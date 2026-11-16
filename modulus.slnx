@@ -28,6 +28,7 @@
     <Project Path="src/messaging/Modulus.Outbox.Abstractions/Modulus.Outbox.Abstractions.csproj" />
     <Project Path="src/messaging/Modulus.Outbox/Modulus.Outbox.csproj" />
     <Project Path="src/messaging/Modulus.Outbox.Management/Modulus.Outbox.Management.csproj" />
+    <Project Path="src/messaging/Modulus.Messaging.Management/Modulus.Messaging.Management.csproj" />
     <Project Path="src/messaging/Modulus.Outbox.MongoDB/Modulus.Outbox.MongoDB.csproj" />
     <Project Path="src/messaging/Modulus.EventBus.RabbitMQ/Modulus.EventBus.RabbitMQ.csproj" />
     <Project Path="src/messaging/Modulus.EventBus.Kafka/Modulus.EventBus.Kafka.csproj" />
@@ -130,6 +131,7 @@
     <Project Path="tests/integration/Modulus.Storage.S3.Integration.Tests/Modulus.Storage.S3.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.SignalR.Backplane.Tests/Modulus.SignalR.Backplane.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Outbox.Management.Tests/Modulus.Outbox.Management.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Messaging.Management.Tests/Modulus.Messaging.Management.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Storage.AzureBlobs.Tests/Modulus.Storage.AzureBlobs.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AspNetCore.Tests/Modulus.AspNetCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Analyzers.Tests/Modulus.Analyzers.Tests.csproj" />

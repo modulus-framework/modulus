@@ -1,0 +1,21 @@
+#nullable enable
+Modulus.Messaging.Management.MessagingManagementExtensions
+const Modulus.Messaging.Management.MessagingManagementExtensions.ReplayPermission = "messaging:errors:replay" -> string!
+const Modulus.Messaging.Management.MessagingManagementExtensions.MaxReplayLimit = 1000 -> int
+const Modulus.Messaging.Management.MessagingManagementExtensions.DefaultReplayLimit = 100 -> int
+Modulus.Messaging.Management.MessageErrorReplayResponse
+override Modulus.Messaging.Management.MessageErrorReplayResponse.ToString() -> string!
+static Modulus.Messaging.Management.MessageErrorReplayResponse.operator !=(Modulus.Messaging.Management.MessageErrorReplayResponse? left, Modulus.Messaging.Management.MessageErrorReplayResponse? right) -> bool
+static Modulus.Messaging.Management.MessageErrorReplayResponse.operator ==(Modulus.Messaging.Management.MessageErrorReplayResponse? left, Modulus.Messaging.Management.MessageErrorReplayResponse? right) -> bool
+override Modulus.Messaging.Management.MessageErrorReplayResponse.GetHashCode() -> int
+override Modulus.Messaging.Management.MessageErrorReplayResponse.Equals(object? obj) -> bool
+Modulus.Messaging.Management.MessageErrorReplayResponse.Equals(Modulus.Messaging.Management.MessageErrorReplayResponse? other) -> bool
+Modulus.Messaging.Management.MessageErrorReplayResponse.<Clone>$() -> Modulus.Messaging.Management.MessageErrorReplayResponse!
+Modulus.Messaging.Management.MessageErrorReplayResponse.Deconstruct(out string! Endpoint, out int Moved) -> void
+Modulus.Messaging.Management.MessageErrorReplayResponse.Endpoint.get -> string!
+Modulus.Messaging.Management.MessageErrorReplayResponse.Endpoint.init -> void
+Modulus.Messaging.Management.MessageErrorReplayResponse.Moved.get -> int
+Modulus.Messaging.Management.MessageErrorReplayResponse.Moved.init -> void
+Modulus.Messaging.Management.MessageErrorReplayResponse.MessageErrorReplayResponse(string! Endpoint, int Moved) -> void
+static Modulus.Messaging.Management.MessagingManagementExtensions.MapModulusMessagingErrors(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/messaging/errors") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+static Modulus.Messaging.Management.MessagingManagementExtensions.AddModulusMessagingManagement(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

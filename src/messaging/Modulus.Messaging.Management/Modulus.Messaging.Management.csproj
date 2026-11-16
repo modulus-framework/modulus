@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework />
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <Description>Operator HTTP API for messaging: replay the parked messages of an endpoint back to it (FR-09, permission-guarded).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../core/Modulus.Core/Modulus.Core.csproj" />
+    <ProjectReference Include="../../core/Modulus.AspNetCore/Modulus.AspNetCore.csproj" />
+    <ProjectReference Include="../../platform/Modulus.Platform/Modulus.Platform.csproj" />
+    <ProjectReference Include="../Modulus.Messaging/Modulus.Messaging.csproj" />
+  </ItemGroup>
+
+</Project>
