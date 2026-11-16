@@ -52,6 +52,9 @@ jobs:
             echo "::error::Line coverage ${line}% is below the ${floor}% floor."
             exit 1
           fi
+      - name: Enforce messaging core coverage (NFR-16)
+        # The core messaging package has its own 85% floor; the solution-wide floor above is too loose to catch it.
+        run: python3 build/check-messaging-coverage.py artifacts/coverage 85
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
