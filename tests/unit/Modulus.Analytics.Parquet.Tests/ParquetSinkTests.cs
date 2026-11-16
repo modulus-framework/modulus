@@ -103,7 +103,10 @@ public sealed class ParquetSinkTests : IDisposable
 
     private static async Task<(List<Dictionary<string, object?>> Rows, ParquetReader Reader)> ReadAsync(string path)
     {
-        var reader = await ParquetReader.CreateAsync(File.OpenRead(path), new ParquetOptions { UseDateOnlyTypeForDates = true });
+        // Read the file into memory so no handle stays open on it: the tests dispose the reader only
+        // sometimes, and an open handle makes the cleanup in Dispose fail on Windows.
+        var bytes = await File.ReadAllBytesAsync(path);
+        var reader = await ParquetReader.CreateAsync(new MemoryStream(bytes), new ParquetOptions { UseDateOnlyTypeForDates = true });
         var rows = new List<Dictionary<string, object?>>();
         for (var g = 0; g < reader.RowGroupCount; g++)
         {
