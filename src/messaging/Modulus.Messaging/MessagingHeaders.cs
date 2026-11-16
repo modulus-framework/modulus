@@ -46,6 +46,12 @@ public static class MessagingHeaders
     public const string DeliveryCount = "mod-delivery-count";
 
     /// <summary>
+    /// How many times the bus has redelivered this message after a failed attempt (FR-08). Set by the bus; a replay from
+    /// <c>_error</c> resets it (FR-09).
+    /// </summary>
+    public const string RedeliveryCount = "mod-redelivery-count";
+
+    /// <summary>
     /// The CLR type name of a sealed message's body (D6). The envelope's body is then an <see cref="EncryptedPayload"/>, and
     /// the bus opens it as this type before a consumer sees it.
     /// </summary>

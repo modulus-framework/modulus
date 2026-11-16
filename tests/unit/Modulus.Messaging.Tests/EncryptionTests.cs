@@ -12,7 +12,7 @@ using Xunit;
 namespace Modulus.Messaging.Tests;
 
 [EncryptedMessage]
-public sealed record SecretNote(Guid Id, string Text);
+public sealed record SecretNote(Guid Id, [property: Modulus.Messaging.Sensitive] string Text);
 
 /// <summary>Not marked: sealed only when its consumer asks for encryption.</summary>
 public sealed record PlainNote(Guid Id, string Text);

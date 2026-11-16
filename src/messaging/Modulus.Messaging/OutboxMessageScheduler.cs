@@ -28,11 +28,11 @@ internal sealed class OutboxMessageScheduler(MessagingBus bus, IMessageOutbox ou
 
     public Task<Guid> ScheduleSend<TMessage>(Uri address, TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class =>
-        ScheduleSend(address, MessagingBus.DueAfter(delay), message, cancellationToken);
+        ScheduleSend(address, bus.DueAfter(delay), message, cancellationToken);
 
     public Task<Guid> SchedulePublish<TMessage>(TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class =>
-        SchedulePublish(MessagingBus.DueAfter(delay), message, cancellationToken);
+        SchedulePublish(bus.DueAfter(delay), message, cancellationToken);
 
     /// <summary>Deletes the scheduled rows of the token that no dispatcher has claimed yet.</summary>
     public Task<bool> CancelScheduled(Guid token, CancellationToken cancellationToken = default) =>

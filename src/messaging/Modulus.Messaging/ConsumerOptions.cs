@@ -74,6 +74,22 @@ public sealed class ConsumerOptions
     /// </summary>
     public bool? SingleActiveConsumer { get; set; }
 
+    /// <summary>
+    /// Most messages a batch consumer handles in one call (FR-04). Used only by <see cref="MessagingBusBuilder.AddBatchConsumer{TConsumer,TMessage}"/>.
+    /// Unset means <see cref="DefaultBatchSize"/>.
+    /// </summary>
+    public int? BatchSize { get; set; }
+
+    /// <summary>
+    /// How long a batch waits for more messages before it runs with the ones it has (FR-04). Used only by batch consumers.
+    /// Unset means <see cref="DefaultBatchWindow"/>.
+    /// </summary>
+    public TimeSpan? BatchWindow { get; set; }
+
+    internal const int DefaultBatchSize = 100;
+
+    internal static readonly TimeSpan DefaultBatchWindow = TimeSpan.FromSeconds(1);
+
     /// <summary>The delivery limit when none is set (RabbitMQ quorum queues use the same default).</summary>
     internal const int DefaultMaxDeliveryCount = 20;
 
@@ -90,6 +106,16 @@ public sealed class ConsumerOptions
         if (MaxDeliveryCount is { } maxDeliveries && maxDeliveries < 1)
         {
             throw new ArgumentOutOfRangeException(nameof(MaxDeliveryCount), "Must be at least 1.");
+        }
+
+        if (BatchSize is { } batchSize && batchSize < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(BatchSize), "Must be at least 1.");
+        }
+
+        if (BatchWindow is { } batchWindow && batchWindow <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(BatchWindow), "Must be positive.");
         }
 
         if (ConcurrentMessageLimit is { } limit && limit < 1)
@@ -114,5 +140,7 @@ public sealed class ConsumerOptions
         MaxDeliveryCount = MaxDeliveryCount ?? defaults.MaxDeliveryCount,
         EncryptPayload = EncryptPayload ?? defaults.EncryptPayload,
         SingleActiveConsumer = SingleActiveConsumer ?? defaults.SingleActiveConsumer,
+        BatchSize = BatchSize ?? defaults.BatchSize,
+        BatchWindow = BatchWindow ?? defaults.BatchWindow,
     };
 }

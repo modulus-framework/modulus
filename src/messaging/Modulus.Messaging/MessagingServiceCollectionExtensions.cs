@@ -24,6 +24,8 @@ public static class MessagingServiceCollectionExtensions
         services.AddSingleton(sp => new MessagingBus(sp, options));
         services.AddSingleton<IMessageTransport>(sp => sp.GetRequiredService<MessagingBus>().Transport);
         services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<MessagingBus>());
+        services.AddSingleton<IMessagingTopology>(sp => sp.GetRequiredService<MessagingBus>());
+        services.AddSingleton<IMessageErrorQueue>(sp => sp.GetRequiredService<MessagingBus>());
         services.TryAddSingleton<RequestRegistry>();
         services.TryAddSingleton<IRequestClient>(sp => new RequestClient(sp.GetRequiredService<MessagingBus>(), sp.GetRequiredService<RequestRegistry>()));
         // Scoped like IBus: inside a scope with an outbox, a scheduled message is stored with its transaction.

@@ -11,10 +11,15 @@ internal sealed record ConsumerRegistration(
     Type MessageType,
     Func<IServiceProvider, MessageEnvelope, CancellationToken, Task> Invoke,
     ConsumerOptions Options,
-    Func<IBus, MessageEnvelope, Exception, CancellationToken, Task> PublishFault);
+    Func<IBus, MessageEnvelope, Exception, CancellationToken, Task> PublishFault,
+    Func<IServiceProvider, IReadOnlyList<MessageEnvelope>, CancellationToken, Task>? InvokeBatch = null);
 
 /// <summary>Configuration produced by <see cref="MessagingBusBuilder"/>.</summary>
 internal sealed record MessagingOptions(
     IReadOnlyList<ConsumerRegistration> Consumers,
     Func<IServiceProvider, IMessageTransport> TransportFactory,
-    string ReplyEndpoint);
+    string ReplyEndpoint,
+    int MaxMessageBytes,
+    IReadOnlyList<Type> Filters,
+    IReadOnlyList<Type> Observers,
+    bool DeployOnly);

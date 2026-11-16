@@ -34,3 +34,93 @@ Modulus.Messaging.CircuitBreakerOptions.OpenDuration.get -> System.TimeSpan
 Modulus.Messaging.CircuitBreakerOptions.OpenDuration.set -> void
 Modulus.Messaging.ConsumerOptions.CircuitBreaker.get -> Modulus.Messaging.CircuitBreakerOptions?
 Modulus.Messaging.ConsumerOptions.CircuitBreaker.set -> void
+Modulus.Messaging.MessageFilterPoint.Send = 0 -> Modulus.Messaging.MessageFilterPoint
+Modulus.Messaging.MessageFilterPoint.Publish = 1 -> Modulus.Messaging.MessageFilterPoint
+Modulus.Messaging.MessageFilterPoint.Consume = 2 -> Modulus.Messaging.MessageFilterPoint
+Modulus.Messaging.MessageFilterPoint
+Modulus.Messaging.IErrorReplayTransport
+Modulus.Messaging.MessageFilterContext
+Modulus.Messaging.IMessageFilter
+Modulus.Messaging.IMessageObserver
+Modulus.Messaging.MessagingTopology.Endpoints.get -> System.Collections.Generic.IReadOnlyList<Modulus.Messaging.EndpointTopology!>!
+Modulus.Messaging.MessagingTopology.Endpoints.init -> void
+Modulus.Messaging.EndpointTopology.ErrorEndpoint.get -> string!
+Modulus.Messaging.EndpointTopology.Name.get -> string!
+Modulus.Messaging.EndpointTopology.ErrorEndpoint.init -> void
+Modulus.Messaging.EndpointTopology.Name.init -> void
+Modulus.Messaging.EndpointTopology.SkippedEndpoint.get -> string!
+Modulus.Messaging.EndpointTopology.SkippedEndpoint.init -> void
+Modulus.Messaging.EndpointTopology.MessageTypes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Messaging.EndpointTopology.MessageTypes.init -> void
+Modulus.Messaging.EndpointTopology.Consumers.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Messaging.EndpointTopology.Consumers.init -> void
+Modulus.Messaging.IMessagingTopology
+Modulus.Messaging.MessagingTopology
+override Modulus.Messaging.MessagingTopology.ToString() -> string!
+static Modulus.Messaging.MessagingTopology.operator !=(Modulus.Messaging.MessagingTopology? left, Modulus.Messaging.MessagingTopology? right) -> bool
+static Modulus.Messaging.MessagingTopology.operator ==(Modulus.Messaging.MessagingTopology? left, Modulus.Messaging.MessagingTopology? right) -> bool
+override Modulus.Messaging.MessagingTopology.GetHashCode() -> int
+override Modulus.Messaging.MessagingTopology.Equals(object? obj) -> bool
+Modulus.Messaging.MessagingTopology.Equals(Modulus.Messaging.MessagingTopology? other) -> bool
+Modulus.Messaging.MessagingTopology.<Clone>$() -> Modulus.Messaging.MessagingTopology!
+Modulus.Messaging.MessagingTopology.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Messaging.EndpointTopology!>! Endpoints) -> void
+Modulus.Messaging.MessageTooLargeException
+Modulus.Messaging.IMessageErrorQueue
+Modulus.Messaging.EndpointTopology
+override Modulus.Messaging.EndpointTopology.ToString() -> string!
+static Modulus.Messaging.EndpointTopology.operator !=(Modulus.Messaging.EndpointTopology? left, Modulus.Messaging.EndpointTopology? right) -> bool
+static Modulus.Messaging.EndpointTopology.operator ==(Modulus.Messaging.EndpointTopology? left, Modulus.Messaging.EndpointTopology? right) -> bool
+override Modulus.Messaging.EndpointTopology.GetHashCode() -> int
+override Modulus.Messaging.EndpointTopology.Equals(object? obj) -> bool
+Modulus.Messaging.EndpointTopology.Equals(Modulus.Messaging.EndpointTopology? other) -> bool
+Modulus.Messaging.EndpointTopology.<Clone>$() -> Modulus.Messaging.EndpointTopology!
+Modulus.Messaging.EndpointTopology.Deconstruct(out string! Name, out string! ErrorEndpoint, out string! SkippedEndpoint, out System.Collections.Generic.IReadOnlyList<string!>! Consumers, out System.Collections.Generic.IReadOnlyList<string!>! MessageTypes) -> void
+Modulus.Messaging.SensitiveAttribute
+Modulus.Messaging.SensitiveAttribute.SensitiveAttribute() -> void
+const Modulus.Messaging.MessagingBusBuilder.DefaultMaxMessageBytes = 1048576 -> int
+Modulus.Messaging.RemoteRequestException
+Modulus.Messaging.ConsumerOptions.BatchSize.get -> int?
+Modulus.Messaging.ConsumerOptions.BatchSize.set -> void
+Modulus.Messaging.ConsumerOptions.BatchWindow.get -> System.TimeSpan?
+Modulus.Messaging.ConsumerOptions.BatchWindow.set -> void
+Modulus.Messaging.IMessageErrorQueue.ReplayAsync(string! endpoint, int limit = 2147483647, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
+Modulus.Messaging.IErrorReplayTransport.ReplayErrors(string! endpoint, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
+Modulus.Messaging.IMessageFilter.Execute(Modulus.Messaging.MessageFilterContext! context, System.Func<System.Threading.Tasks.Task!>! next) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageObserver.OnBusStarted() -> System.Threading.Tasks.Task!
+Modulus.Messaging.MessageFilterContext.Point.get -> Modulus.Messaging.MessageFilterPoint
+Modulus.Messaging.MessageFilterContext.Envelope.get -> Modulus.Messaging.MessageEnvelope!
+Modulus.Messaging.MessageFilterContext.Services.get -> System.IServiceProvider!
+Modulus.Messaging.IMessageObserver.OnBusStopping() -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageObserver.OnPublished(Modulus.Messaging.MessageEnvelope! envelope) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageObserver.OnSent(Modulus.Messaging.MessageEnvelope! envelope) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageObserver.OnReceived(Modulus.Messaging.MessageEnvelope! envelope) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageObserver.OnConsumed(Modulus.Messaging.MessageEnvelope! envelope) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IMessageObserver.OnConsumeFaulted(Modulus.Messaging.MessageEnvelope! envelope, System.Exception! exception) -> System.Threading.Tasks.Task!
+Modulus.Messaging.MessageTooLargeException.MessageTooLargeException(System.Type! messageType, int bodyBytes, int limitBytes) -> void
+Modulus.Messaging.MessageTooLargeException.MessageType.get -> System.Type!
+Modulus.Messaging.MessageTooLargeException.BodyBytes.get -> int
+Modulus.Messaging.MessageTooLargeException.LimitBytes.get -> int
+Modulus.Messaging.MessagingTopology.MessagingTopology(System.Collections.Generic.IReadOnlyList<Modulus.Messaging.EndpointTopology!>! Endpoints) -> void
+Modulus.Messaging.IMessagingTopology.DescribeTopology() -> Modulus.Messaging.MessagingTopology!
+Modulus.Messaging.EndpointTopology.EndpointTopology(string! Name, string! ErrorEndpoint, string! SkippedEndpoint, System.Collections.Generic.IReadOnlyList<string!>! Consumers, System.Collections.Generic.IReadOnlyList<string!>! MessageTypes) -> void
+Modulus.Messaging.RemoteRequestException.RemoteRequestException(string! exceptionType, string! message) -> void
+Modulus.Messaging.RemoteRequestException.ExceptionType.get -> string!
+Modulus.Messaging.MessagingBusBuilder.AddBatchConsumer<TConsumer, TMessage>(string? endpointName = null, System.Action<Modulus.Messaging.ConsumerOptions!>? configure = null) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.MessagingBusBuilder.UseEndpointNameFormatter(System.Func<string!, string!>! formatter) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.MessagingBusBuilder.UseDeployOnly() -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.MessagingBusBuilder.UseMaxMessageSize(int bytes) -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.MessagingBusBuilder.AddObserver<TObserver>() -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.MessagingBusBuilder.AddFilter<TFilter>() -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.Batch<TMessage>.Messages.get -> System.Collections.Generic.IReadOnlyList<Modulus.Messaging.ConsumeContext<TMessage!>!>!
+Modulus.Messaging.Batch<TMessage>.Messages.init -> void
+Modulus.Messaging.Batch<TMessage>
+override Modulus.Messaging.Batch<TMessage>.ToString() -> string!
+~static Modulus.Messaging.Batch<TMessage>.operator !=(Modulus.Messaging.Batch<TMessage>? left, Modulus.Messaging.Batch<TMessage>? right) -> bool
+~static Modulus.Messaging.Batch<TMessage>.operator ==(Modulus.Messaging.Batch<TMessage>? left, Modulus.Messaging.Batch<TMessage>? right) -> bool
+override Modulus.Messaging.Batch<TMessage>.GetHashCode() -> int
+override Modulus.Messaging.Batch<TMessage>.Equals(object? obj) -> bool
+~Modulus.Messaging.Batch<TMessage>.Equals(Modulus.Messaging.Batch<TMessage>? other) -> bool
+~Modulus.Messaging.Batch<TMessage>.<Clone>$() -> Modulus.Messaging.Batch<TMessage>!
+Modulus.Messaging.Batch<TMessage>.Deconstruct(out System.Collections.Generic.IReadOnlyList<Modulus.Messaging.ConsumeContext<TMessage!>!>! Messages) -> void
+Modulus.Messaging.Batch<TMessage>.Batch(System.Collections.Generic.IReadOnlyList<Modulus.Messaging.ConsumeContext<TMessage!>!>! Messages) -> void
+const Modulus.Messaging.MessagingHeaders.RedeliveryCount = "mod-redelivery-count" -> string!

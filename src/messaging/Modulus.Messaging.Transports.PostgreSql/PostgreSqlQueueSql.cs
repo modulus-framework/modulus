@@ -135,6 +135,29 @@ internal static class PostgreSqlQueueSql
     public static string Release(string table) =>
         $"UPDATE {table} SET lock_token = NULL, locked_until = NULL WHERE id = @id AND lock_token = @token";
 
+    /// <summary>
+    /// Moves up to @limit parked rows of @error_queue back to @endpoint (FR-09), oldest first. A replayed row starts again: its
+    /// delivery count is reset, and its redelivery and delivery headers are dropped.
+    /// </summary>
+    public static string ReplayErrors(string table) => $"""
+        WITH picked AS (
+            SELECT q.id FROM {table} AS q
+            WHERE q.queue = @error_queue
+            ORDER BY q.visible_at, q.id
+            LIMIT @limit
+            FOR UPDATE SKIP LOCKED
+        )
+        UPDATE {table} AS q
+        SET queue = @endpoint,
+            delivery_count = 0,
+            lock_token = NULL,
+            locked_until = NULL,
+            visible_at = now(),
+            headers = q.headers - 'mod-redelivery-count' - 'mod-delivery-count'
+        FROM picked
+        WHERE q.id = picked.id
+        """;
+
     public static string Park(string table) => $"""
         UPDATE {table}
         SET queue = @error_queue,

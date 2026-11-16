@@ -44,3 +44,16 @@ public sealed class RequestTimeoutException : TimeoutException
 
     public TimeSpan Timeout { get; }
 }
+
+/// <summary>The consumer failed while handling the request (FR-06): the exception type and message it reported.</summary>
+public sealed class RemoteRequestException : Exception
+{
+    public RemoteRequestException(string exceptionType, string message)
+        : base($"The remote consumer failed with {exceptionType}: {message}")
+    {
+        ExceptionType = exceptionType;
+    }
+
+    /// <summary>The exception type on the consumer side, or the park reason (for example <c>delivery-limit</c>).</summary>
+    public string ExceptionType { get; }
+}

@@ -11,7 +11,7 @@ namespace Modulus.Messaging.Transports.RabbitMQ;
 /// Delayed redelivery uses a TTL queue that dead-letters back to the endpoint, which works on any RabbitMQ 3.13+
 /// broker without the delayed-message plugin (BRS R-09).
 /// </summary>
-public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHealth, IConcurrentDeliveryTransport, ISingleActiveConsumerTransport, IScheduledMessageTransport, IAsyncDisposable
+public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHealth, IConcurrentDeliveryTransport, ISingleActiveConsumerTransport, IScheduledMessageTransport, IErrorReplayTransport, IAsyncDisposable
 {
     /// <inheritdoc/>
     public string SystemName => "rabbitmq";
@@ -509,6 +509,66 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
         }
 
         return PublishBytes(queue, body.ToArray(), properties, CancellationToken.None, queueArguments: null);
+    }
+
+    /// <summary>
+    /// Moves up to <paramref name="limit"/> messages of <c>endpoint_error</c> back to the endpoint (FR-09). Each one is
+    /// published with confirms first and acknowledged from the error queue after the broker accepted the copy, so a crash
+    /// in between repeats the move rather than losing the message. The broker's delivery count and the error headers are
+    /// dropped: the message starts again.
+    /// </summary>
+    public async Task<int> ReplayErrors(string endpoint, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        var connection = _connection ?? throw new InvalidOperationException("The RabbitMQ transport is not started.");
+        var queue = endpoint + "_error";
+        await using var channel = await connection.CreateChannelAsync(
+            new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
+            cancellationToken).ConfigureAwait(false);
+
+        var moved = 0;
+        while (moved < limit)
+        {
+            var result = await channel.BasicGetAsync(queue, autoAck: false, cancellationToken).ConfigureAwait(false);
+            if (result is null)
+            {
+                break;
+            }
+
+            var properties = ReplayProperties(result.BasicProperties);
+            await PublishBytes(endpoint, result.Body.ToArray(), properties, cancellationToken, queueArguments: null).ConfigureAwait(false);
+            await channel.BasicAckAsync(result.DeliveryTag, multiple: false, cancellationToken).ConfigureAwait(false);
+            moved++;
+        }
+
+        return moved;
+    }
+
+    private static BasicProperties ReplayProperties(IReadOnlyBasicProperties original)
+    {
+        var properties = new BasicProperties
+        {
+            Persistent = true,
+            ContentType = original.ContentType,
+            MessageId = original.MessageId,
+            Headers = new Dictionary<string, object?>(StringComparer.Ordinal),
+        };
+        if (original.Headers is not null)
+        {
+            foreach (var (key, value) in original.Headers)
+            {
+                if (key is RabbitMqMessageCodec.QuorumDeliveryCountHeader or RabbitMqMessageCodec.ErrorTypeHeader or RabbitMqMessageCodec.ErrorMessageHeader
+                    or MessagingHeaders.DeliveryCount or MessagingHeaders.RedeliveryCount)
+                {
+                    continue;
+                }
+
+                properties.Headers![key] = value;
+            }
+        }
+
+        return properties;
     }
 
     private async Task PublishBytes(

@@ -3,3 +3,4 @@ Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.TenantRowLeve
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.TenantRowLevelSecurity.set -> void
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.TransportRole.get -> string!
 Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransportOptions.TransportRole.set -> void
+Modulus.Messaging.Transports.PostgreSql.PostgreSqlTransport.ReplayErrors(string! endpoint, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!

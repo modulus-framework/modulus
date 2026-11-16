@@ -17,6 +17,10 @@ internal sealed class RequestRegistry
 
     internal void Remove(Guid requestId) => _pending.TryRemove(requestId, out _);
 
+    /// <summary>Fails the waiting request with the consumer's exception. Returns false when nothing waits for it.</summary>
+    internal bool Fail(Guid requestId, string exceptionType, string message) =>
+        _pending.TryRemove(requestId, out var pending) && pending.TrySetException(new RemoteRequestException(exceptionType, message));
+
     /// <summary>Completes the waiting request. Returns false when nothing waits for it (it timed out, or it was never sent here).</summary>
     internal bool Complete(Guid requestId, object response) =>
         _pending.TryRemove(requestId, out var pending) && pending.TrySetResult(response);

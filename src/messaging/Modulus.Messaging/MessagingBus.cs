@@ -12,10 +12,10 @@ using Modulus.Messaging.Internal;
 namespace Modulus.Messaging;
 
 /// <summary>The bus. Routes publishes and sends to the transport and runs consumers, with retries, redelivery and faults.</summary>
-internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
+internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IMessagingTopology, IMessageErrorQueue
 {
     /// <summary>Header holding the number of redeliveries so far.</summary>
-    internal const string RedeliveryCountHeader = "mod-redelivery-count";
+    internal const string RedeliveryCountHeader = MessagingHeaders.RedeliveryCount;
 
     private readonly ILogger _logger;
     private readonly IServiceScopeFactory _scopes;
@@ -24,6 +24,13 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
     private readonly IMessageEncryptionKeys? _keys;
     private readonly string _replyEndpoint;
     private readonly ConcurrentDictionary<string, EndpointControl> _endpoints = new(StringComparer.Ordinal);
+    private readonly TimeProvider _time;
+    private readonly IHostApplicationLifetime? _lifetime;
+    private readonly int _maxMessageBytes;
+    private readonly bool _deployOnly;
+    private readonly IReadOnlyList<Type> _filterTypes;
+    private readonly IReadOnlyList<IMessageObserver> _observers;
+    private readonly Dictionary<ConsumerRegistration, BatchCollector> _batches = new(ReferenceEqualityComparer.Instance);
 
     internal MessagingBus(IServiceProvider services, MessagingOptions options)
     {
@@ -33,10 +40,38 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         _consumers = options.Consumers;
         _replyEndpoint = options.ReplyEndpoint;
         _transport = options.TransportFactory(services);
+        _time = services.GetService<TimeProvider>() ?? TimeProvider.System;
+        _lifetime = services.GetService<IHostApplicationLifetime>();
+        _maxMessageBytes = options.MaxMessageBytes;
+        _deployOnly = options.DeployOnly;
+        _filterTypes = options.Filters;
+        _observers = options.Observers
+            .Select(type => (IMessageObserver)ActivatorUtilities.GetServiceOrCreateInstance(services, type))
+            .ToArray();
+        foreach (var registration in _consumers.Where(r => r.InvokeBatch is not null))
+        {
+            var consumerOptions = registration.Options;
+            _batches[registration] = new BatchCollector(
+                consumerOptions.BatchSize ?? ConsumerOptions.DefaultBatchSize,
+                consumerOptions.BatchWindow ?? ConsumerOptions.DefaultBatchWindow,
+                consumerOptions.Retry,
+                _time,
+                envelopes => InvokeBatchAsync(registration, envelopes, CancellationToken.None));
+        }
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
+        if (_deployOnly)
+        {
+            // Declares the topology, then stops: nothing is received (FR-23).
+            await _transport.Start(_consumers.Select(c => c.Endpoint).Distinct(StringComparer.Ordinal).ToArray(), static (_, _) => Task.CompletedTask, cancellationToken).ConfigureAwait(false);
+            await _transport.Stop(cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation("Messaging topology declared; deploy-only mode stops the host");
+            _lifetime?.StopApplication();
+            return;
+        }
+
         var limits = ConcurrencyByEndpoint();
         if (_transport is IConcurrentDeliveryTransport concurrent)
         {
@@ -64,7 +99,8 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             singleActiveTransport.ConfigureSingleActiveConsumer(singleActive);
         }
 
-        return _transport.Start(_consumers.Select(c => c.Endpoint).Distinct(StringComparer.Ordinal).ToArray(), Receive, cancellationToken);
+        await _transport.Start(_consumers.Select(c => c.Endpoint).Distinct(StringComparer.Ordinal).ToArray(), Receive, cancellationToken).ConfigureAwait(false);
+        await NotifyAsync(o => o.OnBusStarted()).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -77,14 +113,67 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         foreach (var registration in _consumers)
         {
             var limit = registration.Options.ConcurrentMessageLimit ?? 1;
+            if (registration.InvokeBatch is not null)
+            {
+                // A batch fills up only when enough of its messages are in flight at once.
+                limit = Math.Max(limit, registration.Options.BatchSize ?? ConsumerOptions.DefaultBatchSize);
+            }
+
             limits[registration.Endpoint] = Math.Max(limit, limits.GetValueOrDefault(registration.Endpoint, 1));
         }
 
         return limits;
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) =>
-        _transport.Stop(cancellationToken);
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await NotifyAsync(o => o.OnBusStopping()).ConfigureAwait(false);
+        await _transport.Stop(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The topology: each endpoint with a consumer, its consumers and message types, and its parking queues (FR-23).</summary>
+    public MessagingTopology DescribeTopology() =>
+        new(_consumers
+            .GroupBy(c => c.Endpoint, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal)
+            .Select(g => new EndpointTopology(
+                g.Key,
+                g.Key + "_error",
+                g.Key + "_skipped",
+                g.Select(c => c.ConsumerKey).Distinct(StringComparer.Ordinal).OrderBy(n => n, StringComparer.Ordinal).ToArray(),
+                g.Select(c => c.MessageType.FullName ?? c.MessageType.Name).Distinct(StringComparer.Ordinal).OrderBy(n => n, StringComparer.Ordinal).ToArray()))
+            .ToArray());
+
+    MessagingTopology IMessagingTopology.DescribeTopology() => DescribeTopology();
+
+    /// <summary>Replays parked messages of an endpoint back to it (FR-09). Needs a transport that supports it.</summary>
+    public Task<int> ReplayAsync(string endpoint, int limit = int.MaxValue, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        if (_transport is not IErrorReplayTransport replay)
+        {
+            throw new NotSupportedException($"The {_transport.GetType().Name} transport cannot replay parked messages.");
+        }
+
+        return replay.ReplayErrors(endpoint, limit, cancellationToken);
+    }
+
+    /// <summary>Calls each observer; an observer that throws is logged and does not affect the message.</summary>
+    private async Task NotifyAsync(Func<IMessageObserver, Task> notify)
+    {
+        foreach (var observer in _observers)
+        {
+            try
+            {
+                await notify(observer).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                _logger.LogWarning(exception, "A message observer failed; the message is not affected");
+            }
+        }
+    }
 
     /// <summary>The transport this bus sends and receives over.</summary>
     internal IMessageTransport Transport => _transport;
@@ -112,7 +201,8 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             headers[key] = value;
         }
 
-        await _transport.Send(built with { Headers = headers }, cancellationToken).ConfigureAwait(false);
+        var sent = built with { Headers = headers };
+        await SendThroughAsync(MessageFilterPoint.Send, sent, cancellationToken).ConfigureAwait(false);
         MessagingMetrics.Sent.Add(1, MessagingMetrics.Destination(endpoint));
     }
 
@@ -123,7 +213,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         using var activity = MessagingTelemetry.StartProducer("publish " + typeof(TMessage).Name, typeof(TMessage).Name, _transport.SystemName);
         foreach (var envelope in EnvelopesForPublish(message))
         {
-            await _transport.Send(envelope, cancellationToken).ConfigureAwait(false);
+            await SendThroughAsync(MessageFilterPoint.Publish, envelope, cancellationToken).ConfigureAwait(false);
             MessagingMetrics.Sent.Add(1, MessagingMetrics.Destination(envelope.Endpoint));
         }
     }
@@ -134,8 +224,48 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         var endpoint = EndpointFromAddress(address);
         using var activity = MessagingTelemetry.StartProducer("send " + endpoint, endpoint, _transport.SystemName);
         var envelope = EnvelopeForSend(address, message);
-        await _transport.Send(envelope, cancellationToken).ConfigureAwait(false);
+        await SendThroughAsync(MessageFilterPoint.Send, envelope, cancellationToken).ConfigureAwait(false);
         MessagingMetrics.Sent.Add(1, MessagingMetrics.Destination(envelope.Endpoint));
+    }
+
+    /// <summary>
+    /// Hands one envelope to the transport: the send filters run around it, then the observers are told. The filters run in a
+    /// fresh DI scope, so a scoped filter sees one scope per message.
+    /// </summary>
+    private async Task SendThroughAsync(MessageFilterPoint point, MessageEnvelope envelope, CancellationToken cancellationToken)
+    {
+        Task Deliver() => _transport.Send(envelope, cancellationToken);
+        if (_filterTypes.Count == 0)
+        {
+            await Deliver().ConfigureAwait(false);
+        }
+        else
+        {
+            await using var scope = _scopes.CreateAsyncScope();
+            await RunFiltersAsync(point, envelope, scope.ServiceProvider, Deliver, 0).ConfigureAwait(false);
+        }
+
+        if (point == MessageFilterPoint.Publish)
+        {
+            await NotifyAsync(o => o.OnPublished(envelope)).ConfigureAwait(false);
+        }
+        else
+        {
+            await NotifyAsync(o => o.OnSent(envelope)).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Runs the filters from <paramref name="index"/> on, then <paramref name="inner"/>. Each filter calls its next.</summary>
+    private Task RunFiltersAsync(MessageFilterPoint point, MessageEnvelope envelope, IServiceProvider services, Func<Task> inner, int index)
+    {
+        if (index >= _filterTypes.Count)
+        {
+            return inner();
+        }
+
+        var filter = (IMessageFilter)ActivatorUtilities.GetServiceOrCreateInstance(services, _filterTypes[index]);
+        var context = new MessageFilterContext(point, envelope, services);
+        return filter.Execute(context, () => RunFiltersAsync(point, envelope, services, inner, index + 1));
     }
 
     public async Task<Guid> ScheduleSend<TMessage>(Uri address, DateTimeOffset deliverAt, TMessage message, CancellationToken cancellationToken = default)
@@ -165,13 +295,13 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         where TMessage : class =>
         SchedulePublish(DueAfter(delay), message, cancellationToken);
 
-    internal static DateTimeOffset DueAfter(TimeSpan delay)
+    internal DateTimeOffset DueAfter(TimeSpan delay)
     {
         if (delay < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(delay), delay, "A scheduled delay cannot be negative.");
         }
-        return DateTimeOffset.UtcNow + delay;
+        return _time.GetUtcNow() + delay;
     }
 
     public Task<bool> CancelScheduled(Guid token, CancellationToken cancellationToken = default) =>
@@ -217,7 +347,9 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         where TMessage : class
     {
         ArgumentNullException.ThrowIfNull(message);
+        EnsureWithinLimit(message);
         var envelopes = new List<MessageEnvelope>();
+        var now = _time.GetUtcNow();
         var delivered = new HashSet<(string Endpoint, string ConsumerKey)>();
         foreach (var registration in _consumers)
         {
@@ -231,7 +363,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
                 Modulus.GuidV7.Create(),
                 registration.Endpoint,
                 message,
-                DeliveryHeaders(message, registration.Endpoint, registration.Options, DateTimeOffset.UtcNow),
+                DeliveryHeaders(message, registration.Endpoint, registration.Options, now),
                 registration.ConsumerKey), registration.Options));
         }
 
@@ -242,10 +374,22 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         where TMessage : class
     {
         ArgumentNullException.ThrowIfNull(message);
+        EnsureWithinLimit(message);
         var endpoint = EndpointFromAddress(address);
         var options = _consumers.FirstOrDefault(r => r.Endpoint == endpoint)?.Options;
         return SealIfRequired(new MessageEnvelope(
-            Modulus.GuidV7.Create(), endpoint, message, DeliveryHeaders(message, endpoint, options, DateTimeOffset.UtcNow)), options);
+            Modulus.GuidV7.Create(), endpoint, message, DeliveryHeaders(message, endpoint, options, _time.GetUtcNow())), options);
+    }
+
+    /// <summary>Refuses a body larger than the bus allows, before anything is stored or sent (FR-22).</summary>
+    private void EnsureWithinLimit(object message)
+    {
+        var type = message.GetType();
+        var size = JsonSerializer.SerializeToUtf8Bytes(message, type, MessageJson.Options).Length;
+        if (size > _maxMessageBytes)
+        {
+            throw new MessageTooLargeException(type, size, _maxMessageBytes);
+        }
     }
 
     /// <summary>
@@ -344,6 +488,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
     {
         // Every line this delivery logs carries its trace, message, endpoint and company (D9, FR-24).
         using var logScope = _logger.BeginScope(LogScope(wire));
+        await NotifyAsync(o => o.OnReceived(wire)).ConfigureAwait(false);
 
         // Transport operations (skip, redeliver, error) always take the wire form, so a sealed body is never written back
         // in the clear. The consumer and its fault see the opened form (D6).
@@ -361,6 +506,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             MessagingMetrics.Parked.Add(1, MessagingMetrics.Destination(wire.Endpoint), new KeyValuePair<string, object?>("reason", "unhandled"));
             _logger.LogWarning("Parked message {MessageId} on {Endpoint} in _skipped: no consumer handles it", wire.MessageId, wire.Endpoint);
             await _transport.MoveToSkipped(wire, cancellationToken).ConfigureAwait(false);
+            await ReplyFaultAsync(wire, "unhandled", "No consumer on this endpoint handles the message.", cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -374,10 +520,11 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             MessagingMetrics.Parked.Add(1, MessagingMetrics.Destination(wire.Endpoint), new KeyValuePair<string, object?>("reason", "no-tenant"));
             _logger.LogWarning("Parked message {MessageId} on {Endpoint} in _skipped: it has no tenant and the consumer requires one", wire.MessageId, wire.Endpoint);
             await _transport.MoveToSkipped(wire with { Headers = headers }, cancellationToken).ConfigureAwait(false);
+            await ReplyFaultAsync(wire, "no-tenant", "The message has no tenant and the consumer requires one.", cancellationToken).ConfigureAwait(false);
             return;
         }
 
-        if (IsExpired(envelope, DateTimeOffset.UtcNow))
+        if (IsExpired(envelope, _time.GetUtcNow()))
         {
             // Past its time-to-live: park it unprocessed (FR-13). No consumer runs and no rate-limit slot is used.
             var headers = new Dictionary<string, string>(wire.Headers, StringComparer.Ordinal)
@@ -387,6 +534,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             MessagingMetrics.Parked.Add(1, MessagingMetrics.Destination(wire.Endpoint), new KeyValuePair<string, object?>("reason", "expired"));
             _logger.LogWarning("Parked message {MessageId} on {Endpoint} in _skipped: it expired before delivery", wire.MessageId, wire.Endpoint);
             await _transport.MoveToSkipped(wire with { Headers = headers }, cancellationToken).ConfigureAwait(false);
+            await ReplyFaultAsync(wire, "expired", "The message expired before it was delivered.", cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -412,39 +560,63 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
 
         var attempts = 0;
         Exception failure;
-        while (true)
+        if (_batches.TryGetValue(registration, out var batch))
         {
-            attempts++;
+            // The batch retries as a whole, so the message's own attempt is the batch's one (FR-04).
+            attempts = 1;
             try
             {
-                await Invoke(registration, envelope, cancellationToken).ConfigureAwait(false);
+                await batch.AddAsync(envelope, TenantOf(envelope) ?? string.Empty, cancellationToken).ConfigureAwait(false);
                 control.Record(succeeded: true);
                 return;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                // Shutdown, not a failure: the transport puts the message back.
                 throw;
             }
             catch (Exception exception)
             {
                 failure = exception;
             }
-
-            // A park request (D8) is not retried: retrying cannot fix it.
-            if (failure is MessageParkException)
-            {
-                break;
-            }
-
-            var retry = options.Retry;
-            if (retry is null || retry.IsIgnored(failure) || attempts - 1 >= retry.Retries)
-            {
-                break;
-            }
-
-            await Task.Delay(retry.DelayFor(attempts), cancellationToken).ConfigureAwait(false);
         }
+        else
+        {
+            while (true)
+            {
+                attempts++;
+                try
+                {
+                    await Invoke(registration, envelope, cancellationToken).ConfigureAwait(false);
+                    control.Record(succeeded: true);
+                    return;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // Shutdown, not a failure: the transport puts the message back.
+                    throw;
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                }
+
+                // A park request (D8) is not retried: retrying cannot fix it.
+                if (failure is MessageParkException)
+                {
+                    break;
+                }
+
+                var retry = options.Retry;
+                if (retry is null || retry.IsIgnored(failure) || attempts - 1 >= retry.Retries)
+                {
+                    break;
+                }
+
+                await Task.Delay(retry.DelayFor(attempts), _time, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        await NotifyAsync(o => o.OnConsumeFaulted(envelope, failure)).ConfigureAwait(false);
 
         // Ignored exceptions go straight to _error (FR-07), so they skip redelivery as well, and so does a park request.
         var parkRequest = failure as MessageParkException;
@@ -514,6 +686,27 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         MessagingMetrics.Parked.Add(1, MessagingMetrics.Destination(wire.Endpoint), new KeyValuePair<string, object?>("reason", reason));
         _logger.LogError(failure, "Parked message {MessageId} on {Endpoint} in _error, reason {Reason}", wire.MessageId, wire.Endpoint, reason);
         await _transport.MoveToError(wire, failure, cancellationToken).ConfigureAwait(false);
+        await ReplyFaultAsync(wire, reason, failure.Message, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Tells a waiting requester that its request failed (FR-06), so it gets a <see cref="RemoteRequestException"/> at once.
+    /// Does nothing for a message that is not a request.
+    /// </summary>
+    private async Task ReplyFaultAsync(MessageEnvelope wire, string exceptionType, string message, CancellationToken cancellationToken)
+    {
+        if (!wire.Headers.TryGetValue(MessagingHeaders.ReplyTo, out var replyTo) || replyTo.Length == 0 ||
+            !wire.Headers.TryGetValue(MessagingHeaders.RequestId, out var requestText) || !Guid.TryParse(requestText, out var requestId))
+        {
+            return;
+        }
+
+        var fault = new MessageEnvelope(
+            Modulus.GuidV7.Create(),
+            replyTo,
+            new RequestFault(requestId, exceptionType, message),
+            new Dictionary<string, string>(StringComparer.Ordinal));
+        await _transport.Send(fault, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -531,7 +724,10 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         var reason = (failure as MessageParkException)?.Reason ?? "error";
         MessagingMetrics.Parked.Add(1, MessagingMetrics.Destination(wire.Endpoint), new KeyValuePair<string, object?>("reason", reason));
         _logger.LogError(failure, "Parked message {MessageId} on {Endpoint} in _error after {Attempts} attempt(s), reason {Reason}", wire.MessageId, wire.Endpoint, attempts, reason);
+        // The payload is described with its sensitive properties masked (NFR-12).
+        _logger.LogDebug("Parked message {MessageId} payload: {Payload}", wire.MessageId, MessageDescription.Describe(envelope.Message));
         await _transport.MoveToError(wire, failure, cancellationToken).ConfigureAwait(false);
+        await ReplyFaultAsync(wire, reason == "error" ? failure.GetType().FullName ?? failure.GetType().Name : reason, failure.Message, cancellationToken).ConfigureAwait(false);
         if (envelope.Message is not IFault)
         {
             await registration.PublishFault(this, envelope, failure, cancellationToken).ConfigureAwait(false);
@@ -623,7 +819,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             }
             else
             {
-                await RunConsumer(registration, services, envelope, cancellationToken).ConfigureAwait(false);
+                await RunFiltersAsync(MessageFilterPoint.Consume, envelope, services, () => RunConsumer(registration, services, envelope, cancellationToken), 0).ConfigureAwait(false);
                 MessagingMetrics.Consumed.Add(1, MessagingMetrics.Destination(envelope.Endpoint));
             }
 
@@ -633,6 +829,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
             }
 
             MessagingMetrics.RecordProcess(envelope.Endpoint, started, errorType: null);
+            await NotifyAsync(o => o.OnConsumed(envelope)).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -691,16 +888,81 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         }
     }
 
-    private static async Task RunConsumer(
+    /// <summary>Runs a batch in one tenant's scope, with the inbox and unit of work of the attempt (FR-04, RULE-04).</summary>
+    private async Task InvokeBatchAsync(ConsumerRegistration registration, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
+    {
+        using var tenant = MessageTenant.Enter(TenantOf(envelopes[0]));
+        await using var scope = _scopes.CreateAsyncScope();
+        var services = scope.ServiceProvider;
+        var prepared = await PrepareConsumeScopesAsync(services, envelopes[0], cancellationToken).ConfigureAwait(false);
+        using var entered = EnterAll(prepared);
+        var unitOfWork = services.GetService<IConsumeUnitOfWork>();
+        var inbox = services.GetService<IMessageInbox>();
+        if (unitOfWork is not null)
+        {
+            await unitOfWork.Begin(cancellationToken).ConfigureAwait(false);
+        }
+
+        try
+        {
+            var fresh = new List<MessageEnvelope>(envelopes.Count);
+            foreach (var envelope in envelopes)
+            {
+                if (inbox is not null && !await inbox.Claim(envelope.MessageId, registration.ConsumerKey, cancellationToken).ConfigureAwait(false))
+                {
+                    MessagingMetrics.InboxDuplicates.Add(1, new KeyValuePair<string, object?>("endpoint", envelope.Endpoint));
+                    continue;
+                }
+
+                fresh.Add(envelope);
+            }
+
+            if (fresh.Count > 0)
+            {
+                await RunFiltersAsync(MessageFilterPoint.Consume, fresh[0], services, () => RunWithTimeoutAsync(
+                    registration.Options.ConsumeTimeout,
+                    fresh[0].Endpoint,
+                    token => registration.InvokeBatch!(services, fresh, token),
+                    cancellationToken), 0).ConfigureAwait(false);
+                foreach (var envelope in fresh)
+                {
+                    MessagingMetrics.Consumed.Add(1, MessagingMetrics.Destination(envelope.Endpoint));
+                    await NotifyAsync(o => o.OnConsumed(envelope)).ConfigureAwait(false);
+                }
+            }
+
+            if (unitOfWork is not null)
+            {
+                await unitOfWork.Commit(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+            if (unitOfWork is not null)
+            {
+                await unitOfWork.Rollback(CancellationToken.None).ConfigureAwait(false);
+            }
+
+            throw;
+        }
+    }
+
+    private static Task RunConsumer(
         ConsumerRegistration registration,
         IServiceProvider services,
         MessageEnvelope envelope,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) =>
+        RunWithTimeoutAsync(
+            registration.Options.ConsumeTimeout,
+            envelope.Endpoint,
+            token => registration.Invoke(services, envelope, token),
+            cancellationToken);
+
+    private static async Task RunWithTimeoutAsync(TimeSpan? timeout, string endpoint, Func<CancellationToken, Task> run, CancellationToken cancellationToken)
     {
-        var timeout = registration.Options.ConsumeTimeout;
         if (timeout is null)
         {
-            await registration.Invoke(services, envelope, cancellationToken).ConfigureAwait(false);
+            await run(cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -708,11 +970,11 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService
         attemptSource.CancelAfter(timeout.Value);
         try
         {
-            await registration.Invoke(services, envelope, attemptSource.Token).ConfigureAwait(false);
+            await run(attemptSource.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && attemptSource.IsCancellationRequested)
         {
-            throw new ConsumeTimeoutException(envelope.Endpoint, timeout.Value);
+            throw new ConsumeTimeoutException(endpoint, timeout.Value);
         }
     }
 

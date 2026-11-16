@@ -11,7 +11,7 @@ namespace Modulus.Messaging.Transports.RabbitMQ;
 internal static class RabbitMqMessageCodec
 {
     internal const string MessageTypeHeader = "mod-message-type";
-    private const string QuorumDeliveryCountHeader = "x-delivery-count";
+    internal const string QuorumDeliveryCountHeader = "x-delivery-count";
     internal const string ConsumerKeyHeader = "mod-consumer-key";
     internal const string ErrorTypeHeader = "mod-error-type";
     internal const string ErrorMessageHeader = "mod-error-message";

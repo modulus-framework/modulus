@@ -1,1 +1,21 @@
 #nullable enable
+Modulus.Messaging.Testing.FaultInjector
+Modulus.Messaging.Testing.FaultInjector.FaultInjector() -> void
+Modulus.Messaging.Testing.VirtualClock
+Modulus.Messaging.Testing.SagaHarness<TSaga>
+Modulus.Messaging.Testing.SagaHarness<TSaga>.SagaHarness(Modulus.Messaging.Testing.MessagingTestHarness! harness) -> void
+Modulus.Messaging.Testing.VirtualClock.VirtualClock() -> void
+Modulus.Messaging.Testing.MessagingTestHarness.Faults.get -> Modulus.Messaging.Testing.FaultInjector!
+Modulus.Messaging.Testing.MessagingTestHarness.Clock.get -> Modulus.Messaging.Testing.VirtualClock?
+Modulus.Messaging.Testing.SagaHarness<TSaga>.FindAsync(System.Guid correlationId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TSaga?>!
+Modulus.Messaging.Testing.VirtualClock.VirtualClock(System.DateTimeOffset start) -> void
+Modulus.Messaging.Testing.FaultInjector.FailNext<TMessage>(int times, System.Exception! exception) -> void
+static Modulus.Messaging.Testing.MessagingTestHarness.StartAsync(System.Action<Modulus.Messaging.MessagingBusBuilder!>! configure, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? services, Modulus.Messaging.Testing.VirtualClock? clock) -> System.Threading.Tasks.Task<Modulus.Messaging.Testing.MessagingTestHarness!>!
+override Modulus.Messaging.Testing.VirtualClock.GetUtcNow() -> System.DateTimeOffset
+Modulus.Messaging.Testing.FaultInjector.Clear() -> void
+Modulus.Messaging.Testing.FaultInjector.FailAlways<TMessage>(System.Exception! exception) -> void
+Modulus.Messaging.Testing.SagaHarness<TSaga>.WaitForStateAsync(System.Guid correlationId, string! state, System.TimeSpan? timeout = null) -> System.Threading.Tasks.Task<bool>!
+override Modulus.Messaging.Testing.VirtualClock.CreateTimer(System.Threading.TimerCallback! callback, object? state, System.TimeSpan dueTime, System.TimeSpan period) -> System.Threading.ITimer!
+Modulus.Messaging.Testing.SagaHarness<TSaga>.WaitForCompletionAsync(System.Guid correlationId, System.TimeSpan? timeout = null) -> System.Threading.Tasks.Task<bool>!
+Modulus.Messaging.Testing.FaultInjector.Remaining<TMessage>() -> int
+Modulus.Messaging.Testing.VirtualClock.Advance(System.TimeSpan by) -> void

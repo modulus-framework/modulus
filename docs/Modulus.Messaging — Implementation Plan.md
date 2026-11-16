@@ -70,7 +70,7 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 - D7 RLS on the queue table: not done (the transport is host-level by design); the inbox record gets a nullable `TenantId`, built 2026-11-15 (upgrade: a migration).
 - D8 Refused company: parked at once with reason `tenant-refused` (built 2026-11-15: `MessageParkException` in core; the company adapter throws it for an unknown or inactive company, and a transient store failure still retries; `D8_a_refused_company_is_parked_at_once_and_is_not_retried`).
 - D9 `messaging.system`: the transport name (`rabbitmq`, `postgresql`, `in-memory`), built 2026-11-15, with a log scope per delivery and the queue-depth gauge.
-- D10 FR-23 CLI scaffolding: deferred until after G4.
+- D10 FR-23 CLI scaffolding: superseded 2026-11-15 by the owner's request to build it now (`modulus add-messaging`, see Progress). The v1 topology API and deploy-only mode followed on 2026-11-16.
 - D11 Circuit breaker: not built; the kill switch covers the criterion.
 - D12 RabbitMQ `MaxQueueLength` on existing queues: apply a RabbitMQ policy (`rabbitmqctl set_policy`) rather than a migration step.
 - D13 In-memory health: always healthy is correct (no broker); documented.
@@ -94,9 +94,42 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 
 **Larger, not started**
 - Tenant context, FR-21: the BRS acceptance "a consumer for tenant A cannot read tenant B rows" is met for module EF data, through the framework's tenant filter (end-to-end test). Remaining: database-level defense in depth (RLS on the PostgreSQL transport's queue table; tenant column on the inbox record). The outbox row already carries the tenant in its headers.
-- M4 release (gate G4, needs two weeks in production): payload encryption (FR-22, built 2026-11-15), `[Sensitive]` redaction (NFR-12, covered by design and a test, see Progress), OpenTelemetry messaging conventions for spans and metrics (FR-24, NFR-17; built 2026-11-15, see Progress), health checks (transports done, see Progress), host adapter (built), CLI scaffolding (FR-23, deferred until after G4 by D10), migration guide from MassTransit v8 (NFR-19, not written), frozen API baseline and signed packages (not done).
+- M4 release (gate G4, needs two weeks in production): payload encryption (FR-22, built), `[Sensitive]` redaction (NFR-12, built 2026-11-16), OpenTelemetry messaging conventions (FR-24, NFR-17, built), health checks (built), host adapter (built), CLI scaffolding (FR-23, built), migration guide from MassTransit v8 (NFR-19, written: `docs/messaging/migration-from-masstransit.md`), API baseline (new v1 surface is in PublicAPI.Unshipped until the release) and signed packages (not done, needs the owner's certificate).
 - Test coverage target of 85% on core (NFR-16): measured 2026-11-15 from the unit suites on net10, merged across suites: `Modulus.Messaging` 88.2% of lines (896 of 1016), Sagas 87.2%, EF inbox 80.2%, EF outbox 67.0%, host adapter 64.0%. Integration suites are not in the figure. No gate in CI yet.
-- Outbox and inbox on Npgsql: not built. The EF Core outbox and inbox work on SQLite and other EF providers; the saga repository on Npgsql exists (JSONB).
+- Outbox and inbox on Npgsql: built (`Modulus.Messaging.Outbox.Npgsql`, `Modulus.Messaging.Inbox.Npgsql`; 7 integration tests). Superseded: this line was stale.
+
+### V1 requirements, status after the gap-closure pass (2026-11-16)
+
+Every BRS v1 requirement (Must and Should, plus the Could items FR-26 to FR-33, which the plan puts outside v1) was checked against the code and the tests. Status:
+
+**Built and tested in this pass**
+- FR-04 batch consumers: `AddBatchConsumer` with `BatchSize` and `BatchWindow`; batches are grouped per tenant; a failed batch is retried as a whole, then each message follows the normal redelivery and park rules (`V1GapTests.FR_04`).
+- FR-06 remote faults: a failed request answers the requester at once with `RemoteRequestException` (the exception type, or the park reason such as `unhandled`, `expired`, `delivery-limit`); no timeout wait (`V1GapTests.FR_06`).
+- FR-09 replay: `IMessageErrorQueue.ReplayAsync` moves `_error` messages back to their endpoint, oldest first, with delivery counts reset. Transports: in-memory (unit), PostgreSQL and RabbitMQ (integration: `ErrorReplayTests` in each project). The CLI part of the BRS acceptance is not built (see Not built).
+- FR-20 filters and observers: `IMessageFilter` at send, publish and consume (resolved from the container per message; can refuse a message); `IMessageObserver` for bus start and stop, send, publish, receive, consume and faulted attempts. An observer that throws is logged and does not affect the message (`V1GapTests.FR_20`).
+- FR-22 body size limit: `UseMaxMessageSize` (default 1 MiB, JSON bytes); a larger message is refused at send with `MessageTooLargeException`, before the outbox or transport sees it (`V1GapTests.FR_22`).
+- FR-23 topology: `IMessagingTopology.DescribeTopology()` (endpoints, consumers, message types, `_error` and `_skipped` names); `UseDeployOnly()` declares the topology and receives nothing; `UseEndpointNameFormatter` renames derived endpoint names (`V1GapTests.FR_23`).
+- FR-25 test harness: a `VirtualClock` (the bus, the in-memory transport, redelivery and sagas use the injected `TimeProvider`), `FaultInjector` (fails the next N consume attempts through the normal retry and park rules), and `SagaHarness<TSaga>` (find, wait for a state, wait for completion). A saga's payment-window timeout fires on the virtual clock (`SagaVirtualClockTests`).
+- NFR-12 `[Sensitive]`: properties marked `[Sensitive]` show as `***` in the payload diagnostic that a parked message logs (Debug level). Other values are logged. The earlier "no content in logs" test now marks its secret text `[Sensitive]` (`V1GapTests.NFR_12`).
+
+**Built earlier and re-verified**
+- FR-17 `Request` (see Progress above), FR-21 row-level isolation, FR-14 single-active consumer, FR-12 scheduling with cancel (not on RabbitMQ, D2), FR-13 TTL and priority (not priority on RabbitMQ, D1), FR-24 telemetry and health, FR-05 faults, FR-18 consumer sagas, FR-19 saga repositories.
+
+**Not built, with the reason**
+- NFR-02 reconnect backoff from 1 s to 60 s: RabbitMQ.Client's automatic recovery retries at one fixed interval. An exponential backoff needs our own reconnect loop that re-creates channels, consumers and topology, which is a larger change than this pass. Open.
+- NFR-13 Native AOT and trimming: the core serialises arbitrary message types with `System.Text.Json` reflection. AOT needs a generated `JsonSerializerContext` for every message type, which the bus cannot provide generically. The core is not marked `IsAotCompatible`. Open, and it needs a design decision (accept it as unsupported, or require user-supplied serializer contexts).
+- FR-09 CLI replay: the BRS acceptance also says "by API and CLI". The API is built; a `modulus` command for replay is not.
+- NFR-14 baseline shipped: the new public surface is in the `PublicAPI.Unshipped.txt` files, which the analyzers enforce. Moving it to `Shipped` is a release step.
+- NFR-20 docs site: the Markdown docs in `docs/messaging/` exist; a published site does not.
+- NFR-21 signed packages: needs the owner's code-signing certificate (F-25).
+- Measured NFR targets (NFR-03 to NFR-07): not measured, need target hardware.
+- FR-20 transaction filter: consumes already run inside the unit of work (`IConsumeUnitOfWork`), which commits or rolls back each attempt. It is not exposed as a filter.
+- Filters and observers do not run for an outbox send until the dispatcher hands the row to the transport. The outbox stores the message first, so a send filter that refuses a message does not stop an outbox write.
+
+**Notes on the new behaviour**
+- The default body size limit (1 MiB) makes each send serialise the message once more to measure it. NFR-06 (overhead) was not measured after this change.
+- A batch runs its filters once, with the first message of the batch.
+- `UseEndpointNameFormatter` applies only to names the bus derives; call it before the consumers are added.
 
 ### Progress
 
@@ -140,7 +173,7 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 - [x] Kill switch: when the failure ratio over the last N outcomes reaches the threshold, the endpoint pauses for the restart timeout, then restarts with an empty window (FR-15)
 - [x] 2 tests: deliveries spaced by the rate limit; the kill switch pauses after four failures and restarts after the timeout
 - [x] Concurrency limit (`ConsumerOptions.ConcurrentMessageLimit`, default 1) through `IConcurrentDeliveryTransport`, which the bus calls before start. Implemented in all three transports (in-memory, RabbitMQ, PostgreSQL). Transports without the interface refuse a limit above 1 at start (`ConcurrencyTests`). Tests: in-memory unit 3, PostgreSQL integration 2 (ordered under 16 across two hosts, limit reached on one host), RabbitMQ integration 2
-- [ ] Circuit breaker as a separate mechanism: not built. The kill switch covers the BRS acceptance criterion; Polly's circuit breaker is already used in `Modulus.Sagas`
+- [x] Circuit breaker (`CircuitBreakerOptions`, `EndpointControl`; 3 unit tests). Built on 2026-11-15 after all; D11 above is superseded. The kill switch remains the BRS criterion.
 
 **M1 remaining**
 
@@ -204,7 +237,7 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 - [x] Concurrency control in the in-memory repository (FR-19, optimistic): `SagaInstance.Version`; a save or delete of a copy whose version is no longer stored throws `SagaConcurrencyException`, and the bus redelivers the message, which re-reads and applies its change. Tests: a stale save is refused; 50 increments with 8 workers, each forced to overlap, all apply (without the version check the same test ends at 7, so it proves the fix)
 - [x] EF Core saga repository (FR-19) in `Modulus.Messaging.Sagas.EntityFrameworkCore`: `SagaRecord` table (`messaging_sagas`, keyed by saga type and correlation id), `AddEntityFrameworkSagaRepository<TSaga,TContext>()`. A save is an insert for a new instance (a racing insert is a conflict) or one `UPDATE ... WHERE Version = read version`; a delete checks the version the same way. Tests on SQLite: a stale save is refused; 50 increments with 8 workers on the database all apply (without the check the same test ends at 7). Found and fixed on the way: the version must be read from the column, not the JSON
 - [x] Npgsql JSONB saga repository (FR-19) in `Modulus.Messaging.Sagas.PostgreSql`: `PostgreSqlSagaRepository<TSaga>` with `SchemaScript`; a save is an `INSERT ... ON CONFLICT DO NOTHING` or one `UPDATE ... WHERE version = read version`, a delete checks the version the same way. Tests on a PostgreSQL 17 container: a stale save is refused; 50 increments with 8 workers all apply. With the UPDATE check removed the same test fails (it ends at 0, not at 7 as the in-memory and EF runs do; the cause of the different count is not yet explained)
-- [ ] Not yet: the FR-17 leftover `Request` (needs FR-06). `If`, `Catch` and `Ignore` are done (2026-11-15)
+- [x] FR-17 `Request` (2026-11-16): no dedicated API. A saga sends the request, waits in a state and completes on the correlated reply (`SagaRequestReplyTests`, net8.0 and net10.0). A `Request` method would only wrap `Send`, `TransitionTo` and `CorrelateBy`.
 
 **M3 consumer sagas (FR-18, done)**
 
@@ -252,7 +285,7 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 - [x] Tests (`TenantTests`, 5 unit, net8.0 and net10.0): the sender's tenant reaches the consumer; two messages each keep their own tenant; a tenant-scoped consumer parks a tenant-less message and runs nothing; a tenant-scoped consumer handles a tenant message; the scope restores on dispose
 - [x] Bridge to the framework's tenant (2026-11-15): `Modulus.Messaging.Modulus` (new project, `AddModulusTenantMessaging()`). Two hooks in the core make it possible: `IMessageAmbientContext` (wraps the scoped bus and scheduler, so a message from a request carries that request's company; a host-context scope clears any outer one) and `IConsumeScope` (verifies the header's company through `VerifyTenantAsync` and enters it in the bus's consume frame; an unknown, inactive or malformed company refuses the message)
 - [x] Tests: 5 core hook tests (`AmbientHookTests`), 5 adapter tests (`AdapterTests`), both TFMs
-- [ ] Not yet, and the BRS acceptance "a consumer for tenant A cannot read tenant B rows" is not met until these are done: row-level isolation (PostgreSQL RLS for the queue table, tenant-stamped EF outbox and inbox rows); A refused company is retried under the consumer's redelivery policy unless the consumer ignores `TenantContextRejectedException`
+- [x] Row-level isolation (FR-21, built 2026-11-15, commit 4aba7b86): RLS on the PostgreSQL queue table (`TenantRowLevelSecurity`, opt-in, 32 integration tests with it), `TenantId` on the inbox record, and the tenant header on outbox rows. The remaining note: the transport is host-level by design (D7).
 
 **M4 metrics (FR-24, partly done, 2026-11-15)**
 

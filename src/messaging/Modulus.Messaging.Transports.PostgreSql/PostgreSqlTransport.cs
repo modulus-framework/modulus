@@ -12,7 +12,7 @@ namespace Modulus.Messaging.Transports.PostgreSql;
 /// the bus has finished with it (RULE-02). A row whose host dies keeps its lease until it expires, then another host
 /// receives it (at-least-once). Delayed redelivery is a row with a visibility time in the future.
 /// </summary>
-public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport, IMessageTransportHealth, IAsyncDisposable
+public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport, IMessageTransportHealth, IErrorReplayTransport, IAsyncDisposable
 {
     /// <inheritdoc/>
     public string SystemName => "postgresql";
@@ -266,6 +266,18 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
                 (PostgreSqlMessageCodec.ErrorMessageHeader, exception.Message)),
             envelope.ConsumerKey);
         return Enqueue(envelope.Endpoint + ErrorSuffix, error, TimeSpan.Zero, cancellationToken);
+    }
+
+    /// <summary>Moves up to <paramref name="limit"/> parked rows of the endpoint's <c>_error</c> queue back to it (FR-09).</summary>
+    public async Task<int> ReplayErrors(string endpoint, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        await using var command = _dataSource.CreateCommand(PostgreSqlQueueSql.ReplayErrors(_table));
+        command.Parameters.AddWithValue("error_queue", endpoint + ErrorSuffix);
+        command.Parameters.AddWithValue("endpoint", endpoint);
+        command.Parameters.AddWithValue("limit", limit);
+        return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public Task MoveToSkipped(MessageEnvelope envelope, CancellationToken cancellationToken)

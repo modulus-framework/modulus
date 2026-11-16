@@ -7,7 +7,7 @@ namespace Modulus.Messaging.Transports.InMemory;
 /// Stopping stops taking new messages and lets in-flight ones finish; after the stop timeout the in-flight
 /// message is put back in its queue. Messages are lost if the process exits: use a durable transport in production.
 /// </summary>
-public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport
+public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTransport, IConcurrentDeliveryTransport, IErrorReplayTransport
 {
     /// <inheritdoc/>
     public string SystemName => "in-memory";
@@ -22,6 +22,7 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
     private readonly object _scheduleGate = new();
     private readonly Dictionary<Guid, List<ScheduledItem>> _scheduled = new();
     private readonly TimeSpan _stopTimeout;
+    private readonly TimeProvider _time;
     private IReadOnlyDictionary<string, int> _limits = new Dictionary<string, int>(StringComparer.Ordinal);
 
     private Func<MessageEnvelope, CancellationToken, Task>? _receive;
@@ -34,6 +35,15 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
     }
 
     public InMemoryTransport(TimeSpan stopTimeout)
+        : this(stopTimeout, TimeProvider.System)
+    {
+    }
+
+    /// <summary>
+    /// Creates a transport whose delays (scheduled messages, redelivery) run on <paramref name="timeProvider"/>. A test passes
+    /// a virtual clock and advances it, so a timeout of minutes passes at once (FR-25).
+    /// </summary>
+    public InMemoryTransport(TimeSpan stopTimeout, TimeProvider timeProvider)
     {
         if (stopTimeout < TimeSpan.Zero)
         {
@@ -41,6 +51,36 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
         }
 
         _stopTimeout = stopTimeout;
+        _time = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+    }
+
+    /// <summary>Moves up to <paramref name="limit"/> parked messages of the endpoint back to it, oldest first (FR-09).</summary>
+    public async Task<int> ReplayErrors(string endpoint, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(endpoint);
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        if (!_deadLetters.TryGetValue(endpoint + "_error", out var errors))
+        {
+            return 0;
+        }
+
+        var moved = 0;
+        while (moved < limit && errors.TryDequeue(out var letter))
+        {
+            await Send(ForReplay(letter.Envelope), cancellationToken).ConfigureAwait(false);
+            moved++;
+        }
+
+        return moved;
+    }
+
+    /// <summary>A replayed message starts again: its delivery and redelivery counts are reset.</summary>
+    private static MessageEnvelope ForReplay(MessageEnvelope envelope)
+    {
+        var headers = new Dictionary<string, string>(envelope.Headers, StringComparer.Ordinal);
+        headers.Remove(MessagingHeaders.DeliveryCount);
+        headers.Remove(MessagingHeaders.RedeliveryCount);
+        return envelope with { Headers = headers };
     }
 
     /// <summary>Messages that failed in a consumer, in the order they were parked. Endpoint <c>x</c> parks in <c>x_error</c>.</summary>
@@ -152,7 +192,7 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
         // Runs off the pump so the endpoint keeps moving while the message waits.
         return Task.Run(async () =>
         {
-            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(delay, _time, cancellationToken).ConfigureAwait(false);
             await Send(envelope, CancellationToken.None).ConfigureAwait(false);
         }, CancellationToken.None);
     }
@@ -186,7 +226,7 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
             items.Add(item);
         }
 
-        var delay = deliverAt - DateTimeOffset.UtcNow;
+        var delay = deliverAt - _time.GetUtcNow();
         _ = FireAsync(scheduleToken, item, delay < TimeSpan.Zero ? TimeSpan.Zero : delay);
         return Task.CompletedTask;
     }
@@ -217,7 +257,7 @@ public sealed class InMemoryTransport : IMessageTransport, IScheduledMessageTran
     {
         try
         {
-            await Task.Delay(delay, item.Cancellation.Token).ConfigureAwait(false);
+            await Task.Delay(delay, _time, item.Cancellation.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

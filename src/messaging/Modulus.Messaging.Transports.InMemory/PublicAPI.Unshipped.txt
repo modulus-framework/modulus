@@ -1,1 +1,3 @@
 #nullable enable
+Modulus.Messaging.Transports.InMemory.InMemoryTransport.InMemoryTransport(System.TimeSpan stopTimeout, System.TimeProvider! timeProvider) -> void
+Modulus.Messaging.Transports.InMemory.InMemoryTransport.ReplayErrors(string! endpoint, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
