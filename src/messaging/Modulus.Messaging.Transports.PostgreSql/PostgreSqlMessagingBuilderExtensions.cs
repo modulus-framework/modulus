@@ -9,6 +9,6 @@ public static class PostgreSqlMessagingBuilderExtensions
         ArgumentNullException.ThrowIfNull(configure);
         var options = new PostgreSqlTransportOptions();
         configure(options);
-        return builder.UseTransport(_ => new PostgreSqlTransport(options));
+        return builder.UseTransport(_ => new PostgreSqlTransport(options) { MessageTypes = builder.MessageTypes });
     }
 }

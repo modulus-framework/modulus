@@ -141,3 +141,21 @@ Modulus.Messaging.RequestFault.<Clone>$() -> Modulus.Messaging.RequestFault!
 Modulus.Messaging.RequestFault.Deconstruct(out System.Guid RequestId, out string! ExceptionType, out string! Message) -> void
 Modulus.Messaging.IBus.SendRequest<TMessage>(System.Uri! address, TMessage! message, System.Guid requestId, string! replyEndpoint, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Modulus.Messaging.RequestFault.RequestFault(System.Guid RequestId, string! ExceptionType, string! Message) -> void
+Modulus.Messaging.MessageUrnAttribute
+Modulus.Messaging.MessageUrnAttribute.MessageUrnAttribute(string! urn) -> void
+Modulus.Messaging.MessageUrnAttribute.Urn.get -> string!
+const Modulus.Messaging.MessageUrnAttribute.MaxLength = 256 -> int
+Modulus.Messaging.ConsumeContext<TMessage>.Redeliver(System.TimeSpan delay) -> void
+Modulus.Messaging.RedeliverMessageException
+Modulus.Messaging.RedeliverMessageException.Delay.get -> System.TimeSpan
+Modulus.Messaging.RedeliverMessageException.RedeliverMessageException(System.TimeSpan delay) -> void
+Modulus.Messaging.IInMemoryMessageOutbox
+Modulus.Messaging.IInMemoryMessageOutbox.CommitAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Modulus.Messaging.IInMemoryMessageOutbox.Pending.get -> int
+Modulus.Messaging.IInMemoryMessageOutbox.Rollback() -> void
+static Modulus.Messaging.MessagingServiceCollectionExtensions.AddModulusMessagingInMemoryOutbox(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Modulus.Messaging.ConsumerDefinition<TConsumer>
+Modulus.Messaging.ConsumerDefinition<TConsumer>.ConsumerDefinition() -> void
+Modulus.Messaging.MessagingBusBuilder.AddConsumer<TConsumer, TMessage>(Modulus.Messaging.ConsumerDefinition<TConsumer!>! definition) -> Modulus.Messaging.MessagingBusBuilder!
+virtual Modulus.Messaging.ConsumerDefinition<TConsumer>.Configure(Modulus.Messaging.ConsumerOptions! options) -> void
+virtual Modulus.Messaging.ConsumerDefinition<TConsumer>.EndpointName.get -> string?

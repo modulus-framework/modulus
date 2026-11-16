@@ -106,11 +106,15 @@ public sealed class InboxTests : IAsyncLifetime
 
     private async Task StartAsync(Action<Modulus.Messaging.MessagingBusBuilder> consumers)
     {
-        _connection = new SqliteConnection($"DataSource=file:inbox-{Guid.NewGuid():N}?mode=memory&cache=shared");
+        // The keep-alive connection holds the shared in-memory database open. Each DbContext opens its own
+        // connection to it: one SqliteConnection is not thread-safe, and the consumer and the test read
+        // the database from different threads.
+        var connectionString = $"DataSource=file:inbox-{Guid.NewGuid():N}?mode=memory&cache=shared";
+        _connection = new SqliteConnection(connectionString);
         await _connection.OpenAsync();
 
         var services = new ServiceCollection();
-        services.AddDbContext<InboxTestDb>(o => o.UseSqlite(_connection));
+        services.AddDbContext<InboxTestDb>(o => o.UseSqlite(connectionString));
         services.AddModulusMessaging(b =>
         {
             consumers(b);
@@ -142,11 +146,16 @@ public sealed class InboxTests : IAsyncLifetime
 
         await Transport().Send(envelope, CancellationToken.None);
 
-        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(5);
+        // Generous: under a full parallel test run the first consume can take well over 5 seconds.
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
         while (await CountRowsAsync() != 1 && DateTimeOffset.UtcNow < deadline)
         {
             await Task.Delay(20);
         }
+
+        var dead = Transport().Errors("orders");
+        dead.Should().BeEmpty("the consumer should not dead-letter the message: " +
+            string.Join(" | ", dead.Select(d => d.Exception?.ToString())));
 
         await using var scope = _provider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<InboxTestDb>();

@@ -64,11 +64,12 @@ public sealed class ScheduledOutboxTests : IAsyncLifetime
             await transaction.CommitAsync();
         }
 
-        // A dispatch that starts before the due time must send nothing. The clock is read before the call, so the
-        // dispatch's own clock is never later than this one (a cold start can take longer than the delay itself).
+        // A dispatch that runs entirely before the due time must send nothing. Every clock read the dispatch makes
+        // lies between the two readings below, so the check only applies when both are before the due time: a cold
+        // start can take longer than the delay, and then the dispatch may legitimately see the message as due.
         var startedBeforeDue = DateTimeOffset.UtcNow < dueAt;
         var early = await DispatchOnce();
-        if (startedBeforeDue)
+        if (startedBeforeDue && DateTimeOffset.UtcNow < dueAt)
         {
             early.Should().Be(0, "the message is not due yet");
         }

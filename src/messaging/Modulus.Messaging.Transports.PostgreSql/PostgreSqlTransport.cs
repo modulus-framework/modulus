@@ -34,6 +34,9 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
     private bool _started;
     private Func<MessageEnvelope, CancellationToken, Task>? _receive;
 
+    /// <summary>The message types this transport may deserialize (NFR-10). Set by the bus; null when used on its own.</summary>
+    internal MessageTypeAllowList? MessageTypes { get; set; }
+
     public PostgreSqlTransport(PostgreSqlTransportOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -359,9 +362,18 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
                 return;
             }
 
+            // No consumer on this host accepts the type (NFR-10): the message is unhandled, so it goes to _skipped (UC-03)
+            // without being decoded.
+            if (MessageTypes is not null && MessageTypes.Resolve(item.MessageType) is null)
+            {
+                await ParkAsync(item, "No consumer on this host handles message type " + item.MessageType + ".", SkippedSuffix, MessagingHeaders.SkipReason)
+                    .ConfigureAwait(false);
+                return;
+            }
+
             if (!PostgreSqlMessageCodec.TryDecode(
                     item.Queue, item.MessageId, item.MessageType, item.ConsumerKey, item.Body, item.Headers,
-                    out var envelope, out var reason))
+                    out var envelope, out var reason, MessageTypes))
             {
                 // Cannot be rebuilt: park the row in the error queue so an operator can read it.
                 await ParkAsync(item, reason ?? "Message cannot be rebuilt.").ConfigureAwait(false);
@@ -487,15 +499,15 @@ public sealed class PostgreSqlTransport : IMessageTransport, IScheduledMessageTr
         await command.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
-    private async Task ParkAsync(Claimed item, string reason)
+    private async Task ParkAsync(Claimed item, string reason, string suffix = ErrorSuffix, string reasonHeader = PostgreSqlMessageCodec.ErrorMessageHeader)
     {
         await using var command = _dataSource.CreateCommand(PostgreSqlQueueSql.Park(_table));
         command.Parameters.AddWithValue("id", item.Id);
         command.Parameters.AddWithValue("token", item.LockToken);
-        command.Parameters.AddWithValue("error_queue", item.Queue + ErrorSuffix);
+        command.Parameters.AddWithValue("error_queue", item.Queue + suffix);
         command.Parameters.AddWithValue("error_headers", NpgsqlDbType.Jsonb, System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, string>
         {
-            [PostgreSqlMessageCodec.ErrorMessageHeader] = reason,
+            [reasonHeader] = reason,
         }));
         await command.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
     }

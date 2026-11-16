@@ -22,4 +22,5 @@ internal sealed record MessagingOptions(
     int MaxMessageBytes,
     IReadOnlyList<Type> Filters,
     IReadOnlyList<Type> Observers,
-    bool DeployOnly);
+    bool DeployOnly,
+    MessageTypeAllowList MessageTypes);

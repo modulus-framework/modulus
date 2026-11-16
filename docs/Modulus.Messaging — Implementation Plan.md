@@ -43,7 +43,7 @@ Run on this machine (Ryzen 5 8600G, 12 threads, Podman for containers). Unit sui
 
 | Suite | Result |
 |---|---|
-| `tests/unit/Modulus.Messaging.Tests` (core) | 96 of 96, both TFMs |
+| `tests/unit/Modulus.Messaging.Tests` (core) | 128 of 128, both TFMs (2026-11-16, after the fixes in this pass) |
 | `tests/unit/Modulus.Messaging.Sagas.Tests` | 25 of 25, both TFMs |
 | `tests/unit/Modulus.Messaging.Modulus.Tests` (host adapter) | 7 of 7, both TFMs |
 | `tests/unit/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests` | 8 of 8, both TFMs |
@@ -52,14 +52,19 @@ Run on this machine (Ryzen 5 8600G, 12 threads, Podman for containers). Unit sui
 | `tests/unit/Modulus.Messaging.Management.Tests` | 8 of 8, both TFMs |
 | `tests/unit/Modulus.Analytics.Messaging.Tests` | 6 of 6, both TFMs |
 | `tests/unit/Modulus.Identity.Messaging.Tests` | 16 of 16, both TFMs |
-| `tests/integration/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests` (Category=Integration, net10.0) | 20 of 20 |
-| `tests/integration/Modulus.Messaging.Transports.PostgreSql.Integration.Tests` (Category=Integration, net10.0) | 34 of 34 |
+| `tests/integration/Modulus.Messaging.Transports.RabbitMQ.Integration.Tests` (Category=Integration, net10.0, Docker Desktop, 2026-11-16) | 18 of 20; the 2 failures are the restart tests (Open tasks item 11) |
+| `tests/integration/Modulus.Messaging.Transports.PostgreSql.Integration.Tests` (Category=Integration, net10.0, Docker Desktop, 2026-11-16) | 33 of 35; the 2 failures are the restart tests (Open tasks item 11) |
 | Chaos G1 (`Category=Chaos`, PostgreSQL, 1,000,000 messages) | Pass, 2026-11-16: every message applied once, 102 worker kills, 16.5 min |
-| Benchmark `MessagingBenchmarks.SendAndHandle` (in-memory, Release) | Median 4.65 µs (mean 4.2 to 4.7 µs over two runs); 5 µs target met on this machine |
+| Benchmark `MessagingBenchmarks.SendAndHandle` (in-memory, Release) | Median 4.65 µs (mean 4.2 to 4.7 µs over two runs); 5 µs target met on this machine. Re-run 2026-11-16 (later): median 4.19 µs, mean 4.23 µs, 2.84 KB allocated per message |
+| Benchmark `MessagingThroughputBenchmarks` (in-memory, Release, 10,000 messages per batch, NFR-03) | Concurrency 1: 2.34 µs per message (about 428k msg/s); concurrency 8: 1.77 µs (about 564k msg/s). The 1M msg/s target is **not met** on this machine (12 threads; the target assumes 8 cores). Allocated 2.4 KB and 2.66 KB per message |
+| Benchmark `MessagingStartupBenchmarks` (NFR-07) | Build the bus, register 100 consumers and start and stop the host: mean 314 µs, 500 KB allocated. Target under 50 ms: met. One consumer type on 100 endpoints; excludes the application's own startup |
+| NFR-06 allocation count | Not measured: BenchmarkDotNet reports bytes, so "under 2 allocations beyond payload" is open |
+| NFR-05 PostgreSQL throughput (2k to 5k msg/s) | Measured 2026-11-16 on Docker Desktop (PostgreSQL 17 container, `PostgreSqlThroughputTests`): 20,000 messages in 16.39 s = 1,220 msg/s, every message handled once. **Below the target**; the Docker Desktop VM is a plausible cause, not confirmed. Judged on target hardware |
+| Full requirements audit (2026-11-16, second pass) | [docs/messaging/brs-audit-2026-11-16.md](messaging/brs-audit-2026-11-16.md): every BRS requirement with its status and evidence |
 | RabbitMQ throughput (`G2_measures_end_to_end_throughput_with_publisher_confirms`) | 23.4k and 23.3k msg/s; 25k target not met here |
 | Coverage, `Modulus.Messaging` line coverage (CI gate, core unit suite) | 86.0% (floor 85%) |
 
-Not re-run in full on 2026-11-16: the Sagas PostgreSQL and Npgsql outbox/inbox integration projects (last run 2026-11-15: 2 and 7 tests), and the CLI suites for messaging. Run them before a release.
+Broker integration suites on Docker (Testcontainers, PostgreSQL 17 and RabbitMQ, 2026-11-16, net10.0): PostgreSQL transport 33 of 35 passed; RabbitMQ transport 18 of 20 passed. The four failures are the outage tests (NFR-02 recovery and FR-24 health while the broker or database is down): Docker Desktop gives a restarted container a new host port, the environment issue listed under Open tasks item 11. Two regressions found and fixed during the run: the URN change made standalone transports unable to resolve URNs (the conformance suite failed), and sealed messages (the EncryptedPayload wrapper) and unregistered types were parked in `_error` instead of `_skipped`. Not yet re-run: the Sagas PostgreSQL and Npgsql outbox/inbox integration projects (last run 2026-11-15), and the CLI suites for messaging. Run them before a release.
 
 Earlier integration results (2026-11-15, before the reconnect and request changes) are superseded by the table above.
 
@@ -68,7 +73,10 @@ Earlier integration results (2026-11-15, before the reconnect and request change
 Status key: **Built** (code and tests), **Partial** (built with a stated limit), **Open** (not built, the reason is given), **Decided** (not built by decision, see Decisions).
 
 ### Publish, send, consume
-- FR-01 to FR-03, FR-C1 to FR-C3, RULE-07, RULE-10, RULE-14: **Built.** Consumers, publish, send, per-message DI scope, URN registry, settings with the narrowest scope winning.
+- FR-01 to FR-03, FR-C1 to FR-C3, RULE-07, RULE-14: **Built.** Consumers, publish, send, per-message DI scope, settings with the narrowest scope winning. FR-03 `ConsumerDefinition<TConsumer>` (2026-11-16): a class holding the endpoint name and the consumer's settings, registered with `AddConsumer<TConsumer, TMessage>(definition)`; it is a thin layer over `AddConsumer` (`ConsumerDefinitionTests`).
+- FR-14 ordering by partition key: **Built** (already, before 2026-11-16; an earlier review wrongly reported it missing). `[PartitionKey]` on a property, or the endpoint as one partition with `Ordered`; per-partition send order under concurrency 16 is tested in-memory (`ConcurrencyTests`), and on PostgreSQL and RabbitMQ in their integration suites (not run on 2026-11-16).
+- RULE-10 message identity: **Built** (2026-11-16). `[MessageUrn("urn:...")]` on a message type sets its wire identity, so renaming the class keeps the identity of a released message; the URN goes on the wire in place of the .NET name (RabbitMQ and PostgreSQL headers, the encrypted-message header). Two types under one URN are refused at bus build. A type without the attribute gets a derived `urn:clr:{FullName}`, which still works but changes when the class is renamed: put the attribute on every released message. The assembly-qualified name is still accepted on receive, so messages already in flight during a deploy decode. The outbox table still stores the .NET name, because its rows are relayed by the process that wrote them. Tests: `MessageUrnTests`, `MessageTypeAllowListTests`.
+- RULE-11 versioned contracts: **Partial.** The mechanism is built: a new URN per version, and both versions are consumable at once (tested). Nothing checks that a breaking change has a new URN; that needs a contract check in CI (not built).
 - FR-04 batch consumers: **Built.** `AddBatchConsumer` (`BatchSize`, `BatchWindow`), grouped per tenant; a failed batch is retried as a whole, then each message follows the normal redelivery and park rules.
 - FR-05 `Fault<T>`: **Built.** Published when a message is parked in `_error`; `IFault` stops fault-of-fault loops.
 - FR-06 request/response: **Built.** `IRequestClient.GetResponse`, `ConsumeContext.RespondAsync`, `AddRequestClient<TResponse>()`. A consumer failure answers the requester at once with `RemoteRequestException`; a timeout raises `RequestTimeoutException`.
@@ -85,11 +93,11 @@ Status key: **Built** (code and tests), **Partial** (built with a stated limit),
 
 ### Reliability
 - FR-07 retry policies (Immediate, Interval, Intervals, Incremental, Exponential, `Ignore<TException>()`): **Built.**
-- FR-08 delayed redelivery: **Built.** Delivery-count header; PostgreSQL uses a row with a future visibility time; RabbitMQ a TTL queue.
+- FR-08 delayed redelivery: **Built.** Delivery-count header; PostgreSQL uses a row with a future visibility time; RabbitMQ a TTL queue. Also `ConsumeContext.Redeliver(delay)` (2026-11-16): it throws `RedeliverMessageException`, so the attempt's work is rolled back; the message comes back after the delay; it is not a fault, does not feed the kill switch, and does not use the retry policy. A broad `catch (Exception)` in a consumer would turn the request into a failure. Bounded by `MaxDeliveryCount` (D3), since the policy counter is not advanced. Tests: `RedeliverTests`.
 - FR-09 `_error` and `_skipped` with fault headers: **Built.**
 - FR-09 replay by API: **Built.** `IMessageErrorQueue.ReplayAsync` (oldest first, counts reset) on all three transports (integration: `ErrorReplayTests`), and the operator endpoint `POST /messaging/errors/{endpoint}/replay?limit=` (1 to 1000, default 100), behind the Critical permission `messaging:errors:replay`.
 - FR-09 replay by CLI: **Decided.** The `modulus` tool scaffolds code and never holds broker or database credentials. The operator endpoint is the route for the BRS "CLI" half.
-- FR-10 outbox (RULE-01): **Built** on EF Core and Npgsql. Limit: request/response replies are not captured by the outbox (RULE-09).
+- FR-10 outbox (RULE-01): **Built** on EF Core and Npgsql, and in memory (2026-11-16): `AddModulusMessagingInMemoryOutbox()` holds a scope's publishes and sends until `IInMemoryMessageOutbox.CommitAsync()`, sends each once, and drops them on rollback or when the scope ends uncommitted (`InMemoryOutboxTests`). Not durable: a process that exits between commit and send loses the pending messages; scheduling inside it is refused (`NotSupportedException`), not faked. Limit (EF Core and Npgsql): request/response replies are not captured by the outbox (RULE-09).
 - FR-11 inbox (RULE-04): **Built** on EF Core and Npgsql; duplicates are skipped and counted on `messaging.inbox.duplicates`.
 - FR-12 scheduling with cancel: **Built** on InMemory, PostgreSQL and the outbox. **Decided:** RabbitMQ cancel is not supported (the TTL-bucket scheduling cannot search by token). Scheduling through the outbox is cancelled by token.
 - FR-13 TTL: **Built** on every transport (`mod-expires-at`, checked in the bus).
@@ -111,11 +119,12 @@ Status key: **Built** (code and tests), **Partial** (built with a stated limit),
 - NFR-02 PostgreSQL outage: **Built.** Sends fail, polling resumes after the database restarts (integration, Podman).
 - NFR-02 on Docker Desktop: **Open** (environment). The restart tests fail there because the restarted container gets a new host port. The cause is not confirmed.
 - NFR-09 TLS: **Built** on RabbitMQ (AMQP TLS, `TlsCertificateValidation`) and PostgreSQL (`SSL Mode=VerifyFull`); both refuse an untrusted certificate.
-- NFR-13 native AOT: **Decided.** The bus serialises arbitrary message types by reflection; AOT would need a serializer context from every app, which is a breaking change.
+- NFR-10 deserialization safety: **Built** (2026-11-16). A type name from the wire is resolved only against the registered message types, or concrete types assignable to them (`MessageTypeAllowList`, built lazily from the registered consumers). The RabbitMQ and PostgreSQL receive paths and the encrypted-message header use it; a name that is not allowed parks the message before its body is read. Limits: a transport used without a bus keeps the framework's name resolution (it has no registered types); the outbox rebuild (`Type.GetType` on rows this application wrote) is unchanged; a type whose assembly is never loaded in the process cannot be resolved. Tests: `MessageTypeAllowListTests` (unit); the broker paths are covered by the integration projects, which were not run on 2026-11-16 (no container runtime).
+- NFR-13 native AOT: **Decided, reopened for measurement only** (2026-11-16). With `IsAotCompatible=true` the core `Modulus.Messaging` project has 14 distinct trimming and AOT warnings (IL2026, IL2057, IL2067, IL2070, IL2072, IL2075, IL2091, IL3050): reflection-based JSON serialization of message types, DI activation of consumers and filters, `Type.GetType` on names, and `[Sensitive]` property reads. The transports and the sagas package add more. Removing them needs source-generated serializer contexts from each application, which is the breaking change the decision names; the requirement's "Must" priority conflicts with that, and the owner has not reopened the decision. The original reason still holds: the bus serialises arbitrary message types by reflection; AOT would need a serializer context from every app, which is a breaking change.
 - NFR-16 coverage: **Built** as a CI gate (`build/check-messaging-coverage.py`, 85% for `Modulus.Messaging`, measured 86.0%).
 - NFR-17 telemetry conventions: **Built** (see FR-24).
 - NFR-19 migration guide: **Built**, `docs/messaging/migration-from-masstransit.md`.
-- NFR-20 docs site: **Open.** The Markdown docs exist; a published site does not.
+- NFR-20 docs site: **Partial** (2026-11-16). Written: a quick start per transport (`docs/messaging/quick-start.md`), a configuration reference of every setting and its default (`docs/messaging/configuration-reference.md`), and the migration guide. The in-memory parts of the quick start are compiled and run by `QuickStartDocTests`; the broker parts are not run. **Open:** a published site (needs a hosting decision), and the samples (`samples/` needs the owner's permission).
 - NFR-21 signed packages: **Open** (owner's certificate, F-25).
 
 ### Sagas and tenants: limits
@@ -164,7 +173,7 @@ Grouped by what unblocks them.
 
 ### Needs a dedicated runner or the environment
 10. **NFR-06 regression gate on a dedicated runner.** `.github/workflows/benchmark.yml` runs on demand, and `build/check-benchmark-regression.py` fails above 10% over `build/benchmark-baseline.json`. Shared runners are too noisy for it, so it is not a pull-request check.
-11. **Docker Desktop restart tests (NFR-02).** Run them on Podman or a clean Docker host to confirm the outage tests pass there too.
+11. **Docker Desktop restart tests (NFR-02, FR-24).** Confirmed failing on Docker Desktop (2026-11-16): a restarted container gets a new host port and the test cannot reconnect (PostgreSQL 2 of 35, RabbitMQ 2 of 20). Run them on Podman, or on a Docker host that keeps the port, to confirm the outage tests pass.
 12. **Re-run the Sagas PostgreSQL and Npgsql outbox/inbox integration projects, and the messaging CLI suites,** on this machine before a release. They were last run on 2026-11-15.
 
 ### Engineering
@@ -185,6 +194,10 @@ Grouped by what unblocks them.
 ## Known limits
 
 - In-memory messages are lost if the process exits (no durability). It cannot pass G1 on its own.
+- The in-memory outbox (FR-10, 2026-11-16) is not durable either: messages pending a commit are lost if the process exits, and scheduling inside it is refused.
+- `ConsumeContext.Redeliver(delay)` (FR-08) does not advance the retry policy, so a consumer that keeps asking for redelivery is bounded only by `MaxDeliveryCount` (D3).
+- Types with no `[MessageUrn]` keep a name-derived URN (RULE-10): renaming such a class changes its identity.
+- A standalone transport (no bus) resolves URNs by scanning loaded assemblies, once per URN; a bus-hosted transport resolves them only through the registered message types.
 - In-memory delayed redeliveries live in a timer task; a stop before the delay ends loses them.
 - A stop with the RabbitMQ connection already down cannot requeue in-flight messages from this process. The broker requeues them when the connection drops, so no message is lost, but the handler's attempt is repeated.
 - On PostgreSQL the due time of a schedule is the caller's timestamp, compared with the database clock (D14).

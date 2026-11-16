@@ -9,6 +9,6 @@ public static class RabbitMqMessagingBuilderExtensions
         ArgumentNullException.ThrowIfNull(configure);
         var options = new RabbitMqTransportOptions();
         configure(options);
-        return builder.UseTransport(_ => new RabbitMqTransport(options));
+        return builder.UseTransport(_ => new RabbitMqTransport(options) { MessageTypes = builder.MessageTypes });
     }
 }

@@ -47,4 +47,18 @@ public static class MessagingServiceCollectionExtensions
         });
         return services;
     }
+
+    /// <summary>
+    /// Adds the in-memory outbox (FR-10): a scope's publishes and sends are held until
+    /// <see cref="IInMemoryMessageOutbox.CommitAsync"/>, and dropped on rollback or when the scope ends uncommitted.
+    /// Nothing is durable; see <see cref="IInMemoryMessageOutbox"/>. Register it after <see cref="AddModulusMessaging"/>.
+    /// </summary>
+    public static IServiceCollection AddModulusMessagingInMemoryOutbox(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        services.AddScoped<InMemoryMessageOutbox>();
+        services.AddScoped<IInMemoryMessageOutbox>(sp => sp.GetRequiredService<InMemoryMessageOutbox>());
+        services.AddScoped<IMessageOutbox>(sp => sp.GetRequiredService<InMemoryMessageOutbox>());
+        return services;
+    }
 }

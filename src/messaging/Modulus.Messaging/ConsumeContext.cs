@@ -31,6 +31,13 @@ public sealed class ConsumeContext<TMessage> where TMessage : class
     internal IServiceProvider? Services { get; set; }
 
     /// <summary>
+    /// Ends this attempt and redelivers the message after <paramref name="delay"/> (FR-08). The attempt's work is rolled
+    /// back and the retry policy is not consulted. Works for single-message consumers; in a batch, the batch's failure
+    /// path handles it.
+    /// </summary>
+    public void Redeliver(TimeSpan delay) => throw new RedeliverMessageException(delay);
+
+    /// <summary>
     /// Answers a request (FR-06). The reply goes to the request's reply endpoint, through the bus of this attempt, so with
     /// an outbox it commits with the consumer's work. Throws when the message is not a request.
     /// </summary>

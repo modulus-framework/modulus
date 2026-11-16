@@ -19,7 +19,8 @@ public static class MessagingBusBuilderSagaExtensions
         var machine = SagaMachine<TSaga, TMachine>.Instance;
         var addConsumer = typeof(MessagingBusBuilder)
             .GetMethods()
-            .Single(method => method.Name == nameof(MessagingBusBuilder.AddConsumer) && method.GetGenericArguments().Length == 2);
+            .Single(method => method.Name == nameof(MessagingBusBuilder.AddConsumer) && method.GetGenericArguments().Length == 2
+                && method.GetParameters()[0].ParameterType == typeof(string));
 
         foreach (var eventType in machine.DeclaredEvents)
         {

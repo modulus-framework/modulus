@@ -55,6 +55,9 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
     // Serialises teardown and rebuild, so Stop never races a reconnect.
     private readonly SemaphoreSlim _lifecycle = new(1, 1);
 
+    /// <summary>The message types this transport may deserialize (NFR-10). Set by the bus; null when used on its own.</summary>
+    internal MessageTypeAllowList? MessageTypes { get; set; }
+
     public RabbitMqTransport(RabbitMqTransportOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -498,8 +501,13 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
         var consumer = new AsyncEventingBasicConsumer(channel);
         consumer.ReceivedAsync += (_, delivery) =>
         {
-            var decoded = RabbitMqMessageCodec.TryDecode(endpoint, delivery.Body, delivery.BasicProperties, out var envelope, out var reason);
-            incoming.Writer.TryWrite(new Incoming(channel, delivery, decoded ? envelope : null, reason));
+            MessageEnvelope? envelope = null;
+            string? reason = null;
+            var notRegistered = RabbitMqMessageCodec.NotRegistered(delivery.BasicProperties, MessageTypes);
+            var decoded = !notRegistered &&
+                RabbitMqMessageCodec.TryDecode(endpoint, delivery.Body, delivery.BasicProperties, out envelope, out reason, MessageTypes);
+            var failure = notRegistered ? "No consumer on this host handles this message type." : reason;
+            incoming.Writer.TryWrite(new Incoming(channel, delivery, decoded ? envelope : null, failure, notRegistered));
             return Task.CompletedTask;
         };
 
@@ -576,8 +584,10 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
 
         if (item.Envelope is null)
         {
-            // Cannot be rebuilt: park the raw message so an operator can read it, then acknowledge it.
-            await PublishRaw(endpoint + "_error", item.Args.Body, item.Args.BasicProperties, item.Reason).ConfigureAwait(false);
+            // No consumer for the type goes to _skipped (UC-03); anything else that cannot be rebuilt goes to _error so an
+            // operator can read it. The raw message is kept either way, then acknowledged.
+            var target = item.NotRegistered ? endpoint + "_skipped" : endpoint + "_error";
+            await PublishRaw(target, item.Args.Body, item.Args.BasicProperties, item.Reason).ConfigureAwait(false);
             await item.Channel.BasicAckAsync(item.Args.DeliveryTag, multiple: false).ConfigureAwait(false);
             return true;
         }
@@ -599,7 +609,7 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
 #pragma warning restore VSTHRD003
 
     /// <summary>One delivery as the broker sent it, with its decoded envelope when it could be decoded.</summary>
-    private sealed record Incoming(IChannel Channel, BasicDeliverEventArgs Args, MessageEnvelope? Envelope, string? Reason);
+    private sealed record Incoming(IChannel Channel, BasicDeliverEventArgs Args, MessageEnvelope? Envelope, string? Reason, bool NotRegistered = false);
 
     private Task Publish(
         string queue,

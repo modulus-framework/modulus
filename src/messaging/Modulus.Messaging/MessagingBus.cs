@@ -22,6 +22,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
     private readonly IReadOnlyList<ConsumerRegistration> _consumers;
     private readonly IMessageTransport _transport;
     private readonly IMessageEncryptionKeys? _keys;
+    private readonly MessageTypeAllowList _messageTypes;
     private readonly string _replyEndpoint;
     private readonly ConcurrentDictionary<string, EndpointControl> _endpoints = new(StringComparer.Ordinal);
     private readonly TimeProvider _time;
@@ -35,6 +36,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
     internal MessagingBus(IServiceProvider services, MessagingOptions options)
     {
         _keys = services.GetService<IMessageEncryptionKeys>();
+        _messageTypes = options.MessageTypes;
         _logger = services.GetService<ILoggerFactory>()?.CreateLogger("Modulus.Messaging") ?? NullLogger.Instance;
         _scopes = services.GetRequiredService<IServiceScopeFactory>();
         _consumers = options.Consumers;
@@ -619,8 +621,9 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
                     failure = exception;
                 }
 
-                // A park request (D8) is not retried: retrying cannot fix it.
-                if (failure is MessageParkException)
+                // A park request (D8) is not retried: retrying cannot fix it. A redelivery request (FR-08) is not
+                // retried either: the consumer asked for the message to come back later.
+                if (failure is MessageParkException or RedeliverMessageException)
                 {
                     break;
                 }
@@ -633,6 +636,17 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
 
                 await Task.Delay(retry.DelayFor(attempts), _time, cancellationToken).ConfigureAwait(false);
             }
+        }
+
+        // The consumer asked for a delayed redelivery (FR-08): not a fault, so no fault observer, no kill-switch count,
+        // and the retry policy is left alone. The attempt's work was rolled back when the exception left the consumer.
+        if (failure is RedeliverMessageException request)
+        {
+            _logger.LogInformation(
+                "Redelivering message {MessageId} on {Endpoint} in {Delay} at the consumer's request",
+                wire.MessageId, wire.Endpoint, request.Delay);
+            await _transport.Redeliver(wire, request.Delay, cancellationToken).ConfigureAwait(false);
+            return;
         }
 
         await NotifyAsync(o => o.OnConsumeFaulted(envelope, failure)).ConfigureAwait(false);
@@ -669,7 +683,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
             return wire;
         }
 
-        if (!wire.Headers.TryGetValue(MessagingHeaders.EncryptedType, out var typeName) || Type.GetType(typeName) is not { } type)
+        if (!wire.Headers.TryGetValue(MessagingHeaders.EncryptedType, out var typeName) || _messageTypes.Resolve(typeName) is not { } type)
         {
             failure = new MessageParkException("decrypt-failed", $"Message {wire.MessageId} is encrypted without a usable type name.");
             return null;
@@ -782,7 +796,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         var keyId = keys.CurrentKeyId;
         var key = keys.GetKey(keyId) ?? throw new InvalidOperationException($"The current message key '{keyId}' is not available.");
         var type = envelope.Message.GetType();
-        var typeName = type.AssemblyQualifiedName ?? type.FullName ?? type.Name;
+        var typeName = MessageUrn.Of(type);
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(envelope.Message, type, MessageJson.Options);
         var payload = MessageCipher.Encrypt(keyId, key, plaintext, MessageCipher.AssociatedData(envelope, typeName));
         var headers = new Dictionary<string, string>(envelope.Headers, StringComparer.Ordinal)

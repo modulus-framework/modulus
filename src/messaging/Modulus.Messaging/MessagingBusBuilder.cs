@@ -11,6 +11,13 @@ public sealed class MessagingBusBuilder
 
     private readonly List<(ConsumerRegistration Registration, ConsumerOptions Own)> _consumers = [];
     private readonly ConsumerOptions _defaults = new();
+
+    /// <summary>The message types the bus may deserialize from the wire (NFR-10), read from the registered consumers.</summary>
+    internal MessageTypeAllowList MessageTypes =>
+        // A sealed message (FR-22) travels as its EncryptedPayload wrapper, so the wrapper is always an allowed type.
+        _messageTypes ??= new MessageTypeAllowList(() => _consumers.Select(c => c.Registration.MessageType).Append(typeof(EncryptedPayload)));
+
+    private MessageTypeAllowList? _messageTypes;
     private readonly List<Type> _filters = [];
     private readonly List<Type> _observers = [];
     private Func<IServiceProvider, IMessageTransport>? _transportFactory;
@@ -20,6 +27,17 @@ public sealed class MessagingBusBuilder
     private bool _replyFaultReceiverAdded;
     private int _maxMessageBytes = DefaultMaxMessageBytes;
     private bool _deployOnly;
+
+    /// <summary>
+    /// Registers <typeparamref name="TConsumer"/> with the endpoint and settings of <paramref name="definition"/> (FR-03).
+    /// </summary>
+    public MessagingBusBuilder AddConsumer<TConsumer, TMessage>(ConsumerDefinition<TConsumer> definition)
+        where TConsumer : class, IConsumer<TMessage>
+        where TMessage : class
+    {
+        ArgumentNullException.ThrowIfNull(definition);
+        return AddConsumer<TConsumer, TMessage>(definition.EndpointName, definition.Configure);
+    }
 
     /// <summary>
     /// Registers <typeparamref name="TConsumer"/> for <typeparamref name="TMessage"/> on an endpoint.
@@ -230,6 +248,8 @@ public sealed class MessagingBusBuilder
             throw new InvalidOperationException("No transport is configured. Call UseTransport(...) or a transport extension such as UseInMemory().");
         }
 
+        MessageUrn.EnsureUnique(_consumers.Select(c => c.Registration.MessageType));
+
         var consumers = _consumers
             .Select(c =>
             {
@@ -238,6 +258,6 @@ public sealed class MessagingBusBuilder
                 return c.Registration with { Options = effective };
             })
             .ToArray();
-        return new MessagingOptions(consumers, _transportFactory, _replyEndpoint, _maxMessageBytes, _filters.ToArray(), _observers.ToArray(), _deployOnly);
+        return new MessagingOptions(consumers, _transportFactory, _replyEndpoint, _maxMessageBytes, _filters.ToArray(), _observers.ToArray(), _deployOnly, MessageTypes);
     }
 }

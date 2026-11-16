@@ -15,6 +15,8 @@ feature has no equivalent, the guide says so.
 | (EF Core transactional outbox) `AddEntityFrameworkOutbox<TDbContext>` | `services.AddModulusMessagingEntityFrameworkOutbox<TDbContext>()` |
 | (EF Core inbox) `AddEntityFrameworkOutbox`, deduplication | `services.AddModulusMessagingEntityFrameworkInbox<TDbContext>()` |
 | Health checks (`AddMassTransitHealthChecks`) | `services.AddHealthChecks().AddModulusMessagingHealthCheck()` |
+| Endpoint and settings in one class (`IConsumerDefinition<T>`) | `ConsumerDefinition<TConsumer>` (override `EndpointName` and `Configure`), registered with `b.AddConsumer<TConsumer, TMessage>(new MyDefinition())` |
+| Transactional outbox for tests and development (no MassTransit equivalent) | `services.AddModulusMessagingInMemoryOutbox()`; `IInMemoryMessageOutbox.CommitAsync()` sends, a rollback or an uncommitted scope sends nothing. Not durable; scheduling inside it is refused |
 
 Modulus.Messaging has no Kafka or Azure Service Bus transport. The transports are in-memory, RabbitMQ and PostgreSQL.
 
@@ -29,6 +31,8 @@ Modulus.Messaging has no Kafka or Azure Service Bus transport. The transports ar
 | Headers (`ctx.Headers`) | `ctx.Envelope.Headers` (keys are `mod-*`) |
 | `ctx.RespondAsync` / `IRequestClient<T>` (`GetResponse`) | `ConsumeContext.RespondAsync(response)` and `IRequestClient.GetResponse<TRequest, TResponse>(address, request, timeout)`. Register the response type with `AddRequestClient<TResponse>()`. Timeouts raise `RequestTimeoutException` |
 | Message scope per consume (DI) | unchanged: a new DI scope per attempt (RULE-07) |
+| Message identity on the wire (no MassTransit equivalent: MassTransit uses the .NET type name) | `[MessageUrn("urn:orders:order-submitted:v1")]` on the message type. Renaming the class keeps the identity of a released message (RULE-10) |
+| Consumer asks for a later delivery (`context.Redeliver(delay)`) | `ConsumeContext.Redeliver(delay)`: ends the attempt, rolls back its work, delivers the message again after the delay. It is not a fault and does not use the retry policy |
 
 ## Retries, redelivery and faults
 
@@ -70,6 +74,9 @@ message that crashes its host on every attempt stops looping. MassTransit has no
 Differences that matter for a port:
 - A saga's `Complete()` (not `Finalize()`) removes its instance.
 - Saga instances are scoped by company when a company is set: the same correlation id in two companies is two sagas.
+- A message's wire identity is its URN (`[MessageUrn]`), not its .NET type name. A type without the attribute gets a
+  name-derived URN, so give every released message the attribute before you rename it. Messages already in flight during
+  a deploy still decode through the old name.
 - The state-machine state is a `SagaInstance` POCO serialised as JSON. Plan a migration of existing MassTransit
   instances if they must carry over: they are not compatible.
 

@@ -19,7 +19,7 @@ internal static class PostgreSqlMessageCodec
         var type = envelope.Message.GetType();
         var body = Encoding.UTF8.GetString(JsonSerializer.SerializeToUtf8Bytes(envelope.Message, type, Json));
         var headers = JsonSerializer.Serialize(envelope.Headers, Json);
-        return (type.AssemblyQualifiedName ?? type.FullName ?? type.Name, envelope.ConsumerKey, body, headers);
+        return (MessageUrn.Of(type), envelope.ConsumerKey, body, headers);
     }
 
     /// <summary>Rebuilds the envelope, or returns the reason it cannot be rebuilt.</summary>
@@ -31,11 +31,12 @@ internal static class PostgreSqlMessageCodec
         string body,
         string headersJson,
         out MessageEnvelope? envelope,
-        out string? reason)
+        out string? reason,
+        MessageTypeAllowList? allowList = null)
     {
         envelope = null;
         reason = null;
-        if (Type.GetType(messageType) is not { } type)
+        if (MessageTypeAllowList.ResolveWireType(messageType, allowList) is not { } type)
         {
             reason = $"Unknown message type '{messageType}'.";
             return false;

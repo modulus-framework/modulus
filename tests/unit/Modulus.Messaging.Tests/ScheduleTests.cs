@@ -70,10 +70,11 @@ public sealed class ScheduleTests
         var sink = harness.Services.GetRequiredService<Sink>();
         var scheduler = harness.Services.GetRequiredService<IMessageScheduler>();
 
-        var token = await scheduler.ScheduleSend(new Uri("queue:billing.create-invoice"), DateTimeOffset.UtcNow.AddMilliseconds(300), new CreateInvoice(Guid.NewGuid()));
+        // Due well after the cancel, so a loaded test run cannot reach the due time before CancelScheduled.
+        var token = await scheduler.ScheduleSend(new Uri("queue:billing.create-invoice"), DateTimeOffset.UtcNow.AddSeconds(2), new CreateInvoice(Guid.NewGuid()));
 
         (await scheduler.CancelScheduled(token)).Should().BeTrue();
-        await Task.Delay(600);
+        await Task.Delay(2500);
 
         sink.Calls.Should().BeEmpty("a cancelled message never arrives");
         (await scheduler.CancelScheduled(token)).Should().BeFalse("the token has nothing left to cancel");

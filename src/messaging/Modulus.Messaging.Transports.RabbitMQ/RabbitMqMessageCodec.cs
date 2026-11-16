@@ -28,7 +28,7 @@ internal static class RabbitMqMessageCodec
             headers[key] = value;
         }
 
-        headers[MessageTypeHeader] = type.AssemblyQualifiedName ?? type.FullName ?? type.Name;
+        headers[MessageTypeHeader] = MessageUrn.Of(type);
         if (envelope.ConsumerKey is not null)
         {
             headers[ConsumerKeyHeader] = envelope.ConsumerKey;
@@ -50,13 +50,16 @@ internal static class RabbitMqMessageCodec
         ReadOnlyMemory<byte> body,
         IReadOnlyBasicProperties properties,
         out MessageEnvelope? envelope,
-        out string? reason)
+        out string? reason,
+        MessageTypeAllowList? allowList = null)
     {
         envelope = null;
         reason = null;
         var headers = StringHeaders(properties.Headers);
 
-        if (!headers.TryGetValue(MessageTypeHeader, out var typeName) || Type.GetType(typeName) is not { } type)
+        // NFR-10: the type name comes off the wire, so it is resolved only against the registered message types.
+        if (!headers.TryGetValue(MessageTypeHeader, out var typeName) ||
+            MessageTypeAllowList.ResolveWireType(typeName, allowList) is not { } type)
         {
             reason = $"Unknown message type '{typeName ?? "(missing)"}'.";
             return false;
@@ -97,6 +100,21 @@ internal static class RabbitMqMessageCodec
         headers.Remove(ConsumerKeyHeader);
         envelope = new MessageEnvelope(messageId, endpoint, message, headers, consumerKey);
         return true;
+    }
+
+    /// <summary>
+    /// True when a bus-hosted receiver has no consumer for the delivery's type (NFR-10): the message is unhandled and goes
+    /// to _skipped without being decoded. Always false for a standalone transport (no registered types).
+    /// </summary>
+    internal static bool NotRegistered(IReadOnlyBasicProperties properties, MessageTypeAllowList? types)
+    {
+        if (types is null)
+        {
+            return false;
+        }
+
+        var headers = StringHeaders(properties.Headers);
+        return headers.TryGetValue(MessageTypeHeader, out var name) && types.Resolve(name) is null;
     }
 
     internal static Dictionary<string, string> StringHeaders(IDictionary<string, object?>? headers)
