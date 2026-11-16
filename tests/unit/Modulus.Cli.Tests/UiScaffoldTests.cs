@@ -127,4 +127,12 @@ public sealed class UiFrameworkPackagesTests
             foreach (var p in UiFrameworkPackages.Parse(json, engine))
                 File.Exists(Path.Combine(feed, $"{p.Id}.{p.Version}.nupkg")).Should().BeTrue($"{p.Id} ({engine}) must be packed");
     }
+
+    [Theory]
+    [InlineData("analytics", "admin-analytics")]
+    [InlineData("audit", "admin-audit")]
+    [InlineData("overview", "dashboard")]
+    [InlineData("reports", "reports-dashboard")]
+    public void Fluid_dashboards_use_their_own_pages(string key, string fluidTemplate)
+        => UiScaffold.DashboardTemplateName(UiScaffold.FindDashboard(key), "fluid").Should().Be(fluidTemplate);
 }

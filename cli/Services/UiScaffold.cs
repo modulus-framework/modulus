@@ -42,6 +42,14 @@ internal static class UiScaffold
         return engine;
     }
 
+    /// <summary>The template file name of a dashboard in an engine. Fluid has its own pages for analytics and audit (the admin starter pages).</summary>
+    public static string DashboardTemplateName(UiPageTemplate page, string engine) => (engine, page.Key) switch
+    {
+        ("fluid", "analytics") => "admin-analytics",
+        ("fluid", "audit") => "admin-audit",
+        _ => page.TemplateName,
+    };
+
     public static UiPageTemplate FindDashboard(string key) =>
         Dashboards.FirstOrDefault(d => d.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
         ?? throw new ArgumentException(
