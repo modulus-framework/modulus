@@ -14,7 +14,7 @@ internal sealed class UiCreateDashboardCommand : Command<UiCreateDashboardComman
         [CommandArgument(0, "<template>")]
         public string Template { get; init; } = "";
 
-        [Description("UI engine: mvc, razor-pages or blazor (default: the one recorded in .modulus.json)")]
+        [Description("UI engine: mvc, razor-pages, blazor or fluid (fluid: overview and reports only) (default: the one recorded in .modulus.json)")]
         [CommandOption("--engine")]
         public string? Engine { get; init; }
 

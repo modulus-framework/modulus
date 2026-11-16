@@ -50,7 +50,11 @@ internal static class UiAdminScaffold
     }
 
     /// <summary>One manifest entry: where the file goes in the UI project and which template renders it.</summary>
-    internal sealed record Entry(string Path, string Template);
+    /// <summary>
+    /// One manifest entry: where the file goes in the UI project and which template renders it. <see cref="Page"/> names the page
+    /// (its file stem, as in <see cref="Pages"/>) when the path alone does not say it, as in the Fluid routes.
+    /// </summary>
+    internal sealed record Entry(string Path, string Template, string? Page = null);
 
     /// <summary>The <c>admin</c> feature's files for an engine, read from <c>ui-kit.json</c> next to the unpacked templates folder.</summary>
     public static IReadOnlyList<Entry> ReadEntries(string templatesDir, string engine)
@@ -68,7 +72,10 @@ internal static class UiAdminScaffold
                 $"This {UiTemplatePackage.PackageId} version has no '{Feature}' feature for {engine}. Update the package (MODULUS_UI_VERSION) and try again.");
 
         return list.EnumerateArray()
-            .Select(e => new Entry(e.GetProperty("path").GetString()!, e.GetProperty("template").GetString()!))
+            .Select(e => new Entry(
+                e.GetProperty("path").GetString()!,
+                e.GetProperty("template").GetString()!,
+                e.TryGetProperty("page", out var page) ? page.GetString() : null))
             .ToList();
     }
 
@@ -79,9 +86,13 @@ internal static class UiAdminScaffold
         return Pages.FirstOrDefault(p => p.File.Equals(stem, StringComparison.Ordinal));
     }
 
+    /// <summary>The page an entry belongs to: its <see cref="Entry.Page"/> when it names one, otherwise the page its path names.</summary>
+    public static UiAdminPage? PageOf(Entry entry) =>
+        entry.Page is { } file ? Pages.FirstOrDefault(p => p.File.Equals(file, StringComparison.Ordinal)) : PageOf(entry.Path);
+
     /// <summary>The entries that belong to the chosen pages (the MVC controller is always kept: it serves every action).</summary>
     public static IReadOnlyList<Entry> Select(IReadOnlyList<Entry> entries, IReadOnlyList<string> keys) =>
-        entries.Where(e => PageOf(e.Path) is not { } page || keys.Contains(page.Key)).ToList();
+        entries.Where(e => PageOf(e) is not { } page || keys.Contains(page.Key)).ToList();
 
     /// <summary>The <c>AddModulusAdminUi</c> statement for the chosen pages; the pages argument is left out when every page is chosen.</summary>
     public static string WiringLine(IReadOnlyList<string> keys)

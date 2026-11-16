@@ -1924,7 +1924,8 @@ Seven libraries plus `Synvro.Modulus.Ui.Templates`, all at 0.9.0, all from `E:\P
 ### Assumptions and open questions
 
 - `samples/` is out of scope and keeps its current UI 1.4.0 references.
-- Blazor and Fluid web hosts stay unsupported, because modulus-ui itself has no app host for them yet.
+- The Fluid web host is supported with `--auth none` (`modulus app --ui-engine fluid --auth none`). It has no sign-in pages yet, so `--auth` other than `none` is refused (modulus-ui open task 6).
+- Blazor web hosts stay unsupported, because modulus-ui itself has no app host for them yet.
 - Backward compatibility: apps already wired in the host keep working.
 - The framework seams in Part A touch `src/` and need their own review and PublicAPI updates.
 

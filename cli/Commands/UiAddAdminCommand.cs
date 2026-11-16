@@ -77,9 +77,11 @@ internal sealed class UiAddAdminCommand : Command<UiAddAdminCommand.Settings>
             foreach (var (entry, file, target) in plan)
             {
                 renderer.RenderToFile(file, new { Namespace = rootNamespace + ".Controllers", PageName = Path.GetFileNameWithoutExtension(entry.Path), ModuleName = folder }, target);
-                var page = UiAdminScaffold.PageOf(entry.Path);
+                var page = UiAdminScaffold.PageOf(entry);
+                // Escaped: a route folder such as [id] is markup to Spectre.Console, and the path must print as written.
+                var shown = Spectre.Console.Markup.Escape(Path.GetRelativePath(start, target));
                 Ux.Success(page is null ? "Controller added" : $"{page.File} page added",
-                    page is null ? Path.GetRelativePath(start, target) : $"{Path.GetRelativePath(start, target)}  →  {page.Route}");
+                    page is null ? shown : $"{shown}  →  {Spectre.Console.Markup.Escape(page.Route)}");
             }
 
             // MVC views have no layout until a _ViewStart names one (the Razor Pages host sets it under Pages/). Left alone when the app has its own.
@@ -91,17 +93,19 @@ internal sealed class UiAddAdminCommand : Command<UiAddAdminCommand.Settings>
                 Ux.Success("Layout added", Path.GetRelativePath(start, viewStart));
             }
 
+            // The Fluid host has no menu service and no controllers: its pages are routed by their paths, so nothing is wired.
+            var wireMenu = !s.NoMenu && engine != "fluid";
             var programPath = Path.Combine(uiDir, "Program.cs");
             if (File.Exists(programPath))
             {
                 if (engine == "mvc")
                     foreach (var change in UiHostWiring.EnsureControllerRouting(programPath))
                         Ux.Success("Web host updated", change);
-                if (!s.NoMenu)
+                if (wireMenu)
                     foreach (var change in UiHostWiring.EnsureAdminMenu(programPath, UiAdminScaffold.WiringLine(keys), UiHostWiring.AdminUiNamespace(engine)))
                         Ux.Success("Web host updated", change);
             }
-            else if (!s.NoMenu)
+            else if (wireMenu)
                 Ux.Warning($"No Program.cs in {Path.GetRelativePath(start, uiDir)}; add {UiAdminScaffold.WiringLine(keys)} yourself to get the menu.");
 
             if (File.Exists(programPath) && !UiAccessGates.HasSignIn(File.ReadAllText(programPath)))

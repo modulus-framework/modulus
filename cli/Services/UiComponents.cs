@@ -188,6 +188,8 @@ internal static class UiComponents
         "mvc" => Path.Combine(uiProjectDir, "Views", "Shared", "Components", $"_{component.PascalName}.cshtml"),
         "razor-pages" => Path.Combine(uiProjectDir, "Pages", "Shared", "Components", $"_{component.PascalName}.cshtml"),
         "blazor" => Path.Combine(uiProjectDir, "Components", "Shared", $"{BlazorName(component)}.razor"),
+        // The Fluid engine has no include tag, so a component is a Liquid snippet a page copies in; it keeps the key as its name.
+        "fluid" => Path.Combine(uiProjectDir, "Templates", "Shared", "Components", $"{component.Key}.liquid"),
         _ => throw new ArgumentException($"Unknown UI engine '{engine}'."),
     };
 }
