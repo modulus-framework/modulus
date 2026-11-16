@@ -63,7 +63,7 @@ message that crashes its host on every attempt stops looping. MassTransit has no
 | `.Ignore(E)` | `When(E).Ignore()` |
 | `If` / `IfElse` activity | `When(E).If(condition, block)` / `.IfElse(condition, whenTrue, whenFalse)` |
 | `Catch<T>` activity | `When(E).Then(...).Catch<T>(compensation => ...)`: the attempt is discarded and the compensation runs on the saga as it was |
-| `Request` / `Respond` (saga activities) | not yet: request/response (FR-06) is built, but a saga's `Request` step is not. Use `IRequestClient` from the handler, or a reply message |
+| `Request` / `Respond` (saga activities) | `context.Request(address, message)` in a saga reaction. The answer is a message the saga declares with `Event`; a consumer failure is the `RequestFault` event, correlated by `RequestId`. One request is outstanding per saga instance. A request timeout is not built: use `context.Schedule` |
 | `InstanceState` repository (EF Core, Redis, MongoDB) | in-memory (`AddInMemorySagaRepository<TSaga>`), EF Core (`AddEntityFrameworkSagaRepository<TSaga, TContext>`) or PostgreSQL JSONB (`AddPostgreSqlSagaRepository<TSaga>`). Redis and MongoDB have no repository |
 | Consumer sagas (`ISaga` + `InitiatedBy`) | `AddConsumerSaga<TSaga>(endpoint)` with `IInitiatedBy<TSaga, TMessage>` and `ICorrelatedBy<TMessage>` |
 
