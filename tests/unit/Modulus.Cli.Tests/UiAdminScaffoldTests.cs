@@ -62,7 +62,7 @@ public sealed class UiAdminScaffoldTests
             UiTemplatePackage.Extract(nupkg, templates);
             var renderer = new TemplateEngine();
 
-            foreach (var engine in UiScaffold.Engines)
+            foreach (var engine in TestEngines.Paged)
             {
                 var entries = UiAdminScaffold.ReadEntries(templates, engine);
                 var pages = entries.Select(e => UiAdminScaffold.PageOf(e.Path)).OfType<UiAdminPage>().Select(p => p.File);

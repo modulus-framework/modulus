@@ -8,7 +8,7 @@ internal sealed record UiPageTemplate(string Key, string TemplateName, string Ti
 /// <summary>Shared by the commands that scaffold pages from the template package: engine, template and output-path rules.</summary>
 internal static class UiScaffold
 {
-    public static readonly string[] Engines = ["mvc", "razor-pages", "blazor"];
+    public static readonly string[] Engines = ["mvc", "razor-pages", "blazor", "fluid"];
 
     public static readonly IReadOnlyList<UiPageTemplate> Dashboards =
     [
@@ -34,9 +34,6 @@ internal static class UiScaffold
     public static string ResolveEngine(string? requested, string solutionDir)
     {
         var engine = (requested ?? ReadEngine(solutionDir)).ToLowerInvariant();
-        if (engine == "fluid")
-            throw new InvalidOperationException(
-                "The Fluid templates can't be scaffolded yet (their Liquid placeholders clash with the template syntax). Use mvc, razor-pages or blazor.");
         if (!Engines.Contains(engine))
             throw new InvalidOperationException(
                 engine == "none"
@@ -53,17 +50,20 @@ internal static class UiScaffold
     /// <summary>Path of a template inside the unpacked package, or null when the engine has no such template.</summary>
     public static string? TemplateFile(string templatesDir, string engine, string templateName)
     {
-        var ext = engine == "blazor" ? "razor" : "cshtml";
-        var file = Path.Combine(templatesDir, engine, $"{templateName}.{ext}.sbn");
+        // Fluid templates are plain Liquid (no Scriban), so they are copied as they are.
+        var file = engine == "fluid"
+            ? Path.Combine(templatesDir, engine, $"{templateName}.liquid")
+            : Path.Combine(templatesDir, engine, $"{templateName}.{(engine == "blazor" ? "razor" : "cshtml")}.sbn");
         return File.Exists(file) ? file : null;
     }
 
-    /// <summary>Where the page goes in the UI project: Views/{Module}, Pages/{Module} or Components/Pages/{Module}.</summary>
+    /// <summary>Where the page goes in the UI project: Views/{Module}, Pages/{Module}, Components/Pages/{Module} or, for Fluid, Templates/{Module} (a page's path is its route).</summary>
     public static string OutputPath(string engine, string uiProjectDir, string module, string pageName) => engine switch
     {
         "mvc" => Path.Combine(uiProjectDir, "Views", module, $"{pageName}.cshtml"),
         "razor-pages" => Path.Combine(uiProjectDir, "Pages", module, $"{pageName}.cshtml"),
         "blazor" => Path.Combine(uiProjectDir, "Components", "Pages", module, $"{pageName}.razor"),
+        "fluid" => Path.Combine(uiProjectDir, "Templates", module, $"{pageName}.liquid"),
         _ => throw new ArgumentException($"Unknown UI engine '{engine}'."),
     };
 }

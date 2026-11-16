@@ -31,6 +31,11 @@ public sealed class UiCommandFlowTests : IDisposable
 
     private int Run(params string[] args) => Program.Main([.. args, "-o", _root]);
 
+    /// <summary>The identity pages need a sign-in: the host registers one, as <c>modulus app --auth openiddict</c> does.</summary>
+    private void WithSignIn() =>
+        File.WriteAllText(Path.Combine(_ui, "Program.cs"),
+            "var builder = WebApplication.CreateBuilder(args);\nbuilder.Services.AddModulusOpenIddict(options => { });\nvar app = builder.Build();\napp.Run();\n");
+
     private string P(params string[] parts) => Path.Combine([_ui, .. parts]);
 
     [Fact]
@@ -66,6 +71,7 @@ public sealed class UiCommandFlowTests : IDisposable
         Run("ui", "create-dashboard", "analytics").Should().Be(0);
         File.Exists(P("Views", "Dashboards", "Analytics.cshtml")).Should().BeTrue();
 
+        WithSignIn();
         Run("ui", "add-auth").Should().Be(0);
         Run("ui", "add-2fa").Should().Be(0);
         Run("ui", "add-session-manager").Should().Be(0);
@@ -91,10 +97,23 @@ public sealed class UiCommandFlowTests : IDisposable
     }
 
     [Fact]
+    public void Identity_pages_are_refused_in_an_app_without_sign_in()
+    {
+        // No sign-in provider in the host: the pages would link to /Account/Login and call /account/*, which this app does not serve.
+        Run("ui", "add-auth").Should().Be(1);
+        Run("ui", "add-2fa").Should().Be(1);
+        Run("ui", "add-session-manager").Should().Be(1);
+
+        Directory.Exists(P("Views")).Should().BeFalse();
+        Directory.Exists(P("Controllers")).Should().BeFalse();
+    }
+
+    [Fact]
     public void A_dry_run_and_an_unknown_name_write_nothing()
     {
         if (!HasPackage()) return;
 
+        WithSignIn();
         Run("ui", "add-component", "--all", "--dry-run").Should().Be(0);
         Run("ui", "add-auth", "--dry-run").Should().Be(0);
         Run("ui", "theme", "create", "ghost", "--dry-run").Should().Be(0);

@@ -26,7 +26,7 @@ internal static class UiPageScaffold
 
     public static int Run(IReadOnlyList<UiAuthPage> pages, string controllerTemplate, string controllerFile,
         string? engineOption, string? output, string what, string folder = "Auth", bool sharedController = false, object? model = null,
-        bool callsApi = false, bool anonymous = false)
+        bool callsApi = false, bool anonymous = false, bool requiresSignIn = false)
     {
         var start = Path.GetFullPath(output ?? "./");
         var inventory = ModuleDiscovery.Inventory(start)
@@ -34,6 +34,10 @@ internal static class UiPageScaffold
                 "No .slnx found in the current directory tree. Run from inside a Modulus application, or pass --output <path>.");
         if (inventory.Kind == AppKind.Api)
             throw new InvalidOperationException($"This app is API-only ({AppKinds.Property}=api), so it has no UI to add {what} to.");
+        if (requiresSignIn && !HasSignIn(inventory))
+            throw new InvalidOperationException(
+                $"This app has no sign-in provider, so {what} would link to /Account/Login and call /account/* routes that it does not serve. " +
+                "Add a sign-in first (for example `modulus app --auth openiddict`), or run this in an app that has one.");
 
         var engine = UiScaffold.ResolveEngine(engineOption, inventory.SolutionDir);
         var templates = UiTemplatePackage.Resolve()
@@ -120,5 +124,13 @@ internal static class UiPageScaffold
         else if (!split && callsApi)
             Ux.Info("The pages call the Modulus.Identity /account/* endpoints on the same host (the cookie session is used for 2FA).");
         return 0;
+    }
+
+    /// <summary>True when the app's API or web host registers a sign-in provider (the same probes as <c>modulus describe</c>).</summary>
+    private static bool HasSignIn(ModuleDiscovery.AppInventory inventory)
+    {
+        var programs = new[] { inventory.ProgramCsPath, inventory.WebProgramCsPath };
+        return programs.Any(path => !string.IsNullOrEmpty(path) && File.Exists(path)
+            && ModuleDiscovery.DetectEnabledFeatures(path!).Any(f => f.StartsWith("Auth:", StringComparison.Ordinal)));
     }
 }

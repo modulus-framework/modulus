@@ -74,6 +74,12 @@ internal sealed class TemplateEngine
     public void RenderToFile(
         string templatePath, object model, string outputPath)
     {
+        // A Liquid page (the Fluid engine) is not Scriban: it is copied as it is, so its {{ }} and {% %} tags reach the page.
+        if (templatePath.EndsWith(".liquid", StringComparison.OrdinalIgnoreCase))
+        {
+            Ux.WriteFile(outputPath, File.ReadAllText(templatePath));
+            return;
+        }
         var content = Render(templatePath, model, outputPath);
         Ux.WriteFile(outputPath, content);
     }

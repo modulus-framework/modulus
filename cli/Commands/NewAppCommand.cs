@@ -151,8 +151,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     internal static readonly string[] KnownUiEngines = ["mvc", "razor-pages", "blazor", "fluid", "none"];
 
-    /// <summary>The engines a web app host can run on today (the Modulus UI framework's Razor hosts).</summary>
-    internal static readonly string[] HostableUiEngines = ["mvc", "razor-pages", "blazor"];
+    /// <summary>The engines a web app host can run on today: the Modulus UI framework's Razor hosts and the Liquid (Fluid) host.</summary>
+    internal static readonly string[] HostableUiEngines = ["mvc", "razor-pages", "blazor", "fluid"];
 
     private readonly TemplateEngine _templates = new();
 
@@ -183,6 +183,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var useUiFramework = UsesUiFramework(kind, uiEngine);
 
         var auth = ResolveAuth(s.Auth);
+        // The Fluid host has no sign-in pages yet: they are Razor Pages, and the Liquid host has no Razor Pages.
+        if (uiEngine == "fluid" && auth != "none")
+            throw new ArgumentException("The fluid engine has no sign-in pages yet (they are Razor Pages). Use --auth none, or pick mvc, razor-pages or blazor for a sign-in.");
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, auth);
 
         // Resolve infrastructure options
@@ -499,7 +502,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         // The example entity's list, create and edit pages in a web app, over the example API they already call. Best effort: the
         // pages need the UI template package, and without it the app is still generated (`modulus ui create-crud` adds them later).
-        if (model.Kind == AppKind.WebAppApi && !model.NoExample && model.UiEngine != "blazor")
+        if (model.Kind == AppKind.WebAppApi && !model.NoExample && model.UiEngine is not ("blazor" or "fluid"))
             AddExamplePages(projectDir, model);
     }
 
@@ -584,8 +587,12 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var webDir = Path.Combine(projectDir, "src", "Web", $"{rootNs}.Web");
         _templates.RenderToFile("app/web.csproj", model,
             Path.Combine(webDir, $"{rootNs}.Web.csproj"));
-        _templates.RenderToFile(model.UiEngine == "blazor" ? "app/Program.Blazor" : "app/Program.Web", model,
-            Path.Combine(webDir, "Program.cs"));
+        _templates.RenderToFile(model.UiEngine switch
+            {
+                "blazor" => "app/Program.Blazor",
+                "fluid" => "app/Program.Fluid",
+                _ => "app/Program.Web",
+            }, model, Path.Combine(webDir, "Program.cs"));
 
         // The Web project has its own configuration: it connects to nothing but
         // the API host ("Api:BaseUrl"), so it must not share the API's
@@ -597,6 +604,22 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "appsettings.Development.json"));
         _templates.RenderToFile("app/launchSettings.Web.json", model,
             Path.Combine(webDir, "Properties", "launchSettings.json"));
+
+        // The Fluid host renders Liquid pages from Templates/: the layout, the landing page and the error page, copied verbatim from
+        // the UI template package (they hold Liquid tags, which the Scriban renderer would not pass through).
+        if (model.UiEngine == "fluid")
+        {
+            var packageTemplates = UiTemplatePackage.Resolve()
+                ?? throw new InvalidOperationException(
+                    $"Could not find the {UiTemplatePackage.PackageId} package, which has the Liquid host pages. " +
+                    $"Pack it into ~/.modulus/feed (or set {UiTemplatePackage.FeedEnvironmentVariable}).");
+            var pagesDir = Directory.CreateDirectory(Path.Combine(webDir, "Templates")).FullName;
+            File.Copy(Path.Combine(packageTemplates, "fluid", "host-layout.liquid"), Path.Combine(pagesDir, "_layout.liquid"), overwrite: true);
+            File.Copy(Path.Combine(packageTemplates, "fluid", "host-index.liquid"), Path.Combine(pagesDir, "index.liquid"), overwrite: true);
+            File.Copy(Path.Combine(packageTemplates, "fluid", "host-error.liquid"), Path.Combine(pagesDir, "error.liquid"), overwrite: true);
+            projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+            return;
+        }
 
         // The Blazor host renders components, not Razor Pages: its pages, then the same typed API clients.
         if (model.UiEngine == "blazor")
@@ -888,9 +911,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(infraDir, "IdentitySeeding.cs"));
     }
 
-    /// <summary>Whether the Web project runs on the Modulus UI framework: a webapp+api app with the mvc or razor-pages engine.</summary>
+    /// <summary>Whether the Web project runs on the Modulus UI framework: a webapp+api app with a hosted UI engine (mvc, razor-pages, blazor or fluid).</summary>
     internal static bool UsesUiFramework(AppKind kind, string uiEngine) =>
-        kind == AppKind.WebAppApi && (uiEngine is "mvc" or "razor-pages" or "blazor");
+        kind == AppKind.WebAppApi && (uiEngine is "mvc" or "razor-pages" or "blazor" or "fluid");
 
     /// <summary>References the UI framework packages for the app's UI engine in the host project.</summary>
     private static void AddUiFrameworkPackages(string projectDir, AppModel model)

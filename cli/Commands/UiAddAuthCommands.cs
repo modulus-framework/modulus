@@ -22,7 +22,7 @@ internal sealed class UiAddAuthCommand : Command<UiAddAuthCommand.Settings>
         s.Apply();
         return CommandRunner.Run(() => UiPageScaffold.Run(
             UiPageScaffold.Recovery, "ui/AuthRecoveryController", "AuthRecoveryController.cs", s.Engine, s.Output, "password recovery pages",
-            callsApi: true, anonymous: true));
+            callsApi: true, anonymous: true, requiresSignIn: true));
     }
 }
 
@@ -44,7 +44,7 @@ internal sealed class UiAdd2FaCommand : Command<UiAdd2FaCommand.Settings>
         s.Apply();
         return CommandRunner.Run(() => UiPageScaffold.Run(
             UiPageScaffold.TwoFactor, "ui/TwoFactorController", "TwoFactorController.cs", s.Engine, s.Output, "the two-factor page",
-            callsApi: true));
+            callsApi: true, requiresSignIn: true));
     }
 }
 
@@ -66,6 +66,6 @@ internal sealed class UiAddSessionManagerCommand : Command<UiAddSessionManagerCo
         s.Apply();
         return CommandRunner.Run(() => UiPageScaffold.Run(
             UiPageScaffold.Sessions, "ui/SessionsController", "SessionsController.cs", s.Engine, s.Output, "the session manager",
-            callsApi: true));
+            callsApi: true, requiresSignIn: true));
     }
 }

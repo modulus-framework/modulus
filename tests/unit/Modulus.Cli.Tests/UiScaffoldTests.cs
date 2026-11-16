@@ -30,13 +30,40 @@ public sealed class UiScaffoldTests
     }
 
     [Theory]
-    [InlineData("fluid", "*Fluid*")]
     [InlineData("none", "*No UI engine*")]
     [InlineData("vue", "*Unknown UI engine*")]
     public void Engines_without_templates_are_refused_with_the_reason(string engine, string message)
     {
         var act = () => UiScaffold.ResolveEngine(engine, Path.GetTempPath());
         act.Should().Throw<InvalidOperationException>().WithMessage(message);
+    }
+
+    [Fact]
+    public void Fluid_is_an_engine_and_its_pages_are_Liquid_files_under_Templates()
+    {
+        UiScaffold.ResolveEngine("fluid", Path.GetTempPath()).Should().Be("fluid");
+        UiScaffold.OutputPath("fluid", "/app", "Ops", "Overview").Should().Be(Path.Combine("/app", "Templates", "Ops", "Overview.liquid"));
+    }
+
+    [Fact]
+    public void A_fluid_template_is_found_as_a_plain_liquid_file_and_copied_as_it_is()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "fluid-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(dir, "fluid"));
+        try
+        {
+            const string source = "{{ title | default: 'x' }} {% comment %}kept as Liquid{% endcomment %}";
+            var liquid = Path.Combine(dir, "fluid", "card.liquid");
+            File.WriteAllText(liquid, source);
+
+            UiScaffold.TemplateFile(dir, "fluid", "card").Should().Be(liquid);
+            UiScaffold.TemplateFile(dir, "fluid", "missing").Should().BeNull();
+
+            var target = Path.Combine(dir, "out", "card.liquid");
+            new TemplateEngine().RenderToFile(liquid, new { Title = "not substituted" }, target);
+            File.ReadAllText(target).Should().Be(source);
+        }
+        finally { Directory.Delete(dir, recursive: true); }
     }
 
     [Fact]
@@ -57,7 +84,7 @@ public sealed class UiScaffoldTests
         {
             UiTemplatePackage.Extract(nupkg, Path.Combine(dir, "templates"));
             foreach (var d in UiScaffold.Dashboards)
-                UiScaffold.Engines.Select(e => UiScaffold.TemplateFile(Path.Combine(dir, "templates"), e, d.TemplateName))
+                TestEngines.Paged.Select(e => UiScaffold.TemplateFile(Path.Combine(dir, "templates"), e, d.TemplateName))
                     .Should().Contain(f => f != null, d.Key);
         }
         finally { Directory.Delete(dir, recursive: true); }
