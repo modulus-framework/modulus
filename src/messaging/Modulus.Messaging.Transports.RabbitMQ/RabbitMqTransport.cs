@@ -43,6 +43,17 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
     private IConnection? _connection;
     private IChannel? _publishChannel;
     private Func<MessageEnvelope, CancellationToken, Task>? _receive;
+    // Endpoints of the started transport, so a reconnect can rebuild every consumer.
+    private string[] _endpoints = [];
+    // Bumped whenever the connection is torn down, so events from channels of an earlier connection are ignored.
+    private int _generation;
+    // 1 while a reconnect is pending or running (or Start is running): one loop at a time.
+    private int _reconnecting;
+    private volatile bool _stopped;
+    private Task? _reconnectTask;
+    private readonly CancellationTokenSource _closing = new();
+    // Serialises teardown and rebuild, so Stop never races a reconnect.
+    private readonly SemaphoreSlim _lifecycle = new(1, 1);
 
     public RabbitMqTransport(RabbitMqTransportOptions options)
     {
@@ -57,9 +68,10 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
             Password = options.Password,
             VirtualHost = options.VirtualHost,
             ClientProvidedName = options.ClientName,
-            // Reconnect and re-declare topology after an outage (NFR-02, no manual restart).
-            AutomaticRecoveryEnabled = true,
-            TopologyRecoveryEnabled = true,
+            // The bus reconnects itself with an exponential back-off (ReconnectMinDelay to ReconnectMaxDelay, NFR-02).
+            // The client's own recovery retries at a fixed interval, so it is switched off here.
+            AutomaticRecoveryEnabled = false,
+            TopologyRecoveryEnabled = false,
             Ssl = new SslOption
             {
                 Enabled = options.UseTls,
@@ -107,17 +119,118 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
         }
 
         _receive = receive;
-        _connection = await _factory.CreateConnectionAsync(cancellationToken).ConfigureAwait(false);
-        _publishChannel = await _connection.CreateChannelAsync(
-            new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
-            cancellationToken).ConfigureAwait(false);
-
-        foreach (var endpoint in endpoints.Distinct(StringComparer.Ordinal))
+        _endpoints = endpoints.Distinct(StringComparer.Ordinal).ToArray();
+        // Holds off reconnects while the first connection is made; a failed start leaves no loop behind.
+        Interlocked.Exchange(ref _reconnecting, 1);
+        try
         {
-            await StartConsumer(endpoint, cancellationToken).ConfigureAwait(false);
+            await OpenAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _reconnecting, 0);
+        }
+    }
+
+    /// <summary>Connects, opens the publish channel and starts a consumer for every endpoint and for the schedule queue.</summary>
+    private async Task OpenAsync(CancellationToken cancellationToken)
+    {
+        // A new generation: events of channels opened before this point are stale.
+        var generation = Interlocked.Increment(ref _generation);
+        var connection = await _factory.CreateConnectionAsync(cancellationToken).ConfigureAwait(false);
+        connection.ConnectionShutdownAsync += (_, _) =>
+        {
+            TriggerReconnect(generation);
+            return Task.CompletedTask;
+        };
+        _connection = connection;
+        try
+        {
+            _publishChannel = Watch(await connection.CreateChannelAsync(
+                new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true),
+                cancellationToken).ConfigureAwait(false));
+
+            foreach (var endpoint in _endpoints)
+            {
+                await StartConsumer(endpoint, cancellationToken).ConfigureAwait(false);
+            }
+
+            await StartScheduleConsumer(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            await CloseConnectionAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>Starts a reconnect for the connection of <paramref name="generation"/>, unless one is already running or the transport stopped.</summary>
+    private void TriggerReconnect(int generation)
+    {
+        if (_stopped || generation != Volatile.Read(ref _generation) || Interlocked.CompareExchange(ref _reconnecting, 1, 0) != 0)
+        {
+            return;
         }
 
-        await StartScheduleConsumer(cancellationToken).ConfigureAwait(false);
+        _reconnectTask = Task.Run(ReconnectAsync, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Rebuilds the connection after an outage. A failed attempt waits ReconnectMinDelay, doubling each time up to
+    /// ReconnectMaxDelay, then tries again. Ends when the transport is rebuilt or stops.
+    /// </summary>
+    private async Task ReconnectAsync()
+    {
+        var attempt = 0;
+        while (!_stopped)
+        {
+            try
+            {
+                await _lifecycle.WaitAsync(_closing.Token).ConfigureAwait(false);
+                try
+                {
+                    await CloseConnectionAsync().ConfigureAwait(false);
+                    await OpenAsync(_closing.Token).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _lifecycle.Release();
+                }
+
+                Interlocked.Exchange(ref _reconnecting, 0);
+                return;
+            }
+            catch (OperationCanceledException) when (_closing.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception exception) when (exception is not OutOfMemoryException)
+            {
+                // Still down: wait, then try again. The delay grows with each failed attempt.
+                _ = exception;
+                var delay = RabbitMqReconnectBackoff.DelayFor(++attempt, _options.ReconnectMinDelay, _options.ReconnectMaxDelay);
+                try
+                {
+                    await Task.Delay(delay, _closing.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>Reports a channel's closure to the reconnect loop; the channel belongs to the current generation.</summary>
+    private IChannel Watch(IChannel channel)
+    {
+        var generation = Volatile.Read(ref _generation);
+        channel.ChannelShutdownAsync += (_, _) =>
+        {
+            TriggerReconnect(generation);
+            return Task.CompletedTask;
+        };
+        return channel;
     }
 
     /// <summary>
@@ -141,6 +254,30 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
     }
 
     public async Task Stop(CancellationToken cancellationToken)
+    {
+        _stopped = true;
+        await CancelReconnectAsync().ConfigureAwait(false);
+        await _lifecycle.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await StopCoreAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _lifecycle.Release();
+        }
+    }
+
+    private async Task CancelReconnectAsync()
+    {
+        await _closing.CancelAsync().ConfigureAwait(false);
+        if (_reconnectTask is { } reconnect)
+        {
+            await reconnect.ConfigureAwait(false);
+        }
+    }
+
+    private async Task StopCoreAsync(CancellationToken cancellationToken)
     {
         // No new deliveries; in-flight messages keep running.
         foreach (var (channel, tag) in _consumers)
@@ -227,9 +364,9 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
 
     private async Task StartScheduleConsumer(CancellationToken cancellationToken)
     {
-        var channel = await _connection!.CreateChannelAsync(
+        var channel = Watch(await _connection!.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken).ConfigureAwait(false));
         await DeclareQueueAsync(channel, ScheduleDueQueue, QueueArguments(), cancellationToken).ConfigureAwait(false);
         await channel.BasicQosAsync(0, 16, global: false, cancellationToken).ConfigureAwait(false);
 
@@ -329,17 +466,21 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
 
     public async ValueTask DisposeAsync()
     {
+        _stopped = true;
+        await CancelReconnectAsync().ConfigureAwait(false);
         await CloseConnectionAsync().ConfigureAwait(false);
         _declareLock.Dispose();
+        _lifecycle.Dispose();
+        _closing.Dispose();
         _abort.Dispose();
     }
 
     private async Task StartConsumer(string endpoint, CancellationToken cancellationToken)
     {
         var limit = _limits.TryGetValue(endpoint, out var configured) ? configured : 1;
-        var channel = await _connection!.CreateChannelAsync(
+        var channel = Watch(await _connection!.CreateChannelAsync(
             new CreateChannelOptions(publisherConfirmationsEnabled: false, publisherConfirmationTrackingEnabled: false),
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken).ConfigureAwait(false));
         await DeclareQueueAsync(channel, endpoint, EndpointArguments(endpoint), cancellationToken).ConfigureAwait(false);
 
         // Enough unacknowledged deliveries for every worker to have one (a prefetch below the limit would starve it).
@@ -578,7 +719,7 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
         CancellationToken cancellationToken,
         IDictionary<string, object?>? queueArguments)
     {
-        var channel = _publishChannel ?? throw new InvalidOperationException("The RabbitMQ transport is not started.");
+        var channel = _publishChannel ?? throw new InvalidOperationException("The RabbitMQ transport is not started or is reconnecting to the broker.");
         await EnsureQueueAsync(channel, queue, queueArguments, cancellationToken).ConfigureAwait(false);
 
         // Publisher confirms: the task completes once the broker has accepted the message. The channel is not
@@ -656,25 +797,60 @@ public sealed class RabbitMqTransport : IMessageTransport, IMessageTransportHeal
         return arguments;
     }
 
+    /// <summary>Closes every channel and the connection, and forgets the declared queues (a rebuilt broker may not have them).</summary>
     private async Task CloseConnectionAsync()
     {
-        foreach (var (channel, _) in _consumers)
+        // Stale events from these channels must not start another reconnect.
+        Interlocked.Increment(ref _generation);
+        foreach (var writer in _pending)
+        {
+            writer.TryComplete();
+        }
+
+        _pending.Clear();
+        var consumers = _consumers.Select(consumer => consumer.Channel).ToArray();
+        _consumers.Clear();
+        var publish = _publishChannel;
+        _publishChannel = null;
+        var connection = _connection;
+        _connection = null;
+        _declaredQueues.Clear();
+
+        foreach (var channel in consumers)
         {
             await CloseQuietlyAsync(channel).ConfigureAwait(false);
         }
 
-        _consumers.Clear();
-        if (_publishChannel is not null)
+        if (publish is not null)
         {
-            await CloseQuietlyAsync(_publishChannel).ConfigureAwait(false);
-            _publishChannel = null;
+            await CloseQuietlyAsync(publish).ConfigureAwait(false);
         }
 
-        if (_connection is not null)
+        if (connection is not null)
         {
-            await _connection.CloseAsync().ConfigureAwait(false);
-            await _connection.DisposeAsync().ConfigureAwait(false);
-            _connection = null;
+            await CloseQuietlyConnectionAsync(connection).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task CloseQuietlyConnectionAsync(IConnection connection)
+    {
+        try
+        {
+            await connection.CloseAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Already closed by the broker or the network.
+            _ = exception;
+        }
+
+        try
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            _ = exception;
         }
     }
 

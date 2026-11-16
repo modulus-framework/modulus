@@ -47,6 +47,12 @@ public sealed class RabbitMqTransportOptions
     /// <summary>How long a stop waits for in-flight messages before the broker takes them back (NFR-18).</summary>
     public TimeSpan StopTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>First wait before reconnecting after the broker or the connection is lost (NFR-02).</summary>
+    public TimeSpan ReconnectMinDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>Longest wait between reconnect attempts; the wait doubles from <see cref="ReconnectMinDelay"/> up to this (NFR-02).</summary>
+    public TimeSpan ReconnectMaxDelay { get; set; } = TimeSpan.FromSeconds(60);
+
     internal void Validate()
     {
         if (string.IsNullOrWhiteSpace(HostName))
@@ -67,6 +73,16 @@ public sealed class RabbitMqTransportOptions
         if (StopTimeout < TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(StopTimeout), "Must not be negative.");
+        }
+
+        if (ReconnectMinDelay <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ReconnectMinDelay), "Must be positive.");
+        }
+
+        if (ReconnectMaxDelay < ReconnectMinDelay)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ReconnectMaxDelay), "Must not be shorter than ReconnectMinDelay.");
         }
     }
 }

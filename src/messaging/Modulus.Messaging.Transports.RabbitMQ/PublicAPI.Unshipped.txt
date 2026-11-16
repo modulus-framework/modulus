@@ -1,2 +1,6 @@
 #nullable enable
 Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransport.ReplayErrors(string! endpoint, int limit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.ReconnectMaxDelay.get -> System.TimeSpan
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.ReconnectMaxDelay.set -> void
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.ReconnectMinDelay.get -> System.TimeSpan
+Modulus.Messaging.Transports.RabbitMQ.RabbitMqTransportOptions.ReconnectMinDelay.set -> void
