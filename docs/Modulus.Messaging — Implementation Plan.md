@@ -86,7 +86,7 @@ Grouped by what unblocks them. Each item names the requirement it closes.
 - Chaos run of 1M messages with random kills, zero lost and zero double-applied (NFR-01, gate G1): passed on 2026-11-15 and again on 2026-11-16 (see Progress).
 
 **Engineering, next**
-- Sagas, FR-17 leftovers: `Request` waits for FR-06. `If`, `IfElse`, `Catch` and `Ignore` are done. Decided (D5): a false `If` guard accepts the event and skips the guarded steps; a caught exception runs the `Catch` reaction on the original saga, and the attempt's effects, including outbox rows, are discarded.
+- Sagas, FR-17 leftovers: the saga `Request` step is still not built. FR-06 is built (`IRequestClient.GetResponse`, with remote faults as `RemoteRequestException`), so the step can wrap that client, but a `RequestFault` reply still needs a mapping to a saga event, which is not designed yet. `If`, `IfElse`, `Catch` and `Ignore` are done. Decided (D5): a false `If` guard accepts the event and skips the guarded steps; a caught exception runs the `Catch` reaction on the original saga, and the attempt's effects, including outbox rows, are discarded.
 - Sagas: cancel a saga's pending timeout when it completes: done 2026-11-15 (RabbitMQ still cannot cancel, see its scheduling decision).
 - RabbitMQ: cross-host partition order is opt-in through `SingleActiveConsumer` (2026-11-15). Without it, order holds per queue only.
 - Circuit breaker as a separate mechanism (optional: the kill switch covers the BRS criterion).
@@ -179,7 +179,7 @@ Every BRS v1 requirement (Must and Should, plus the Could items FR-26 to FR-33, 
 **M1 remaining**
 
 - [ ] Ack after commit (RULE-02): done for the RabbitMQ transport (M2) and for the EF outbox/inbox transaction. The InMemory transport has no ack
-- [ ] Chaos harness and the G1 run (NFR-01): needs the durable transports; the InMemory transport loses messages on exit, so it cannot pass G1 on its own
+- [x] Chaos harness and the G1 run (NFR-01): passed on PostgreSQL on 2026-11-15 and again on 2026-11-16 (1,000,000 messages, 102 kills, every message applied once). The InMemory transport cannot pass it on its own, since it loses messages on exit.
 
 **M2 RabbitMQ transport (in progress)**
 
@@ -190,7 +190,7 @@ Every BRS v1 requirement (Must and Should, plus the Could items FR-26 to FR-33, 
 - [x] TLS option and credentials from options (NFR-09); the message body is JSON, metadata in `mod-*` headers
 - [x] `IMessageTransport.Start` now receives the consumer endpoints, so a transport can declare their queues
 - [x] 4 integration tests on a real RabbitMQ 4 broker (Testcontainers on Podman): publish and send round trip, failing message redelivered then parked in `_error` with its fault headers, unhandled message parked in `_skipped`, in-flight message delivered again to the next host after a stop
-- [ ] Broker outage and recovery (NFR-02, `NFR_02_the_bus_recovers_when_the_broker_restarts_without_a_host_restart`; passed on Podman, fails on Docker Desktop; the cause is not confirmed: a forwarder on a fixed port, which follows the container, did not fix it, and a restarted container did not answer on its new port within 60 s): the broker is stopped, a send during the outage fails (never reported as sent), the broker starts again, and the bus recovers and delivers without a host restart; 5 integration tests pass on net8.0 and net10.0
+- [x] Broker outage and recovery (NFR-02, passed on Podman on 2026-11-16 with the new reconnect loop; `NFR_02_the_bus_recovers_when_the_broker_restarts_without_a_host_restart`; passed on Podman, fails on Docker Desktop; the cause is not confirmed: a forwarder on a fixed port, which follows the container, did not fix it, and a restarted container did not answer on its new port within 60 s): the broker is stopped, a send during the outage fails (never reported as sent), the broker starts again, and the bus recovers and delivers without a host restart; 5 integration tests pass on net8.0 and net10.0
 - [x] Throughput (G2, `G2_measures_end_to_end_throughput_with_publisher_confirms`): 50,000 messages sent through the bus with publisher confirms and consumed by one host take about 1.6 s, about 31–32k msg/s on the development machine (two runs), above the 25k target. Publishes do not hold the channel lock while waiting for confirms (a lock across the confirm wait had capped publishing at about 430 msg/s; the broker itself handles about 60k msg/s with concurrent confirms in a raw probe)
 - [x] Bus overhead (NFR-06, measured 2026-11-16): `MessagingBenchmarks.SendAndHandle` (Send to the consumer running, in-memory transport, Release, BenchmarkDotNet) gives a p50 of 4.65 µs (mean 4.2 to 4.7 µs over two runs), under the 5 µs target. This is the bus's own cost with no broker round trip. Still open: the 10% regression gate in CI, and the same measurement on the target hardware.
 - [ ] G2 on the target hardware. On this machine (Ryzen 5 8600G, 12 threads, Podman port proxy) the RabbitMQ run measured 23.4k and 23.3k msg/s on 2026-11-16 and 31–32k msg/s earlier, so it does not reach the 25k target reliably here. It is not judged until it runs on the target hardware.
@@ -204,7 +204,7 @@ Every BRS v1 requirement (Must and Should, plus the Could items FR-26 to FR-33, 
 - [x] Competing hosts claim batches with `FOR UPDATE SKIP LOCKED` under a lease, so a row is handled by one host at a time (`RULE_02_competing_hosts_handle_each_message_exactly_once`: 300 messages over two hosts, each once)
 - [x] A row is deleted only after the bus has finished with it (RULE-02); a stop releases unfinished rows at the stop timeout (NFR-18); a host that dies keeps its lease until it expires, then another host receives the row (at-least-once)
 - [x] Delayed redelivery is a row with a visibility time in the future (FR-08); `_error` (with `mod-error-message`) and `_skipped` are queues in the same table (FR-09)
-- [ ] Database outage: sends fail with an error and polling resumes after the database restarts (NFR-02; passed on Podman, fails on Docker Desktop for the same port reason; the test now has its own class, so it no longer breaks other tests)
+- [x] Database outage: sends fail with an error and polling resumes after the database restarts (NFR-02; passed on Podman; passed on Podman, fails on Docker Desktop for the same port reason; the test now has its own class, so it no longer breaks other tests)
 - [x] 7 integration tests on a real PostgreSQL 17 container (Testcontainers on Podman), net10.0; net8.0 run recorded below
 **M3 scheduler with cancel (FR-12, in progress)**
 
@@ -261,7 +261,8 @@ Every BRS v1 requirement (Must and Should, plus the Could items FR-26 to FR-33, 
 - [x] Retention: a delivered row is deleted on success, so there is nothing to keep. Parked rows (`_error`, `_skipped`) are purged by `PurgeParkedAsync(olderThan)` (unclaimed rows only; 2 integration tests). Nothing purges on a timer: a maintenance job must call it
 - [x] Migration script: `docs/messaging/postgresql-queue-schema.sql` (default schema and table); `PostgreSqlTransport.SchemaScript(options)` generates it for others. `SchemaScriptTests` fails if the file and the code differ
 - [x] Purge timer: `ParkedRetention` (null keeps parked rows) with `PurgeInterval` (default 1 hour) runs the purge while the transport runs; a failure goes to `PurgeFailed` and is retried at the next interval (2 integration tests). The PostgreSQL integration assembly runs its tests one at a time, because a purge removes every parked row and other tests wait for parked rows
-- [ ] Not built yet: an index tuned for the 25k msg/s target (not measured), the migration script for the schema, and the PostgreSQL throughput measurement
+- [x] Migration script: `docs/messaging/postgresql-schema.sql` (idempotent; it includes the claim index and the tenant column). `PostgreSqlSchemaScriptTests` fails when it drifts from the transport's own script.
+- [ ] Not built yet: an index tuned for the 25k msg/s target (not measured on target hardware), and the PostgreSQL throughput measurement
 - [ ] Limit: the readiness wait for the test container uses the TCP port, because rootless Podman cannot exec the default `pg_isready` check here; the test fixture also waits for a real query and clears pooled connections after a database restart
 
 **M4 tracing (FR-24, partly done, 2026-11-15)**
@@ -321,7 +322,7 @@ Every BRS v1 requirement (Must and Should, plus the Could items FR-26 to FR-33, 
 - [x] `Modulus.Messaging.Transports.RabbitMQ.Integration.Tests`: 16 of 16 (one run failed on a race in the test's poll helper: a basic-get on a queue not yet declared closes the channel, and the helper's `finally` then threw `AlreadyClosedException`. The helper now closes only an open channel; the test passes on repeated runs)
 - [x] `Modulus.Messaging.Sagas.PostgreSql.Integration.Tests`: 2 of 2
 - [x] `Modulus.Messaging.Integration.Tests`: 6 of 6
-- [ ] Not run in this pass: `Modulus.Messaging.Transports.InMemory` has no integration project; the Docker Desktop restart-test caveat above still applies
+- [x] In-memory conformance: `TransportConformanceTests` in `tests/unit/Modulus.Messaging.Tests` runs the shared suite on the in-memory transport, so no separate integration project is needed. The Docker Desktop restart-test caveat above still applies to the broker transports.
 
 **Progress, fifth pass (2026-11-15)**
 
