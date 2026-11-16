@@ -12,7 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddModulusHardening();
 builder.Services.AddModulusObservability();
-builder.Services.AddSingleton(new ModulusLiquid(new ModulusLiquidOptions()));
+// The components in Templates/Shared/Components are read by {% render %}; they are not pages.
+builder.Services.AddSingleton(new ModulusLiquid(new ModulusLiquidOptions { TemplatesRoot = Path.Combine(builder.Environment.ContentRootPath, "Templates") }));
 
 var app = builder.Build();
 var templates = Path.Combine(app.Environment.ContentRootPath, "Templates");
@@ -35,10 +36,10 @@ app.MapGet("/", (ModulusLiquid liquid) => Page(liquid, templates, "index", "Home
 app.MapFallback((HttpContext context, ModulusLiquid liquid) =>
 {
     var relative = (context.Request.Path.Value ?? "").Trim('/');
-    var page = PagePath(templates, relative);
-    return page is null
-        ? Results.NotFound()
-        : Page(liquid, templates, page, relative, new Dictionary<string, object?>());
+    var found = PagePath(templates, relative);
+    if (found is null) return Results.NotFound();
+    var (page, values) = found.Value;
+    return Page(liquid, templates, page, relative, values);
 });
 
 app.Run();
@@ -54,19 +55,50 @@ static IResult Page(ModulusLiquid liquid, string templates, string page, string 
     return Results.Content(html, "text/html; charset=utf-8");
 }
 
-// The page name for a request path, or null: the layout, the error page and names starting with "_" are not pages, and a path
-// must stay inside Templates/.
-static string? PagePath(string templates, string relative)
+// The page for a request path and the values its [name] folders matched, or null. The layout, the error page, the Shared folder
+// (components) and names starting with "_" are not pages, and a path must stay inside Templates/. A static name wins over a [name]
+// folder: Templates/admin/tenants/[id]/settings.liquid serves /admin/tenants/7/settings, with id = "7".
+static (string Page, Dictionary<string, object?> Values)? PagePath(string templates, string relative)
 {
     if (relative.Length == 0) return null;
     var segments = relative.Split('/');
-    if (segments.Any(s => s.Length == 0 || s.StartsWith('_') || s is "." or "..") || segments[0] == "error") return null;
+    if (segments.Any(s => s.Length == 0 || s.StartsWith('_') || s is "." or "..") || segments[0] == "error" || string.Equals(segments[0], "Shared", StringComparison.OrdinalIgnoreCase)) return null;
 
-    var root = Path.GetFullPath(templates) + Path.DirectorySeparatorChar;
-    foreach (var candidate in new[] { relative, relative + "/index" })
+    var values = new Dictionary<string, object?>();
+    var page = MatchPage(Path.GetFullPath(templates), "", segments, 0, values);
+    return page is null ? null : (page, values);
+}
+
+// Walks the folders for the segments from index i, below the folder rel (empty for Templates/). Returns the page name, or null.
+static string? MatchPage(string templates, string rel, string[] segments, int i, Dictionary<string, object?> values)
+{
+    if (i == segments.Length)
     {
-        var file = Path.GetFullPath(Path.Combine(templates, candidate + ".liquid"));
-        if (file.StartsWith(root, StringComparison.Ordinal) && File.Exists(file)) return candidate;
+        foreach (var candidate in new[] { rel, Join(rel, "index") })
+        {
+            var file = Path.GetFullPath(Path.Combine(templates, candidate + ".liquid"));
+            if (file.StartsWith(templates + Path.DirectorySeparatorChar, StringComparison.Ordinal) && File.Exists(file)) return candidate;
+        }
+        return null;
+    }
+
+    var segment = segments[i];
+    var found = MatchPage(templates, Join(rel, segment), segments, i + 1, values);
+    if (found is not null) return found;
+
+    var dir = Path.Combine(templates, rel);
+    if (!Directory.Exists(dir)) return null;
+    foreach (var folder in Directory.GetDirectories(dir))
+    {
+        var name = Path.GetFileName(folder);
+        if (name.Length < 3 || !name.StartsWith('[') || !name.EndsWith(']')) continue;
+        var key = name[1..^1];
+        values[key] = segment;
+        found = MatchPage(templates, Join(rel, name), segments, i + 1, values);
+        if (found is not null) return found;
+        values.Remove(key);
     }
     return null;
 }
+
+static string Join(string rel, string name) => rel.Length == 0 ? name : rel + "/" + name;

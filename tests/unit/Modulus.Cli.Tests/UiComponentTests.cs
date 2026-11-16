@@ -64,6 +64,7 @@ public sealed class UiComponentTests
     [InlineData("mvc", "Views/Shared/Components/_FormGroup.cshtml")]
     [InlineData("razor-pages", "Pages/Shared/Components/_FormGroup.cshtml")]
     [InlineData("blazor", "Components/Shared/FormGroup.razor")]
+    [InlineData("fluid", "Templates/Shared/Components/form-group.liquid")]
     public void Components_go_where_each_engine_finds_them(string engine, string expected)
         => UiComponents.OutputPath(engine, "/app", UiComponents.Find("form-group"))
             .Should().Be(Path.Combine("/app", expected.Replace('/', Path.DirectorySeparatorChar)));

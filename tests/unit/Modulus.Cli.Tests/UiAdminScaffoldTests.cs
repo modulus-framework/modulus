@@ -50,6 +50,30 @@ public sealed class UiAdminScaffoldTests
     }
 
     [Fact]
+    public void Fluid_entries_name_their_pages_so_settings_and_tenant_settings_stay_apart()
+    {
+        var nupkg = Package();
+        if (nupkg is null) return;
+
+        var dir = Directory.CreateTempSubdirectory("admin-fluid").FullName;
+        try
+        {
+            var templates = Path.Combine(dir, "templates");
+            UiTemplatePackage.Extract(nupkg, templates);
+            var entries = UiAdminScaffold.ReadEntries(templates, "fluid");
+
+            entries.Select(e => UiAdminScaffold.PageOf(e)?.File).Should().BeEquivalentTo(UiAdminScaffold.Pages.Select(p => p.File));
+            foreach (var e in entries)
+                File.Exists(Path.Combine(templates, "fluid", e.Template)).Should().BeTrue(e.Template);
+
+            UiAdminScaffold.Select(entries, ["settings"]).Select(e => e.Path).Should().Equal("Templates/admin/settings.liquid");
+            UiAdminScaffold.Select(entries, ["tenants"]).Select(e => UiAdminScaffold.PageOf(e)!.File)
+                .Should().BeEquivalentTo("Tenants", "TenantSettings", "TenantMembers");
+        }
+        finally { Directory.Delete(dir, recursive: true); }
+    }
+
+    [Fact]
     public void The_manifest_lists_every_page_for_every_engine_and_each_template_renders()
     {
         var nupkg = Package();

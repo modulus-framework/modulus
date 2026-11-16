@@ -125,14 +125,15 @@ public sealed class UiCommandFlowTests : IDisposable
     }
 
     [Fact]
-    public void The_engine_option_overrides_the_recorded_engine_and_fluid_is_refused()
+    public void The_engine_option_overrides_the_recorded_engine_and_fluid_writes_a_liquid_snippet()
     {
         if (!HasPackage()) return;
 
         Run("ui", "add-component", "alert", "--engine", "blazor").Should().Be(0);
         File.Exists(P("Components", "Shared", "ModulusAlert.razor")).Should().BeTrue();
 
-        Run("ui", "add-component", "alert", "--engine", "fluid").Should().Be(1);
+        Run("ui", "add-component", "alert", "--engine", "fluid").Should().Be(0);
+        File.Exists(P("Templates", "Shared", "Components", "alert.liquid")).Should().BeTrue();
     }
 
     [Fact]

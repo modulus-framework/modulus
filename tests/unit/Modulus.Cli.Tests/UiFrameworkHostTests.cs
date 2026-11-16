@@ -62,7 +62,9 @@ public sealed class UiFrameworkHostTests
         var program = _engine.Render("app/Program.Fluid", m);
 
         program.Should().Contain("builder.Services.AddModulusHardening();").And.Contain("builder.Services.AddModulusObservability();")
-            .And.Contain("new ModulusLiquid(new ModulusLiquidOptions())")
+            .And.Contain("new ModulusLiquid(new ModulusLiquidOptions { TemplatesRoot = ")
+            .And.Contain("string.Equals(segments[0], \"Shared\", StringComparison.OrdinalIgnoreCase)")
+            .And.Contain("MatchPage(Path.GetFullPath(templates), \"\", segments, 0, values)")
             .And.Contain("app.UseExceptionHandler(").And.Contain("StatusCodes.Status500InternalServerError")
             .And.Contain("Path.Combine(templates, \"_layout.liquid\")")
             .And.Contain("const string AppName = \"Acme\";")
