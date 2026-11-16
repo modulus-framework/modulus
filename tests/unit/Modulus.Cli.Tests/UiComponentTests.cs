@@ -98,7 +98,7 @@ public sealed class UiComponentTests
             var engine = new TemplateEngine();
 
             var problems = new List<string>();
-            foreach (var e in UiScaffold.Engines)
+            foreach (var e in TestEngines.Paged)
                 foreach (var c in UiComponents.All.Where(c => c.Supports(e)))
                 {
                     var file = UiScaffold.TemplateFile(templates, e, c.Key);

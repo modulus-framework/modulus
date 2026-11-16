@@ -17,10 +17,12 @@
         <p style="margin-top: 12px;">Run <code>modulus describe</code> to see the modules, entities and pages of this app.</p>
     </app-card>
 
+{{ if !no_example }}
     <app-card title="Your application">
         <p>Open a part of the application:</p>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
             <a class="ant-btn ant-btn-primary" href="/{{ example_route }}">{{ example_route | string.capitalize }}</a>
         </div>
     </app-card>
+{{ end }}
 </div>

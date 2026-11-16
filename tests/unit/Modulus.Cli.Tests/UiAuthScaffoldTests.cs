@@ -38,7 +38,7 @@ public sealed class UiPageScaffoldTests
                 ["session-manager"] = ["/account/sessions", "/account/login-history", "/account/sessions/revoke-all"],
             };
 
-            foreach (var e in UiScaffold.Engines)
+            foreach (var e in TestEngines.Paged)
                 foreach (var page in UiPageScaffold.Recovery.Concat(UiPageScaffold.TwoFactor).Concat(UiPageScaffold.Sessions))
                 {
                     var file = UiScaffold.TemplateFile(templates, e, page.Template);
@@ -92,7 +92,7 @@ public sealed class UiPageScaffoldTests
             };
 
             foreach (var chart in UiCharts.All)
-                foreach (var e in UiScaffold.Engines)
+                foreach (var e in TestEngines.Paged)
                 {
                     var file = UiScaffold.TemplateFile(templates, e, chart.Page.Template);
                     file.Should().NotBeNull($"{e}/{chart.Page.Template}");

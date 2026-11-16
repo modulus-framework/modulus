@@ -28,5 +28,11 @@
 {{ if !no_example }}    <!-- DTOs the admin pages bind (the typed clients live in this project's Services/ApiClients/). -->
     <ProjectReference Include="../../Modules/{{ root_namespace }}.Modules.{{ example_module }}/{{ root_namespace }}.Modules.{{ example_module }}.Application/{{ root_namespace }}.Modules.{{ example_module }}.Application.csproj" />
 {{ end }}  </ItemGroup>
+{{ if ui_engine == "fluid" }}
+  <ItemGroup>
+    <!-- The Liquid pages are read from disk at run time (ModulusLiquid.Load), so they are copied next to the app. -->
+    <None Include="Templates\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+{{ end }}
 
 </Project>

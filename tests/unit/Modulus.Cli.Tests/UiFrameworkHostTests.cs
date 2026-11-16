@@ -21,11 +21,21 @@ public sealed class UiFrameworkHostTests
         UseUiFramework = true,
     };
 
+    private static AppModel FluidModel() => new()
+    {
+        RootNamespace = "Acme",
+        AppName = "Acme",
+        Kind = AppKind.WebAppApi,
+        Auth = "none",
+        UiEngine = "fluid",
+        UseUiFramework = true,
+    };
+
     [Theory]
     [InlineData("WebAppApi", "mvc", true)]
     [InlineData("WebAppApi", "razor-pages", true)]
     [InlineData("WebAppApi", "blazor", true)]
-    [InlineData("WebAppApi", "fluid", false)]
+    [InlineData("WebAppApi", "fluid", true)]
     [InlineData("WebAppApi", "none", false)]
     [InlineData("Api", "none", false)]
     public void Only_the_ui_engines_of_a_split_web_app_use_the_framework(string kind, string engine, bool expected)
@@ -43,6 +53,30 @@ public sealed class UiFrameworkHostTests
             .And.NotContain("AddModulusUi").And.NotContain("AddTablerTheme")
             .And.NotContain("UseModulusErrorPages").And.NotContain("MapModulusErrorPages")
             .And.NotContain("using Modulus.UI");
+    }
+
+    [Fact]
+    public void The_fluid_host_renders_liquid_pages_with_the_hardening_and_the_error_page()
+    {
+        var m = FluidModel();
+        var program = _engine.Render("app/Program.Fluid", m);
+
+        program.Should().Contain("builder.Services.AddModulusHardening();").And.Contain("builder.Services.AddModulusObservability();")
+            .And.Contain("new ModulusLiquid(new ModulusLiquidOptions())")
+            .And.Contain("app.UseExceptionHandler(").And.Contain("StatusCodes.Status500InternalServerError")
+            .And.Contain("Path.Combine(templates, \"_layout.liquid\")")
+            .And.Contain("const string AppName = \"Acme\";")
+            .And.NotContain("AddModulusMvc").And.NotContain("MapRazorPages");
+    }
+
+    [Fact]
+    public void The_fluid_project_copies_its_liquid_pages_and_other_hosts_do_not()
+    {
+        var fluid = _engine.Render("app/web.csproj", FluidModel());
+        var razor = _engine.Render("app/web.csproj", Model());
+
+        fluid.Should().Contain("<None Include=\"Templates\\**\" CopyToOutputDirectory=\"PreserveNewest\" />");
+        razor.Should().NotContain("Templates\\**");
     }
 
     [Fact]
