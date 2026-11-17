@@ -91,6 +91,16 @@ rate limiting, and tenant-resolution failures (see `ModulusMeters`).
 | **OTLP** | gRPC/HTTP | Jaeger, Tempo, SigNoz, any OTLP backend |
 | **Console** | stdout | Development (`EnableConsoleExporter`) |
 
+## Local stack and backend options
+
+The repository ships a ready-to-run stack in `deploy/observability`: an OpenTelemetry Collector in front of Jaeger (traces),
+VictoriaLogs (logs) and Prometheus (metrics), all Apache-2.0. Start it with
+`docker compose -f deploy/observability/docker-compose.yml up -d` and set `OpenTelemetry:Otlp:Endpoint` to `http://localhost:4317`.
+
+Alternative backends live in `deploy/observability/backends`: Grafana with Loki and Tempo, OpenObserve, OpenSearch, Apache
+SkyWalking and Netdata. Run one at a time; each has its own compose file. The Grafana stack, OpenObserve and Netdata are AGPL-3.0 or
+GPL-3.0, so check your own license requirements before using them. The README in that folder lists what was tested for each option.
+
 ## Health Checks
 
 ```csharp

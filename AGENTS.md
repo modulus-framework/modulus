@@ -5,7 +5,7 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 ## Project
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
-multi-project solution made of **69 projects** under `src/` (68 packable libraries plus the Roslyn analyzer project) (core, data,
+multi-project solution made of **87 projects** under `src/` (86 libraries plus the Roslyn analyzer project) (core, data,
 identity, messaging, platform, observability, testing; the UI framework lives in the `modulus-ui` repository, see *UI and app kinds* below),
 unit/integration tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for
 scaffolding.

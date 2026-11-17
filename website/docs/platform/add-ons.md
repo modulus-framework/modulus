@@ -1,7 +1,7 @@
 ---
 sidebar_position: 9
 title: Platform add-ons
-description: Media, localization, notifications, secrets from OpenBao and tenant data lifecycle, each an opt-in package.
+description: Media, localization, notifications, secrets from OpenBao or Azure Key Vault and tenant data lifecycle, each an opt-in package.
 ---
 
 # Platform add-ons
@@ -54,6 +54,29 @@ From the CLI:
 ```bash
 modulus add-openbao
 ```
+
+## Secrets from Azure Key Vault
+
+`Modulus.Secrets.AzureKeyVault` is the Azure alternative. It reads secrets through the Azure SDK, authenticated with `DefaultAzureCredential` (a managed identity or workload identity in Azure, your developer login locally), and serves them through the same cached `ISecretStore` as OpenBao.
+
+```csharp
+services.AddAzureKeyVaultSecretStore(builder.Configuration);   // read secrets
+```
+
+```json
+"Secrets": {
+  "AzureKeyVault": {
+    "VaultUri": "https://contoso-prod.vault.azure.net/",
+    "PathPrefix": "tenant-db"
+  }
+}
+```
+
+- A secret reference such as `tenant-db/3f2c/primary` becomes the Key Vault name `tenant-db--3f2c--primary` (Key Vault names allow only letters, digits and hyphens, up to 127 characters).
+- A Key Vault secret holds one string. A JSON object is read as the secret's fields; any other string is read as the single field `value`.
+- It is read-only. Key Vault has no atomic check-and-set on integer versions, so there is no `ISecretWriter`; provision secrets with Azure tooling.
+- Key Vault versions are GUIDs, so the integer version the framework compares for rotation comes from the secret's last-updated time. Two writes in the same second share a version number.
+- Covered by unit tests only; it has not been run against a live vault.
 
 ## Tenant data lifecycle
 
