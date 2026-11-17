@@ -1,0 +1,9 @@
+# Prometheus receives metrics pushed by the OpenTelemetry Collector (remote write). It scrapes nothing itself.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs: []
