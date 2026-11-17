@@ -519,6 +519,12 @@ internal sealed class ModuleModel
     /// </summary>
     public bool? UseAuth { get; set; }
 
+    /// <summary>
+    /// The entity's properties that the generated DTOs, commands, endpoints and CRUD pages carry, <c>Name</c> first. Name only
+    /// unless generate-crud or create-crud reads the entity class (<see cref="CrudFields.Resolve"/>).
+    /// </summary>
+    public IReadOnlyList<CrudField> Fields { get; set; } = CrudFields.NameOnly;
+
     /// <summary>EF Core DbContextOptions extension method name.</summary>
     public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
 

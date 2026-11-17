@@ -8,6 +8,11 @@
 {{ if ui_engine == "blazor" }}    { "route": "/account/login", "reason": "Sign-in: the API checks the credentials, or the external provider starts the sign-in" },
     { "route": "/account/logout", "reason": "Ends the BFF session; it only removes the caller's own session cookie" },
     { "route": "/health", "reason": "Liveness and readiness probes for orchestrators and load balancers" }
+{{ else if ui_engine == "fluid" }}    { "route": "/", "reason": "The home page of the Liquid host is public" },
+    { "route": "/auth/login", "reason": "Sign-in page and its POST: the BFF checks the credentials" },
+    { "route": "/auth/logout", "reason": "Ends the BFF session; it only removes the caller's own session cookie" },
+    { "route": "/{*path:nonfile}", "reason": "The Liquid pages of the host are public; a page that needs a user checks it itself" }{{ if enable_health_checks }},
+    { "route": "/health", "reason": "Health probe for orchestrators and load balancers" }{{ end }}
 {{ else if enable_health_checks }}    { "route": "/health/live", "reason": "Liveness probe for orchestrators and load balancers" }
 {{ end }}  ]
 }

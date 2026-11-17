@@ -105,4 +105,30 @@ public sealed class UiFrameworkHostTests
         _engine.Render("app/Login.Web.cshtml", m).Should().Contain("m-auth-card").And.Contain("asp-for=\"UserName\"");
         _engine.Render("app/appsettings.Web.json", m).Should().Contain("\"Modulus\"").And.Contain("\"Title\": \"Acme\"");
     }
+
+    [Fact]
+    public void The_fluid_host_with_sign_in_wires_the_bff_gateway_and_the_liquid_login()
+    {
+        var m = new AppModel
+        {
+            RootNamespace = "Acme",
+            AppName = "Acme",
+            Kind = AppKind.WebAppApi,
+            Auth = "openiddict",
+            UiEngine = "fluid",
+            UseUiFramework = true,
+        };
+        var program = _engine.Render("app/Program.Fluid", m);
+        program.Should().Contain("builder.Services.AddWebAuthentication(builder.Configuration);")
+            .And.Contain("app.UseAuthentication();").And.Contain("app.MapFluidAuthEndpoints(templates);")
+            .And.Contain("using Modulus.AspNetCore.Security.Policy;");
+
+        var endpoints = _engine.Render("app/AuthEndpoints.Fluid", m);
+        endpoints.Should().Contain("MapPost(\"/auth/login\"").And.Contain("session.SignInAsync(email")
+            .And.Contain("MapPost(\"/auth/logout\"");
+
+        _engine.Render("app/loosening-allowlist.Web.json", m).Should().Contain("\"/auth/login\"").And.Contain("\"/{*path:nonfile}\"");
+
+        _engine.Render("app/Program.Fluid", FluidModel()).Should().NotContain("AddWebAuthentication");
+    }
 }

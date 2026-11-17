@@ -93,6 +93,8 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             TargetFramework = AppFramework.Resolve(module.Directory),
             RouteName = routeName,
             LegacyIntegrationEvents = legacyEvents,
+            // The entity's own properties (its class is read, not compiled); Name only when the class is not written yet.
+            Fields = CrudFields.Resolve(module.Directory, entity),
         };
 
         // Every generated endpoint and command needs the CRUD permission, whatever the identity backend: the administrator

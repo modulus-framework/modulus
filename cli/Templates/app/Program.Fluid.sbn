@@ -1,9 +1,14 @@
+using Microsoft.AspNetCore.Antiforgery;
 using Modulus.AspNetCore.Fluid;
 using Modulus.AspNetCore.Hosting;
-
+{{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
+using {{ root_namespace }}.Web.Endpoints;
+using {{ root_namespace }}.Web.Security;
+{{ end }}
 // The Web host of {{ root_namespace }}: Liquid pages on the Modulus UI, rendered by Fluid. The pages are the Liquid files in
 // Templates/ (a layout and two pages), copied next to the app. Every value is escaped; {% modulus_head %} draws the Modulus styles.
-// This host has no sign-in. A page is a Liquid file in Templates/, and its path is its route: Templates/orders/list.liquid (or
+{{ if use_auth }}// Sign-in goes through the BFF (Bff:BaseUrl), as on the Razor Pages host: /auth/login is the Liquid sign-in page.
+// {{ else }}// This host has no sign-in. {{ end }}A page is a Liquid file in Templates/, and its path is its route: Templates/orders/list.liquid (or
 // Templates/orders/index.liquid) is served at /orders/list. Outside Development an unhandled error gets the error page with a 500
 // status and no exception text.
 const string AppName = "{{ root_namespace }}";
@@ -14,7 +19,9 @@ builder.Services.AddModulusHardening();
 builder.Services.AddModulusObservability();
 // The components in Templates/Shared/Components are read by {% render %}; they are not pages.
 builder.Services.AddSingleton(new ModulusLiquid(new ModulusLiquidOptions { TemplatesRoot = Path.Combine(builder.Environment.ContentRootPath, "Templates") }));
-
+{{ if use_auth }}builder.Services.AddWebAuthentication(builder.Configuration);
+builder.Services.AddAntiforgery();
+{{ end }}
 var app = builder.Build();
 var templates = Path.Combine(app.Environment.ContentRootPath, "Templates");
 
@@ -27,10 +34,15 @@ if (!app.Environment.IsDevelopment())
     }));
 
 app.UseModulusHardening();
-app.MapModulusHealth();
+{{ if use_auth }}app.UseAuthentication();
+app.UseAuthorization();
+{{ end }}app.MapModulusHealth(){{ if use_auth }}.Loosen("Health probe for orchestrators and load balancers; returns no data"){{ end }};
 app.MapStaticAssets();
-
-app.MapGet("/", (ModulusLiquid liquid) => Page(liquid, templates, "index", "Home", new Dictionary<string, object?>()));
+{{ if use_auth }}app.MapFluidAuthEndpoints(templates);
+{{ end }}
+app.MapGet("/", (ModulusLiquid liquid) => Page(liquid, templates, "index", "Home", new Dictionary<string, object?>()))
+{{ if use_auth }}    .Loosen("The home page of the host is public; the pages under it check their own user")
+{{ end }};
 
 // Every other path is a page in Templates/ (see the header). A path that is not a page is a 404.
 app.MapFallback((HttpContext context, ModulusLiquid liquid) =>
@@ -40,7 +52,9 @@ app.MapFallback((HttpContext context, ModulusLiquid liquid) =>
     if (found is null) return Results.NotFound();
     var (page, values) = found.Value;
     return Page(liquid, templates, page, relative, values);
-});
+})
+{{ if use_auth }}.Loosen("The Liquid pages of the host are public; a page that needs a user checks it itself")
+{{ end }};
 
 app.Run();
 

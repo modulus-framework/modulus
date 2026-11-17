@@ -59,6 +59,8 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                     $"Could not find the {UiTemplatePackage.PackageId} {UiTemplatePackage.DefaultVersion} package. " +
                     $"Pack it into ~/.modulus/feed (or set {UiTemplatePackage.FeedEnvironmentVariable}), or wait for it on nuget.org.");
 
+            // The entity's properties, read from its class: the DTOs, the forms and the pages carry them all.
+            var fields = CrudFields.Resolve(moduleDir, entity);
             var model = new
             {
                 EntityName = entity,
@@ -69,6 +71,11 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                 RouteName = route,
                 Route = route,
                 UiNamespace = uiNamespace,
+                Fields = fields,
+                // Fluid: the endpoints render these Liquid pages, and check the sign-in the host's Program.cs sets up.
+                ListPath = UiFluidCrud.ListPath(route),
+                FormPath = UiFluidCrud.FormPath(route),
+                UseAuth = File.Exists(inventory.UiProgramCsPath) && File.ReadAllText(inventory.UiProgramCsPath).Contains("AddWebAuthentication(", StringComparison.Ordinal),
             };
 
             // Resolve and check everything before writing anything.
@@ -98,7 +105,7 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-form") ?? throw Missing(engine), Path.Combine(views, "_Form.cshtml"), true));
                 pages.Add(("ui/CrudController", UiLayout.ControllerFile(uiDir, moduleName, plural), false));
             }
-            else
+            else if (engine == "blazor")
             {
                 // Create and Edit pages share the {Entity}Editor component, which holds the fields and the validation.
                 var folder = UiLayout.BlazorFolder(uiDir, moduleName, plural);
@@ -109,8 +116,21 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
             }
 
             var client = UiLayout.ApiClientFile(uiDir, entity);
+            var fluid = engine == "fluid";
+            // Fluid: the list and the form are Liquid pages under Templates/Shared/Crud (never served as pages), and the endpoints
+            // file renders them. The Fluid host has no menu, so there is no menu entry.
+            var fluidPages = fluid
+                ? new List<(string Target, string Text)>
+                {
+                    (Path.Combine(uiDir, "Templates", UiFluidCrud.ListPath(route)), UiFluidCrud.ListPage(entity, plural, route, fields)),
+                    (Path.Combine(uiDir, "Templates", UiFluidCrud.FormPath(route)), UiFluidCrud.FormPage(entity, plural, route, fields)),
+                }
+                : [];
+            var endpoints = Path.Combine(uiDir, "Endpoints", $"{entity}CrudEndpoints.cs");
             var menu = UiLayout.MenuFile(uiDir, plural);
-            var targets = pages.Select(p => p.Target).Append(client).Append(menu).ToList();
+            var targets = pages.Select(p => p.Target).Concat(fluidPages.Select(p => p.Target)).Append(client).ToList();
+            if (fluid) targets.Add(endpoints);
+            else targets.Add(menu);
             var existing = targets.Where(File.Exists).ToList();
             if (existing.Count > 0 && !Ux.Force)
                 throw new InvalidOperationException(
@@ -122,9 +142,23 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                 renderer.RenderToFile(source, model, target);
                 Ux.Success("Page added", Path.GetRelativePath(start, target));
             }
+            foreach (var (target, text) in fluidPages)
+            {
+                Ux.WriteFile(target, text);
+                Ux.Success("Page added", Path.GetRelativePath(start, target));
+            }
 
             renderer.RenderToFile("ui/EntityApiClient", model, client);
             Ux.Success("Typed client added", Path.GetRelativePath(start, client));
+            if (fluid)
+            {
+                renderer.RenderToFile("ui/CrudFluidEndpoints", model, endpoints);
+                Ux.Success("Endpoints added", Path.GetRelativePath(start, endpoints));
+                WireFluidHost(inventory, uiProject, uiDir, uiNamespace, moduleDir, moduleNamespace, entity, plural, start);
+                Ux.Info($"The pages are at /{route}. They call /api/{moduleName.ToLowerInvariant()}/{route} on the API; set Api:BaseUrl in the Web project's appsettings.json.");
+                return 0;
+            }
+
             renderer.RenderToFile("ui/CrudMenuContributor", model, menu);
             Ux.Success("Menu entry added", Path.GetRelativePath(start, menu));
 
@@ -160,6 +194,47 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
             Ux.Warning($"Program.cs not found: register {plural}MenuContributor yourself.");
         else if (!UiCrud.HostScansMenu(File.ReadAllText(program)))
             Edit(program, text => UiCrud.EnsureMenuRegistered(text, UiLayout.MenuNamespace(uiNamespace), plural), start);
+    }
+
+    /// <summary>
+    /// The Fluid host's wiring: the Application reference, the typed client's registration (the host's ApiClientExtensions.cs is written
+    /// from the Web template when the host has none yet), and the Program.cs lines that register the client, the antiforgery check and
+    /// the endpoints. The Fluid host has no menu, so no menu contributor is added.
+    /// </summary>
+    private static void WireFluidHost(ModuleDiscovery.AppInventory inventory, string uiProject, string uiDir, string uiNamespace,
+        string moduleDir, string moduleNamespace, string entity, string plural, string start)
+    {
+        var application = Path.Combine(CodeGen.LayerDir(moduleDir, moduleNamespace, "Application"), $"{moduleNamespace}.Application.csproj");
+        if (File.Exists(application) && ProjectFileService.EnsureCsprojProjectReference(uiProject, application, Ux.DryRun))
+            Ux.Success("Project reference added", Path.GetRelativePath(start, uiProject));
+
+        var program = inventory.UiProgramCsPath;
+        if (!File.Exists(program))
+            throw new InvalidOperationException("Program.cs not found: the Fluid endpoints are mapped there.");
+        var programText = File.ReadAllText(program);
+        var useAuth = programText.Contains("AddWebAuthentication(", StringComparison.Ordinal);
+
+        var extensions = UiLayout.ApiClientExtensions(uiDir);
+        if (File.Exists(extensions))
+        {
+            Edit(extensions, text => UiCrud.EnsureClientRegistered(text, entity), start);
+        }
+        else
+        {
+            // The Web template registers the entity's client, with the BFF gateway when the host signs in.
+            var root = uiNamespace.EndsWith(".Web", StringComparison.Ordinal) ? uiNamespace[..^".Web".Length] : uiNamespace;
+            new TemplateEngine().RenderToFile("app/ApiClientExtensions.Web", new
+            {
+                root_namespace = root,
+                use_auth = useAuth,
+                auth = useAuth ? "bff" : "none",
+                no_example = false,
+                example_entity = entity,
+            }, extensions);
+            Ux.Success("Client registration added", Path.GetRelativePath(start, extensions));
+        }
+
+        Edit(program, text => UiFluidCrud.EnsureProgram(text, uiNamespace, plural), start);
     }
 
     private static void Edit(string path, Func<string, string> update, string start)

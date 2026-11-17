@@ -18,7 +18,7 @@ public sealed class Get{{ entity_name }}ForEditHandler(I{{ entity_name }}Reposit
         // A copy, so nothing downstream can mutate the tracked entity's bag.
         return new {{ entity_name }}EditDto(
             entity.Id,
-            entity.Name,
-            new Dictionary<string, string?>(entity.ExtraProperties));
+{{ for f in fields }}            entity.{{ f.name }},
+{{ end }}            new Dictionary<string, string?>(entity.ExtraProperties));
     }
 }

@@ -22,7 +22,10 @@ public sealed class Create{{ entity_name }}Handler(
         Create{{ entity_name }}Command command,
         CancellationToken ct)
     {
-        var entity = new {{ entity_name }} { Name = command.Name };
+        var entity = new {{ entity_name }}
+        {
+{{ for f in fields }}            {{ f.name }} = command.{{ f.name }},
+{{ end }}        };
         if (command.ExtraProperties is not null)
             entity.SetExtraProperties(command.ExtraProperties);
 

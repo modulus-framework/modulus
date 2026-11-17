@@ -14,7 +14,7 @@ internal sealed class UiCreateDashboardCommand : Command<UiCreateDashboardComman
         [CommandArgument(0, "<template>")]
         public string Template { get; init; } = "";
 
-        [Description("UI engine: mvc, razor-pages, blazor or fluid (fluid: overview and reports only) (default: the one recorded in .modulus.json)")]
+        [Description("UI engine: mvc, razor-pages, blazor or fluid (default: the one recorded in .modulus.json)")]
         [CommandOption("--engine")]
         public string? Engine { get; init; }
 
@@ -49,7 +49,7 @@ internal sealed class UiCreateDashboardCommand : Command<UiCreateDashboardComman
                     $"Could not find the {UiTemplatePackage.PackageId} {UiTemplatePackage.DefaultVersion} package. " +
                     $"Pack it into ~/.modulus/feed (or set {UiTemplatePackage.FeedEnvironmentVariable}), or wait for it on nuget.org.");
 
-            var file = UiScaffold.TemplateFile(templates, engine, page.TemplateName)
+            var file = UiScaffold.TemplateFile(templates, engine, UiScaffold.DashboardTemplateName(page, engine))
                 ?? throw new InvalidOperationException(
                     $"The '{page.Key}' dashboard has no {engine} template yet.");
 

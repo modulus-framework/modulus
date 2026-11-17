@@ -13,5 +13,5 @@ namespace {{ module_namespace }}.Application;
 
 public sealed record {{ entity_name }}EditDto(
     Guid Id,
-    string Name,
-    IReadOnlyDictionary<string, string?> ExtraProperties);
+{{ for f in fields }}    {{ f.type }} {{ f.name }},
+{{ end }}    IReadOnlyDictionary<string, string?> ExtraProperties);
