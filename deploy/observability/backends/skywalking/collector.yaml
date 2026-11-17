@@ -1,0 +1,41 @@
+# OpenTelemetry Collector for the SkyWalking option: traces go to the OAP's Zipkin receiver, metrics and logs to its OTLP receiver.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+
+exporters:
+  zipkin/skywalking:
+    endpoint: http://oap:9411/api/v2/spans
+    format: json
+  otlp/skywalking:
+    endpoint: oap:11800
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [zipkin/skywalking]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/skywalking]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/skywalking]

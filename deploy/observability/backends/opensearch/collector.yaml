@@ -1,0 +1,38 @@
+# OpenTelemetry Collector for the OpenSearch option: logs and traces go to OpenSearch (Simple Schema for Observability indices).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+
+exporters:
+  opensearch:
+    http:
+      endpoint: http://opensearch:9200
+    # Indices are named ss4o_logs-modulus-default and ss4o_traces-modulus-default (Simple Schema for Observability).
+    dataset: modulus
+    namespace: default
+    mapping:
+      mode: ss4o
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [opensearch]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [opensearch]

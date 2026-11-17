@@ -1,14 +1,32 @@
-# Backend option: OpenSearch (Apache-2.0) for logs and time-series anomaly detection (Random Cut Forest, built in).
+# Backend option: OpenSearch (Apache-2.0) for logs and traces, with time-series anomaly detection (Random Cut Forest, built in),
+# behind the OpenTelemetry Collector. Metrics are not routed here; use the default stack's Prometheus for metrics.
 # Start with:
 #   docker compose -f deploy/observability/backends/opensearch/docker-compose.yml up -d
-# API: http://localhost:9200. Development only: the security plugin is disabled. Enable TLS and authentication before production.
+# API: http://localhost:9200. Applications send OTLP to localhost:4317 (gRPC) or 4318 (HTTP).
+# Development only: the security plugin is disabled. Enable TLS and authentication before production.
 services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otelcol/otel-collector.yaml"]
+    volumes:
+      - ./collector.yaml:/etc/otelcol/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
   opensearch:
     image: opensearchproject/opensearch:2.19.1
     environment:
       discovery.type: single-node
       DISABLE_SECURITY_PLUGIN: "true"
       OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      retries: 12
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     ports:

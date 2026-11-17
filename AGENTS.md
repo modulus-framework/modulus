@@ -1353,6 +1353,7 @@ the delivered process. Current choices:
 | Object storage | Cloud S3 through AWSSDK.S3 (Apache-2.0) | Apache-2.0 | MinIO and Garage (AGPL-3.0) |
 | Dashboards | None yet; Prometheus, Jaeger and VictoriaLogs have built-in UIs | — | Grafana OSS (AGPL-3.0) |
 | Log and time-series anomaly detection (option) | OpenSearch | Apache-2.0 | — |
+| Alternative APM backend (option) | Apache SkyWalking (OAP and UI) | Apache-2.0 | — |
 | Host and container anomaly detection (option) | Netdata agent | GPL-3.0 (approved, see above) | Netdata Cloud and enterprise |
 | Alternative all-in-one backend (option) | OpenObserve open-source edition | AGPL-3.0 (approved, see above) | OpenObserve enterprise (commercial) |
 | Alternative all-in-one backend (option) | Grafana, Loki, Tempo in one image | AGPL-3.0 (approved, see above) | — |

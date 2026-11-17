@@ -40,6 +40,21 @@ The application sends all three signals to the collector through `Otlp:Endpoint`
 - Prometheus loads the messaging alert rules from `prometheus/rules`. Alertmanager is not wired yet.
 - The messaging dashboard in `docs/messaging/monitoring/grafana-dashboard.json` is a Grafana dashboard. It is not part of this stack.
 
+## Backend options
+
+The default stack above is Apache-2.0 only. The folders under `backends/` are alternatives you can run instead (each has its own compose
+file; run one at a time, because they all use ports 4317 and 4318). Licenses and approvals are recorded in `AGENTS.md`.
+
+| Option | License | Tested |
+|---|---|---|
+| `backends/openobserve` | AGPL-3.0 (open-source edition) | Traces and logs sent through the collector are stored and read back; a metric creates its metrics stream (the metric values were not queried). |
+| `backends/lgtm` (Grafana, Loki, Tempo, Prometheus) | AGPL-3.0 | Traces, logs and metrics each sent through the collector and read back. |
+| `backends/opensearch` | Apache-2.0 | Logs and traces sent through the collector and searched. The anomaly detection plugin is installed; no detector was run. |
+| `backends/skywalking` | Apache-2.0 | Traces (as Zipkin), logs and the UI. OTLP metrics are accepted but only stored through SkyWalking's rule files. See the file header for limits. |
+| `backends/netdata` | GPL-3.0 (agent) | Starts and its API answers. Anomaly scores not observed (needs training time). |
+
+Not offered: SigNoz. Its community build supports only SQLite for metadata and its official installer is AGPL; it was evaluated and dropped.
+
 ## Before production
 
 - Jaeger stores traces in memory (`jaeger/config.yaml`). For durable traces, replace the memory backend with a persistent one (Badger is Apache-2.0).

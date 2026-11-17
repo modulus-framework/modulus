@@ -1,0 +1,64 @@
+# Backend option: Apache SkyWalking (Apache-2.0) behind the OpenTelemetry Collector.
+# SkyWalking 10.2 has no OTLP trace handler: it accepts OTLP metrics and logs, and traces through its Zipkin receiver (or its own
+# agents). The collector therefore sends traces as Zipkin and metrics and logs as OTLP. Storage is PostgreSQL.
+# Tested limits (SkyWalking 10.2.0, PostgreSQL storage):
+#  - Traces: a span with zero duration makes the Zipkin receiver throw (HTTP 500), and the collector retries it forever.
+#    Real spans have a duration, so this only shows in synthetic tests.
+#  - Logs: stored and searchable by content.
+#  - Metrics: OTLP metrics are accepted, but SkyWalking turns them into data only through its enabled rule files
+#    (SW_OTEL_RECEIVER_ENABLED_OTEL_METRICS_RULES: nginx, kubernetes, redis, ...). Application metrics need a custom MAL rule.
+# Start with:
+#   docker compose -f deploy/observability/backends/skywalking/docker-compose.yml up -d
+# Web UI: http://localhost:8080 (set SKYWALKING_UI_PORT when 8080 is taken; Windows can reserve it).
+# Applications send OTLP to localhost:4317 (gRPC) or 4318 (HTTP).
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otelcol/otel-collector.yaml"]
+    volumes:
+      - ./collector.yaml:/etc/otelcol/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on: [oap]
+
+  oap:
+    image: apache/skywalking-oap-server:10.2.0
+    environment:
+      SW_STORAGE: postgresql
+      SW_JDBC_URL: "jdbc:postgresql://postgres:5432/skywalking"
+      SW_DATA_SOURCE_USER: skywalking
+      SW_DATA_SOURCE_PASSWORD: modulus-dev-only
+      SW_RECEIVER_ZIPKIN: default
+      SW_QUERY_ZIPKIN: default
+      SW_OTEL_RECEIVER_ENABLED_HANDLERS: "otlp-metrics,otlp-logs"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "12800:12800"
+      - "9412:9412"
+
+  ui:
+    image: apache/skywalking-ui:10.2.0
+    environment:
+      SW_OAP_ADDRESS: http://oap:12800
+    depends_on: [oap]
+    ports:
+      - "${SKYWALKING_UI_PORT:-8080}:8080"
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: skywalking
+      POSTGRES_USER: skywalking
+      POSTGRES_PASSWORD: modulus-dev-only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skywalking -d skywalking"]
+      interval: 10s
+      retries: 6
+    volumes:
+      - skywalking-postgres:/var/lib/postgresql/data
+
+volumes:
+  skywalking-postgres:

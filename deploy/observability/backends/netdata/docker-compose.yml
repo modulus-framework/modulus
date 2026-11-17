@@ -1,6 +1,8 @@
 # Backend option: Netdata agent for host, container and Docker metrics with its built-in anomaly detection.
 # LICENSE: the Netdata agent is GPL-3.0. Approved by the repository owner as a single exception (AGENTS.md). Netdata Cloud and
 # enterprise components are not used here.
+# Tested: the agent starts and its API answers. Anomaly scores were NOT observed: Netdata's machine learning needs a training
+# period of collected history, which a short test run does not provide.
 # Start with:
 #   docker compose -f deploy/observability/backends/netdata/docker-compose.yml up -d
 # Web UI: http://localhost:19999
