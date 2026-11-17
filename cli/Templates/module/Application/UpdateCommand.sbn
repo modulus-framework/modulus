@@ -4,8 +4,8 @@ using Modulus.Mediator.Abstractions.Attributes;
 namespace {{ module_namespace }}.Application;
 
 /// <param name="Id">The {{ entity_name_lower }} to update.</param>
-/// <param name="Name">The new name.</param>
-/// <param name="ExtraProperties">
+{{ for f in fields }}/// <param name="{{ f.name }}">The new {{ f.label | string.downcase }}; null leaves it unchanged.</param>
+{{ end }}/// <param name="ExtraProperties">
 /// Values of the fields other modules contributed to this entity (invariant-culture text by field name), already
 /// validated by the caller. They are merged: an empty value removes the field, fields not listed are left alone,
 /// and null changes none.
@@ -13,7 +13,7 @@ namespace {{ module_namespace }}.Application;
 [Transactional(typeof(IUnitOfWork))]
 [InvalidatesCache("{{ module_name_lower }}:{{ route_name }}")]
 {{ if required_permission }}[RequirePermission("{{ required_permission }}")]
-{{ end }}public sealed record Update{{ entity_name }}Command(Guid Id, string Name, IReadOnlyDictionary<string, string?>? ExtraProperties = null)
+{{ end }}public sealed record Update{{ entity_name }}Command(Guid Id{{ for f in fields }}, {{ f.update_type }} {{ f.name }} = null{{ end }}, IReadOnlyDictionary<string, string?>? ExtraProperties = null)
     : ICommand<Update{{ entity_name }}Result>;
 
 public sealed record Update{{ entity_name }}Result(Guid Id);

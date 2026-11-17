@@ -27,7 +27,9 @@ public sealed class Update{{ entity_name }}Handler(
             ?? throw new NotFoundException(
                 "{{ entity_name }} not found: " + command.Id);
 
-        entity.Name = command.Name;
+{{ for f in fields }}        if (command.{{ f.name }} is not null)
+            entity.{{ f.name }} = command.{{ f.name }}{{ f.unwrap }};
+{{ end }}
         if (command.ExtraProperties is not null)
             entity.SetExtraProperties(command.ExtraProperties);
 

@@ -59,8 +59,8 @@ public sealed class Get{{ entity_name }}ByIdEndpoint(IMediator mediator) : Endpo
 
 public sealed class Create{{ entity_name }}Request
 {
-    public string Name { get; set; } = default!;
-}
+{{ for f in fields }}    public {{ f.type }} {{ f.name }} { get; set; } = {{ f.initial }};
+{{ end }}}
 
 public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : Endpoint<Create{{ entity_name }}Request, Guid>
 {
@@ -75,7 +75,7 @@ public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
 
     public override async Task HandleAsync(Create{{ entity_name }}Request req, CancellationToken ct)
     {
-        var id = await mediator.SendAsync(new Create{{ entity_name }}Command(req.Name), ct);
+        var id = await mediator.SendAsync(new Create{{ entity_name }}Command({{ for f in fields }}{{ if !for.first }}, {{ end }}req.{{ f.name }}{{ end }}), ct);
         await SendCreatedAsync(id, $"/api/{{ module_name_lower }}/{{ route_name }}/{id}", ct);
     }
 }
@@ -83,8 +83,8 @@ public sealed class Create{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
 public sealed class Update{{ entity_name }}Request
 {
     public Guid Id { get; set; }
-    public string Name { get; set; } = default!;
-}
+{{ for f in fields }}    public {{ f.update_type }} {{ f.name }} { get; set; }
+{{ end }}}
 
 public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : Endpoint<Update{{ entity_name }}Request, Update{{ entity_name }}Result>
 {
@@ -98,7 +98,7 @@ public sealed class Update{{ entity_name }}Endpoint(IMediator mediator) : Endpoi
 
     public override async Task HandleAsync(Update{{ entity_name }}Request req, CancellationToken ct)
     {
-        var result = await mediator.SendAsync(new Update{{ entity_name }}Command(req.Id, req.Name), ct);
+        var result = await mediator.SendAsync(new Update{{ entity_name }}Command(req.Id{{ for f in fields }}, req.{{ f.name }}{{ end }}), ct);
         await SendOkAsync(result, ct);
     }
 }

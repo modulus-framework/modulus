@@ -23,7 +23,8 @@ public sealed class Get{{ entity_name }}ByIdHandler(
         return Mask(new {{ entity_name }}Dto
         {
             Id = entity.Id,
-            Name = entity.Name,
+{{ for f in fields }}            {{ f.name }} = entity.{{ f.name }},
+{{ end }}
         });
     }
 

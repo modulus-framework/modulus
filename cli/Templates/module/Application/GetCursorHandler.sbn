@@ -32,7 +32,8 @@ public sealed class Get{{ entity_plural }}CursorHandler(
         return page.Map(e => Mask(new {{ entity_name }}Dto
         {
             Id = e.Id,
-            Name = e.Name,
+{{ for f in fields }}            {{ f.name }} = e.{{ f.name }},
+{{ end }}
         }));
     }
 

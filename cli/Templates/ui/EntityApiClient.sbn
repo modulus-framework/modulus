@@ -72,11 +72,13 @@ public sealed class {{ entity_name }}ApiClient(HttpClient http, IConfiguration c
 /// <summary>Request body for creating a {{ entity_name }} (binds the API's Create{{ entity_name }}Request).</summary>
 public sealed class Create{{ entity_name }}Dto
 {
-    public string Name { get; set; } = string.Empty;
-}
+{{ if fields }}{{ for f in fields }}    public {{ f.type }} {{ f.name }} { get; set; } = {{ f.initial }};
+{{ end }}{{ else }}    public string Name { get; set; } = string.Empty;
+{{ end }}}
 
-/// <summary>Request body for updating a {{ entity_name }} (binds the API's Update{{ entity_name }}Request).</summary>
+/// <summary>Request body for updating a {{ entity_name }} (binds the API's Update{{ entity_name }}Request). A null property leaves its value unchanged.</summary>
 public sealed class Update{{ entity_name }}Dto
 {
-    public string Name { get; set; } = string.Empty;
-}
+{{ if fields }}{{ for f in fields }}    public {{ f.update_type }} {{ f.name }} { get; set; }
+{{ end }}{{ else }}    public string Name { get; set; } = string.Empty;
+{{ end }}}
