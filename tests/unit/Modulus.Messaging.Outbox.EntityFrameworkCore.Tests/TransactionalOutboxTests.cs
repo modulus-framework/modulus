@@ -127,6 +127,66 @@ public sealed class TransactionalOutboxTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_outbox_row_stores_the_message_urn_not_the_assembly_qualified_name()
+    {
+        await using (var scope = _provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<OutboxTestDb>();
+            var bus = scope.ServiceProvider.GetRequiredService<IBus>();
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            await bus.Publish(new OrderPlaced(Guid.NewGuid()));
+            await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+
+        await using var check = _provider.CreateAsyncScope();
+        var row = await check.ServiceProvider.GetRequiredService<OutboxTestDb>().Set<OutboxRecord>().SingleAsync();
+        row.MessageType.Should().StartWith("urn:");
+        row.MessageType.Should().NotContain(",", "an assembly-qualified name would carry the version and the assembly");
+    }
+
+    [Fact]
+    public async Task A_row_written_with_the_assembly_qualified_name_still_dispatches()
+    {
+        await using (var scope = _provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<OutboxTestDb>();
+            db.Set<OutboxRecord>().Add(new OutboxRecord
+            {
+                MessageId = Guid.NewGuid(),
+                Endpoint = "orders",
+                MessageType = typeof(OrderPlaced).AssemblyQualifiedName!,
+                Body = System.Text.Json.JsonSerializer.Serialize(new OrderPlaced(Guid.NewGuid())),
+                Headers = "{}",
+                EnqueuedAt = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        (await DispatchOnce()).Should().Be(1);
+        (await MessagingTestHarnessWait(() => _provider.GetRequiredService<DeliveredLog>().Orders.Count == 1)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_schedule_cancelled_before_the_save_writes_no_row()
+    {
+        // The row is only in the change tracker until SaveChanges: cancelling it must detach it (item 15).
+        Guid token;
+        await using (var scope = _provider.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<OutboxTestDb>();
+            var scheduler = scope.ServiceProvider.GetRequiredService<Modulus.Messaging.IMessageScheduler>();
+            token = await scheduler.ScheduleSend(new Uri("queue:orders"), DateTimeOffset.UtcNow.AddHours(1), new OrderPlaced(Guid.NewGuid()));
+            (await scheduler.CancelScheduled(token)).Should().BeFalse("nothing was saved yet, so no stored row was deleted");
+            await db.SaveChangesAsync();
+        }
+
+        await using var check = _provider.CreateAsyncScope();
+        (await check.ServiceProvider.GetRequiredService<OutboxTestDb>().Set<OutboxRecord>().AnyAsync(r => r.ScheduleToken == token))
+            .Should().BeFalse("a cancelled schedule must not be written by a later save in the same scope");
+    }
+
+    [Fact]
     public async Task RULE_01_a_message_whose_type_no_longer_exists_is_parked_not_dropped()
     {
         await using (var scope = _provider.CreateAsyncScope())

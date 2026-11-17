@@ -56,6 +56,31 @@ public sealed class SagaContext<TSaga, TMessage>
     }
 
     /// <summary>
+    /// Asks another endpoint for something, like <see cref="Request{TRequest}(Uri, TRequest)"/>, and gives up after
+    /// <paramref name="timeout"/> with a <see cref="SagaRequestTimedOut"/> message to this saga's endpoint, unless the
+    /// answer or a fault arrives first (FR-17). The timeout is scheduled with the state, so completing the saga cancels it.
+    /// The saga's open request is the one this call makes; a later call replaces it.
+    /// </summary>
+    public void Request<TRequest>(Uri address, TRequest request, TimeSpan timeout) where TRequest : class
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(request);
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), timeout, "A request timeout must be positive.");
+        }
+
+        var replyEndpoint = _effects.ReplyEndpoint
+            ?? throw new InvalidOperationException("A saga request needs a saga endpoint to answer to.");
+        var requestId = Saga.CorrelationId;
+        var timeoutId = Modulus.GuidV7.Create();
+        Saga.OpenRequestTimeoutId = timeoutId;
+        var timedOut = new SagaRequestTimedOut(requestId, timeoutId, address.ToString(), typeof(TRequest).FullName ?? typeof(TRequest).Name);
+        _effects.AddSchedule((scheduler, ct) => scheduler.ScheduleSend(new Uri($"queue:{replyEndpoint}"), timeout, timedOut, ct));
+        _effects.Add((bus, _, ct) => bus.SendRequest(address, request, requestId, replyEndpoint, ct));
+    }
+
+    /// <summary>
     /// Publishes a message after <paramref name="delay"/>, measured from the call. A timeout is a schedule. Its token is
     /// stored with the saga, so the saga cancels it when it completes; a save that fails cancels it too.
     /// </summary>

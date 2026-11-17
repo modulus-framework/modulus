@@ -20,4 +20,10 @@ public abstract class SagaInstance
     /// never reaches it. A token whose message already arrived cancels nothing, which is harmless.
     /// </summary>
     public List<Guid> PendingTimeouts { get; set; } = [];
+
+    /// <summary>
+    /// The timeout of the request this saga is waiting for, or null when none is open. It is cleared by the answer and by
+    /// the timeout itself; a timeout whose id is not this one is dropped (FR-17).
+    /// </summary>
+    public Guid? OpenRequestTimeoutId { get; set; }
 }

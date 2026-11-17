@@ -10,3 +10,4 @@ MOD0002 | Security | Warning  | ClassifiedLogArgumentAnalyzer: classified value 
 MOD0003 | Design   | Warning  | IntegrationEventNameAnalyzer: integration event name not declared once and well-formed
 MOD0004 | Security | Warning  | ClassifiedLoggerMessageAnalyzer: classified [LoggerMessage] parameter without the classification-aware generator
 MOD0005 | Security | Warning  | UnprojectedClassifiedFieldAnalyzer: classified entity field copied to a type without [ProjectionOf]
+MOD0006 | Design   | Warning  | MessageUrnAnalyzer: released message type without [MessageUrn] (opt-in, ModulusRequireMessageUrn)

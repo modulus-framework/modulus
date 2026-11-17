@@ -10,7 +10,8 @@ internal sealed class OutboxMessageScheduler(MessagingBus bus, IMessageOutbox ou
         where TMessage : class
     {
         var token = Modulus.GuidV7.Create();
-        await outbox.AddScheduled(bus.EnvelopeForSend(address, message), deliverAt, token, cancellationToken).ConfigureAwait(false);
+        var envelope = bus.EnvelopeForSend(address, message);
+        await WriteOrRollBackAsync(token, [envelope], deliverAt, cancellationToken).ConfigureAwait(false);
         return token;
     }
 
@@ -18,11 +19,7 @@ internal sealed class OutboxMessageScheduler(MessagingBus bus, IMessageOutbox ou
         where TMessage : class
     {
         var token = Modulus.GuidV7.Create();
-        foreach (var envelope in bus.EnvelopesForPublish(message))
-        {
-            await outbox.AddScheduled(envelope, deliverAt, token, cancellationToken).ConfigureAwait(false);
-        }
-
+        await WriteOrRollBackAsync(token, bus.EnvelopesForPublish(message), deliverAt, cancellationToken).ConfigureAwait(false);
         return token;
     }
 
@@ -33,6 +30,35 @@ internal sealed class OutboxMessageScheduler(MessagingBus bus, IMessageOutbox ou
     public Task<Guid> SchedulePublish<TMessage>(TimeSpan delay, TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class =>
         SchedulePublish(bus.DueAfter(delay), message, cancellationToken);
+
+    /// <summary>
+    /// Stores every envelope of one schedule under the token. When one write fails, the rows already written under the
+    /// token are cancelled again, so a caller that catches the failure and commits does not keep a partial schedule
+    /// (item 15). The original failure is rethrown; a failed cancel does not hide it.
+    /// </summary>
+    private async Task WriteOrRollBackAsync(Guid token, IEnumerable<MessageEnvelope> envelopes, DateTimeOffset deliverAt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            foreach (var envelope in envelopes)
+            {
+                await outbox.AddScheduled(envelope, deliverAt, token, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+            try
+            {
+                await outbox.CancelScheduled(token, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception cancelFailure) when (cancelFailure is not OutOfMemoryException)
+            {
+                _ = cancelFailure;
+            }
+
+            throw;
+        }
+    }
 
     /// <summary>Deletes the scheduled rows of the token that no dispatcher has claimed yet.</summary>
     public Task<bool> CancelScheduled(Guid token, CancellationToken cancellationToken = default) =>

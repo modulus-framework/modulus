@@ -1,2 +1,23 @@
 #nullable enable
 Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Request<TRequest>(System.Uri! address, TRequest! request) -> void
+Modulus.Messaging.Sagas.SagaContext<TSaga, TMessage>.Request<TRequest>(System.Uri! address, TRequest! request, System.TimeSpan timeout) -> void
+Modulus.Messaging.Sagas.SagaInstance.OpenRequestTimeoutId.get -> System.Guid?
+Modulus.Messaging.Sagas.SagaInstance.OpenRequestTimeoutId.set -> void
+Modulus.Messaging.Sagas.SagaRequestTimedOut
+Modulus.Messaging.Sagas.SagaRequestTimedOut.<Clone>$() -> Modulus.Messaging.Sagas.SagaRequestTimedOut!
+Modulus.Messaging.Sagas.SagaRequestTimedOut.Address.get -> string!
+Modulus.Messaging.Sagas.SagaRequestTimedOut.Address.init -> void
+Modulus.Messaging.Sagas.SagaRequestTimedOut.CorrelationId.get -> System.Guid
+Modulus.Messaging.Sagas.SagaRequestTimedOut.CorrelationId.init -> void
+Modulus.Messaging.Sagas.SagaRequestTimedOut.Deconstruct(out System.Guid CorrelationId, out System.Guid TimeoutId, out string! Address, out string! RequestType) -> void
+Modulus.Messaging.Sagas.SagaRequestTimedOut.Equals(Modulus.Messaging.Sagas.SagaRequestTimedOut? other) -> bool
+Modulus.Messaging.Sagas.SagaRequestTimedOut.RequestType.get -> string!
+Modulus.Messaging.Sagas.SagaRequestTimedOut.RequestType.init -> void
+Modulus.Messaging.Sagas.SagaRequestTimedOut.SagaRequestTimedOut(System.Guid CorrelationId, System.Guid TimeoutId, string! Address, string! RequestType) -> void
+Modulus.Messaging.Sagas.SagaRequestTimedOut.TimeoutId.get -> System.Guid
+Modulus.Messaging.Sagas.SagaRequestTimedOut.TimeoutId.init -> void
+override Modulus.Messaging.Sagas.SagaRequestTimedOut.Equals(object? obj) -> bool
+override Modulus.Messaging.Sagas.SagaRequestTimedOut.GetHashCode() -> int
+override Modulus.Messaging.Sagas.SagaRequestTimedOut.ToString() -> string!
+static Modulus.Messaging.Sagas.SagaRequestTimedOut.operator !=(Modulus.Messaging.Sagas.SagaRequestTimedOut? left, Modulus.Messaging.Sagas.SagaRequestTimedOut? right) -> bool
+static Modulus.Messaging.Sagas.SagaRequestTimedOut.operator ==(Modulus.Messaging.Sagas.SagaRequestTimedOut? left, Modulus.Messaging.Sagas.SagaRequestTimedOut? right) -> bool

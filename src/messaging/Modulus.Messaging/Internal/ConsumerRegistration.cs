@@ -23,4 +23,5 @@ internal sealed record MessagingOptions(
     IReadOnlyList<Type> Filters,
     IReadOnlyList<Type> Observers,
     bool DeployOnly,
-    MessageTypeAllowList MessageTypes);
+    MessageTypeAllowList MessageTypes,
+    Func<Type, string> WireNames);

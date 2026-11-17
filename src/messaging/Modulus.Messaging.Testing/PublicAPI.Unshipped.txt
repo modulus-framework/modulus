@@ -19,3 +19,22 @@ override Modulus.Messaging.Testing.VirtualClock.CreateTimer(System.Threading.Tim
 Modulus.Messaging.Testing.SagaHarness<TSaga>.WaitForCompletionAsync(System.Guid correlationId, System.TimeSpan? timeout = null) -> System.Threading.Tasks.Task<bool>!
 Modulus.Messaging.Testing.FaultInjector.Remaining<TMessage>() -> int
 Modulus.Messaging.Testing.VirtualClock.Advance(System.TimeSpan by) -> void
+Modulus.Messaging.Testing.SagaRepositoryConformance
+static Modulus.Messaging.Testing.SagaRepositoryConformance.RunAsync<TSaga>(System.Func<Modulus.Messaging.Sagas.ISagaRepository<TSaga!>!>! createRepository, System.Func<System.Guid, TSaga!>! newSaga, System.Action<TSaga!>! change, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Messaging.Testing.TransportConformanceReport!>!
+Modulus.Messaging.Testing.MessageUrnContract
+Modulus.Messaging.Testing.MessageUrnContractReport
+Modulus.Messaging.Testing.MessageUrnContractReport.<Clone>$() -> Modulus.Messaging.Testing.MessageUrnContractReport!
+Modulus.Messaging.Testing.MessageUrnContractReport.Added.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Messaging.Testing.MessageUrnContractReport.Added.init -> void
+Modulus.Messaging.Testing.MessageUrnContractReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Removed, out System.Collections.Generic.IReadOnlyList<string!>! Added) -> void
+Modulus.Messaging.Testing.MessageUrnContractReport.EnsureNoBreakingChange() -> void
+Modulus.Messaging.Testing.MessageUrnContractReport.Equals(Modulus.Messaging.Testing.MessageUrnContractReport? other) -> bool
+Modulus.Messaging.Testing.MessageUrnContractReport.MessageUrnContractReport(System.Collections.Generic.IReadOnlyList<string!>! Removed, System.Collections.Generic.IReadOnlyList<string!>! Added) -> void
+Modulus.Messaging.Testing.MessageUrnContractReport.Removed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Modulus.Messaging.Testing.MessageUrnContractReport.Removed.init -> void
+override Modulus.Messaging.Testing.MessageUrnContractReport.Equals(object? obj) -> bool
+override Modulus.Messaging.Testing.MessageUrnContractReport.GetHashCode() -> int
+override Modulus.Messaging.Testing.MessageUrnContractReport.ToString() -> string!
+static Modulus.Messaging.Testing.MessageUrnContract.Verify(string! contractPath, System.Collections.Generic.IEnumerable<System.Type!>! messageTypes, bool acceptRemovals = false) -> Modulus.Messaging.Testing.MessageUrnContractReport!
+static Modulus.Messaging.Testing.MessageUrnContractReport.operator !=(Modulus.Messaging.Testing.MessageUrnContractReport? left, Modulus.Messaging.Testing.MessageUrnContractReport? right) -> bool
+static Modulus.Messaging.Testing.MessageUrnContractReport.operator ==(Modulus.Messaging.Testing.MessageUrnContractReport? left, Modulus.Messaging.Testing.MessageUrnContractReport? right) -> bool

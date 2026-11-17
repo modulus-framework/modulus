@@ -1,1 +1,3 @@
 #nullable enable
+*REMOVED*Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.PostgreSqlSagaRepository(Npgsql.NpgsqlDataSource! dataSource, string! table = "messaging_sagas") -> void
+Modulus.Messaging.Sagas.PostgreSql.PostgreSqlSagaRepository<TSaga>.PostgreSqlSagaRepository(Npgsql.NpgsqlDataSource! dataSource, string! table = "messaging_sagas", Modulus.Messaging.Outbox.Npgsql.INpgsqlUnitOfWork? unitOfWork = null) -> void

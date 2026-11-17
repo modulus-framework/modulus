@@ -17,6 +17,13 @@ internal sealed class EfMessageOutbox<TContext>(TContext db) : IMessageOutbox
 
     private async Task<bool> CancelRowsAsync(Guid scheduleToken, CancellationToken cancellationToken)
     {
+        // Rows added in this scope but not saved yet are only in the change tracker: detach them, so a cancel
+        // after a partial schedule leaves nothing for SaveChanges to write.
+        foreach (var entry in db.ChangeTracker.Entries<OutboxRecord>().Where(e => e.State == EntityState.Added && e.Entity.ScheduleToken == scheduleToken).ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+
         // A claimed row (LockToken set) is already on its way out, so it is left alone.
         var deleted = await db.Set<OutboxRecord>()
             .Where(r => r.ScheduleToken == scheduleToken && r.LockToken == null)
@@ -34,7 +41,7 @@ internal sealed class EfMessageOutbox<TContext>(TContext db) : IMessageOutbox
             MessageId = envelope.MessageId,
             Endpoint = envelope.Endpoint,
             ConsumerKey = envelope.ConsumerKey,
-            MessageType = type.AssemblyQualifiedName ?? type.FullName ?? type.Name,
+            MessageType = envelope.WireType ?? MessageUrn.Of(type),
             Body = JsonSerializer.Serialize(envelope.Message, type),
             Headers = JsonSerializer.Serialize(new Dictionary<string, string>(envelope.Headers, StringComparer.Ordinal)),
             EnqueuedAt = DateTime.UtcNow,

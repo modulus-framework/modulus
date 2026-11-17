@@ -27,6 +27,7 @@ public sealed class MessagingBusBuilder
     private bool _replyFaultReceiverAdded;
     private int _maxMessageBytes = DefaultMaxMessageBytes;
     private bool _deployOnly;
+    private Func<Type, string> _wireNames = MessageUrn.Of;
 
     /// <summary>
     /// Registers <typeparamref name="TConsumer"/> with the endpoint and settings of <paramref name="definition"/> (FR-03).
@@ -145,6 +146,27 @@ public sealed class MessagingBusBuilder
     /// Deploy-only mode (FR-23): the host declares the topology (queues, schema) on start and then exits, without
     /// receiving any message. Use it in a deployment job that holds the rights to create the topology (NFR-11).
     /// </summary>
+    /// <summary>
+    /// Sends the .NET assembly-qualified name of each message type instead of its URN, for one release of a rolling upgrade.
+    /// Use it while services that still expect the .NET name run beside services that send URNs; receivers accept both,
+    /// so only the senders need it. The setting is process-wide, and it is a deployment flag: remove it once every consumer
+    /// is on a build that reads the URN.
+    /// </summary>
+    public MessagingBusBuilder UseLegacyWireTypeNames() =>
+        UseMessageNameFormatter(type => type.AssemblyQualifiedName ?? type.FullName ?? type.Name);
+
+    /// <summary>
+    /// Chooses the type name each message is sent under (MassTransit's message name formatter). The default is the message's
+    /// URN: its <c>[MessageUrn]</c>, or a name derived from its full name. The choice belongs to this bus, so two buses in one
+    /// process can differ. Receivers accept the URN and the assembly-qualified name either way.
+    /// </summary>
+    public MessagingBusBuilder UseMessageNameFormatter(Func<Type, string> formatter)
+    {
+        ArgumentNullException.ThrowIfNull(formatter);
+        _wireNames = formatter;
+        return this;
+    }
+
     public MessagingBusBuilder UseDeployOnly()
     {
         _deployOnly = true;
@@ -258,6 +280,6 @@ public sealed class MessagingBusBuilder
                 return c.Registration with { Options = effective };
             })
             .ToArray();
-        return new MessagingOptions(consumers, _transportFactory, _replyEndpoint, _maxMessageBytes, _filters.ToArray(), _observers.ToArray(), _deployOnly, MessageTypes);
+        return new MessagingOptions(consumers, _transportFactory, _replyEndpoint, _maxMessageBytes, _filters.ToArray(), _observers.ToArray(), _deployOnly, MessageTypes, _wireNames);
     }
 }

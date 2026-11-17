@@ -1,3 +1,4 @@
+-- Schema version 1 (2026-11-17). Additive only: a later version adds tables, columns and indexes and never drops or renames one.
 -- Schema of the PostgreSQL transport queue table (default options). Generated from PostgreSqlTransport.SchemaScript.
 CREATE SEQUENCE IF NOT EXISTS "public"."messaging_queue_seq";
 CREATE TABLE IF NOT EXISTS "public"."messaging_queue" (

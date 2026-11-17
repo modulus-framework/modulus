@@ -19,6 +19,9 @@
     <!-- The transports take the bus's allow-list of message types (NFR-10). -->
     <InternalsVisibleTo Include="Modulus.Messaging.Transports.PostgreSql" />
     <InternalsVisibleTo Include="Modulus.Messaging.Transports.RabbitMQ" />
+    <!-- The outbox writers store the message URN (RULE-10), and the dispatchers resolve it. -->
+    <InternalsVisibleTo Include="Modulus.Messaging.Outbox.EntityFrameworkCore" />
+    <InternalsVisibleTo Include="Modulus.Messaging.Outbox.Npgsql" />
   </ItemGroup>
 
 </Project>

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Modulus.Messaging.Sagas/Modulus.Messaging.Sagas.csproj" />
+    <ProjectReference Include="../Modulus.Messaging.Outbox.Npgsql/Modulus.Messaging.Outbox.Npgsql.csproj" />
     <PackageReference Include="Npgsql" />
   </ItemGroup>
 

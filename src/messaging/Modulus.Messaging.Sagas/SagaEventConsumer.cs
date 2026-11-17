@@ -21,6 +21,17 @@ public sealed class SagaEventConsumer<TMachine, TSaga, TMessage>(
         var key = SagaKeys.ForTenant(MessageTenant.Current, machine.CorrelationKey(typeof(TMessage), message));
 
         var saga = await repository.FindAsync(key, cancellationToken).ConfigureAwait(false);
+        if (SagaRequests.IsStaleTimeout(saga, message))
+        {
+            // The request was answered or replaced meanwhile: nothing to do, and nothing to park.
+            return;
+        }
+
+        if (saga is not null)
+        {
+            SagaRequests.CloseIfAnswered(saga, message, context.Headers);
+        }
+
         SagaReaction<TSaga> reaction;
         if (saga is null)
         {

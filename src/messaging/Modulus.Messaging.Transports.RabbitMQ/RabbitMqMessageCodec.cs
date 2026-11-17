@@ -28,7 +28,7 @@ internal static class RabbitMqMessageCodec
             headers[key] = value;
         }
 
-        headers[MessageTypeHeader] = MessageUrn.Of(type);
+        headers[MessageTypeHeader] = envelope.WireType ?? MessageUrn.Of(type);
         if (envelope.ConsumerKey is not null)
         {
             headers[ConsumerKeyHeader] = envelope.ConsumerKey;

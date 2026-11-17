@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Modulus.Messaging.Outbox.Npgsql;
 using Npgsql;
 using NpgsqlTypes;
 
@@ -16,11 +17,17 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
 
     private readonly NpgsqlDataSource _dataSource;
     private readonly string _table;
+    private readonly INpgsqlUnitOfWork? _unitOfWork;
 
     /// <summary>Creates a repository over one saga table.</summary>
     /// <param name="dataSource">The database that holds the table.</param>
     /// <param name="table">Table name, a plain SQL identifier. Create it with <see cref="SchemaScript"/>.</param>
-    public PostgreSqlSagaRepository(NpgsqlDataSource dataSource, string table = "messaging_sagas")
+    /// <param name="unitOfWork">
+    /// The scope's unit of work. When one is open, saga reads and writes run on its transaction, so the saga state
+    /// commits or rolls back together with the inbox record and the outgoing messages (RULE-06). Without one, each
+    /// call runs on its own connection.
+    /// </param>
+    public PostgreSqlSagaRepository(NpgsqlDataSource dataSource, string table = "messaging_sagas", INpgsqlUnitOfWork? unitOfWork = null)
     {
         ArgumentNullException.ThrowIfNull(dataSource);
         if (!Identifier().IsMatch(table))
@@ -30,6 +37,7 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
 
         _dataSource = dataSource;
         _table = table;
+        _unitOfWork = unitOfWork;
     }
 
     /// <summary>The SQL that creates the saga table (one row per instance, keyed by saga type and correlation id).</summary>
@@ -53,7 +61,7 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
 
     public async Task<TSaga?> FindAsync(Guid correlationId, CancellationToken cancellationToken)
     {
-        await using var command = _dataSource.CreateCommand(
+        await using var command = Command(
             $"SELECT data::text, version FROM \"{_table}\" WHERE saga_type = @saga_type AND correlation_id = @correlation_id");
         command.Parameters.AddWithValue("saga_type", SagaType);
         command.Parameters.AddWithValue("correlation_id", correlationId);
@@ -84,7 +92,7 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
 
         if (expected == 0)
         {
-            await using var insert = _dataSource.CreateCommand(
+            await using var insert = Command(
                 $"INSERT INTO \"{_table}\" (saga_type, correlation_id, version, data) VALUES (@saga_type, @correlation_id, @version, @data) ON CONFLICT DO NOTHING");
             Parameters(insert, saga.CorrelationId, next, data);
             if (await insert.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) == 0)
@@ -96,7 +104,7 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
             return;
         }
 
-        await using var update = _dataSource.CreateCommand(
+        await using var update = Command(
             $"UPDATE \"{_table}\" SET version = @version, data = @data WHERE saga_type = @saga_type AND correlation_id = @correlation_id AND version = @expected");
         Parameters(update, saga.CorrelationId, next, data);
         update.Parameters.AddWithValue("expected", expected);
@@ -116,7 +124,7 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
             return;
         }
 
-        await using var command = _dataSource.CreateCommand(
+        await using var command = Command(
             $"DELETE FROM \"{_table}\" WHERE saga_type = @saga_type AND correlation_id = @correlation_id AND version = @version");
         command.Parameters.AddWithValue("saga_type", SagaType);
         command.Parameters.AddWithValue("correlation_id", saga.CorrelationId);
@@ -126,6 +134,12 @@ public sealed partial class PostgreSqlSagaRepository<TSaga> : ISagaRepository<TS
             throw new SagaConcurrencyException(typeof(TSaga), saga.CorrelationId);
         }
     }
+
+    /// <summary>A command on the scope's open transaction when there is one, else on the data source.</summary>
+    private NpgsqlCommand Command(string sql) =>
+        _unitOfWork?.Connection is { } connection && _unitOfWork.Transaction is { } transaction
+            ? new NpgsqlCommand(sql, connection, transaction)
+            : _dataSource.CreateCommand(sql);
 
     private static void Parameters(NpgsqlCommand command, Guid correlationId, long version, string data)
     {

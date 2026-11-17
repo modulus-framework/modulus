@@ -40,6 +40,7 @@
     <ProjectReference Include="../../analyzers/Modulus.Analyzers/Modulus.Analyzers.csproj"
                       ReferenceOutputAssembly="false" PrivateAssets="all" />
     <None Include="$(ModulusAnalyzerDll)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="build/Synvro.Modulus.AspNetCore.props" Pack="true" PackagePath="build/" Visible="false" />
   </ItemGroup>
 
   <!-- On net8.0 both logging source generators (Logging.Abstractions' and Telemetry's) would emit the same [LoggerMessage]

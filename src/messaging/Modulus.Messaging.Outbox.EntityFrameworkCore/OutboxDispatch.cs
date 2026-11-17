@@ -83,7 +83,8 @@ public static class OutboxDispatch
     private static bool TryRebuild(OutboxRecord row, out MessageEnvelope envelope)
     {
         envelope = null!;
-        var type = Type.GetType(row.MessageType);
+        // A URN (or, for rows written before this change, an assembly-qualified name) resolves to the loaded type that carries it.
+        var type = MessageTypeAllowList.ResolveWireType(row.MessageType, allowList: null);
         if (type is null)
         {
             return false;

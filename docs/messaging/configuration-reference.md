@@ -18,6 +18,8 @@ then a message, then a consumer or saga, then an endpoint, then the bus.
 | `UseEndpointNameFormatter(f)` | none | Maps logical endpoint names to physical ones (environment prefixes). |
 | `UseMaxMessageSize(bytes)` | 1 MiB | A larger message is refused at send with `MessageTooLargeException`. |
 | `UseDeployOnly()` | off | Declares the topology and exits; for a deploy job with admin rights (NFR-11). |
+| `UseMessageNameFormatter(f)` | the URN | The type name each message is sent under (MassTransit-style). Per bus; receivers accept the URN and the .NET name either way. |
+| `UseLegacyWireTypeNames()` | off | Sends the .NET assembly-qualified name for one release of a rolling upgrade (RULE-10). Remove it once every consumer reads URNs. |
 | `UseReplyEndpoint(name)` | generated | The endpoint replies to requests arrive on. |
 
 ## Consumer (`ConsumerOptions`)
@@ -111,6 +113,6 @@ then a message, then a consumer or saga, then an endpoint, then the bus.
 | `mod-partition-key` | Partition of an ordered consumer. |
 | `mod-sequence` | Position in the partition, kept across redeliveries. |
 | `mod-delivery-count` / `mod-redelivery-count` | Deliveries so far, and redeliveries under the policy. |
-| `mod-encrypted-type` | The message's URN, for an encrypted body. |
+| `mod-encrypted-type` | The message's wire type name (its URN, or the .NET name in legacy mode), for an encrypted body. |
 | `mod-request-id` / `mod-reply-to` | Request and reply correlation. |
 | `mod-skip-reason` | Why a message went to `_skipped`. |

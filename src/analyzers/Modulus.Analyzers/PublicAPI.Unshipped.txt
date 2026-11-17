@@ -1,1 +1,7 @@
 #nullable enable
+Modulus.Analyzers.MessageUrnAnalyzer
+Modulus.Analyzers.MessageUrnAnalyzer.MessageUrnAnalyzer() -> void
+const Modulus.Analyzers.MessageUrnAnalyzer.DiagnosticId = "MOD0006" -> string!
+const Modulus.Analyzers.MessageUrnAnalyzer.RequireProperty = "build_property.ModulusRequireMessageUrn" -> string!
+override Modulus.Analyzers.MessageUrnAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
+override Modulus.Analyzers.MessageUrnAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>

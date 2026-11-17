@@ -19,7 +19,7 @@ internal static class PostgreSqlMessageCodec
         var type = envelope.Message.GetType();
         var body = Encoding.UTF8.GetString(JsonSerializer.SerializeToUtf8Bytes(envelope.Message, type, Json));
         var headers = JsonSerializer.Serialize(envelope.Headers, Json);
-        return (MessageUrn.Of(type), envelope.ConsumerKey, body, headers);
+        return (envelope.WireType ?? MessageUrn.Of(type), envelope.ConsumerKey, body, headers);
     }
 
     /// <summary>Rebuilds the envelope, or returns the reason it cannot be rebuilt.</summary>

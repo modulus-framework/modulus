@@ -30,7 +30,7 @@ internal sealed class NpgsqlMessageOutbox(INpgsqlUnitOfWork unitOfWork, string t
         command.Parameters.Add(new NpgsqlParameter("message_id", NpgsqlDbType.Uuid) { Value = envelope.MessageId });
         command.Parameters.Add(new NpgsqlParameter("endpoint", NpgsqlDbType.Text) { Value = envelope.Endpoint });
         command.Parameters.Add(new NpgsqlParameter("consumer_key", NpgsqlDbType.Text) { Value = (object?)envelope.ConsumerKey ?? DBNull.Value });
-        command.Parameters.Add(new NpgsqlParameter("message_type", NpgsqlDbType.Text) { Value = type.AssemblyQualifiedName ?? type.FullName ?? type.Name });
+        command.Parameters.Add(new NpgsqlParameter("message_type", NpgsqlDbType.Text) { Value = envelope.WireType ?? MessageUrn.Of(type) });
         command.Parameters.Add(new NpgsqlParameter("body", NpgsqlDbType.Text) { Value = JsonSerializer.Serialize(envelope.Message, type, NpgsqlOutboxJson.Options) });
         command.Parameters.Add(new NpgsqlParameter("headers", NpgsqlDbType.Text)
         {

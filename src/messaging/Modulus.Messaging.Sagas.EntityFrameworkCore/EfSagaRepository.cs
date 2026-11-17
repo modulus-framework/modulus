@@ -40,20 +40,30 @@ public sealed class EfSagaRepository<TSaga>(DbContext db) : ISagaRepository<TSag
 
         if (saga.Version == 0)
         {
+            // An instance this context already tracks is a second insert of the same saga: a conflict, not a tracking error.
+            if (db.ChangeTracker.Entries<SagaRecord>().Any(e => e.State != EntityState.Detached
+                    && e.Entity.SagaType == SagaType && e.Entity.CorrelationId == saga.CorrelationId))
+            {
+                throw new SagaConcurrencyException(typeof(TSaga), saga.CorrelationId);
+            }
+
             // A new instance: the primary key refuses a second one, so a racing initiation is a conflict.
-            db.Set<SagaRecord>().Add(new SagaRecord
+            var record = new SagaRecord
             {
                 SagaType = SagaType,
                 CorrelationId = saga.CorrelationId,
                 Version = 1,
                 Data = data,
-            });
+            };
+            db.Set<SagaRecord>().Add(record);
             try
             {
                 await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (DbUpdateException)
             {
+                // Leave no unsaved row in the context: a later save on it must not write this one.
+                db.Entry(record).State = EntityState.Detached;
                 throw new SagaConcurrencyException(typeof(TSaga), saga.CorrelationId);
             }
 

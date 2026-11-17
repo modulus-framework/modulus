@@ -19,6 +19,17 @@ public sealed class ConsumerSagaEventConsumer<TSaga, TMessage>(
         var key = SagaKeys.ForTenant(MessageTenant.Current, TSaga.CorrelationKeyOf(message));
 
         var stored = await repository.FindAsync(key, cancellationToken).ConfigureAwait(false);
+        if (SagaRequests.IsStaleTimeout(stored, message))
+        {
+            // The request was answered or replaced meanwhile: nothing to do, and nothing to park.
+            return;
+        }
+
+        if (stored is not null)
+        {
+            SagaRequests.CloseIfAnswered(stored, message, context.Headers);
+        }
+
         var instance = stored ?? new TSaga { CorrelationId = key };
         var effects = new SagaEffects(context.Endpoint);
         var sagaContext = new SagaContext<TSaga, TMessage>(instance, message, effects);

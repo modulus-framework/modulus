@@ -159,3 +159,15 @@ Modulus.Messaging.ConsumerDefinition<TConsumer>.ConsumerDefinition() -> void
 Modulus.Messaging.MessagingBusBuilder.AddConsumer<TConsumer, TMessage>(Modulus.Messaging.ConsumerDefinition<TConsumer!>! definition) -> Modulus.Messaging.MessagingBusBuilder!
 virtual Modulus.Messaging.ConsumerDefinition<TConsumer>.Configure(Modulus.Messaging.ConsumerOptions! options) -> void
 virtual Modulus.Messaging.ConsumerDefinition<TConsumer>.EndpointName.get -> string?
+Modulus.Messaging.IRequestResponse.RequestId.get -> System.Guid
+Modulus.Messaging.MessageUrns
+static Modulus.Messaging.MessageUrns.Of(System.Type! messageType) -> string!
+Modulus.Messaging.MessageFilterContext.UnitOfWork.get -> Modulus.Messaging.IConsumeUnitOfWork?
+Modulus.Messaging.MessagingBusBuilder.UseLegacyWireTypeNames() -> Modulus.Messaging.MessagingBusBuilder!
+Modulus.Messaging.MessageEnvelope.Deconstruct(out System.Guid MessageId, out string! Endpoint, out object! Message, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, out string? ConsumerKey, out string? WireType) -> void
+Modulus.Messaging.MessageEnvelope.MessageEnvelope(System.Guid MessageId, string! Endpoint, object! Message, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, string? ConsumerKey = null, string? WireType = null) -> void
+Modulus.Messaging.MessageEnvelope.WireType.get -> string?
+Modulus.Messaging.MessageEnvelope.WireType.init -> void
+Modulus.Messaging.MessagingBusBuilder.UseMessageNameFormatter(System.Func<System.Type!, string!>! formatter) -> Modulus.Messaging.MessagingBusBuilder!
+*REMOVED*Modulus.Messaging.MessageEnvelope.Deconstruct(out System.Guid MessageId, out string! Endpoint, out object! Message, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, out string? ConsumerKey) -> void
+*REMOVED*Modulus.Messaging.MessageEnvelope.MessageEnvelope(System.Guid MessageId, string! Endpoint, object! Message, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers, string? ConsumerKey = null) -> void

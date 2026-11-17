@@ -6,6 +6,9 @@ namespace Modulus.Messaging;
 /// </summary>
 public interface IRequestResponse
 {
+    /// <summary>The id of the request this reply answers.</summary>
+    Guid RequestId { get; }
+
     object? ResponseMessage => null;
 }
 

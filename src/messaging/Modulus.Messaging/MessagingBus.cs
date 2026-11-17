@@ -32,6 +32,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
     private readonly IReadOnlyList<Type> _filterTypes;
     private readonly IReadOnlyList<IMessageObserver> _observers;
     private readonly Dictionary<ConsumerRegistration, BatchCollector> _batches = new(ReferenceEqualityComparer.Instance);
+    private readonly Func<Type, string> _wireNames;
 
     internal MessagingBus(IServiceProvider services, MessagingOptions options)
     {
@@ -46,6 +47,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         _lifetime = services.GetService<IHostApplicationLifetime>();
         _maxMessageBytes = options.MaxMessageBytes;
         _deployOnly = options.DeployOnly;
+        _wireNames = options.WireNames;
         _filterTypes = options.Filters;
         _observers = options.Observers
             .Select(type => (IMessageObserver)ActivatorUtilities.GetServiceOrCreateInstance(services, type))
@@ -102,7 +104,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         }
 
         await _transport.Start(_consumers.Select(c => c.Endpoint).Distinct(StringComparer.Ordinal).ToArray(), Receive, cancellationToken).ConfigureAwait(false);
-        await NotifyAsync(o => o.OnBusStarted()).ConfigureAwait(false);
+        if (_observers.Count > 0) await NotifyAsync(o => o.OnBusStarted()).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -129,7 +131,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await NotifyAsync(o => o.OnBusStopping()).ConfigureAwait(false);
+        if (_observers.Count > 0) await NotifyAsync(o => o.OnBusStopping()).ConfigureAwait(false);
         await _transport.Stop(cancellationToken).ConfigureAwait(false);
     }
 
@@ -268,11 +270,11 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
 
         if (point == MessageFilterPoint.Publish)
         {
-            await NotifyAsync(o => o.OnPublished(envelope)).ConfigureAwait(false);
+            if (_observers.Count > 0) await NotifyAsync(o => o.OnPublished(envelope)).ConfigureAwait(false);
         }
         else
         {
-            await NotifyAsync(o => o.OnSent(envelope)).ConfigureAwait(false);
+            if (_observers.Count > 0) await NotifyAsync(o => o.OnSent(envelope)).ConfigureAwait(false);
         }
     }
 
@@ -285,7 +287,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         }
 
         var filter = (IMessageFilter)ActivatorUtilities.GetServiceOrCreateInstance(services, _filterTypes[index]);
-        var context = new MessageFilterContext(point, envelope, services);
+        var context = new MessageFilterContext(point, envelope, services, point == MessageFilterPoint.Consume ? services.GetService<IConsumeUnitOfWork>() : null);
         return filter.Execute(context, () => RunFiltersAsync(point, envelope, services, inner, index + 1));
     }
 
@@ -385,7 +387,8 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
                 registration.Endpoint,
                 message,
                 DeliveryHeaders(message, registration.Endpoint, registration.Options, now),
-                registration.ConsumerKey), registration.Options));
+                registration.ConsumerKey,
+                _wireNames(message.GetType())), registration.Options));
         }
 
         return envelopes;
@@ -399,7 +402,8 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         var endpoint = EndpointFromAddress(address);
         var options = _consumers.FirstOrDefault(r => r.Endpoint == endpoint)?.Options;
         return SealIfRequired(new MessageEnvelope(
-            Modulus.GuidV7.Create(), endpoint, message, DeliveryHeaders(message, endpoint, options, _time.GetUtcNow())), options);
+            Modulus.GuidV7.Create(), endpoint, message, DeliveryHeaders(message, endpoint, options, _time.GetUtcNow()),
+            WireType: _wireNames(message.GetType())), options);
     }
 
     /// <summary>Refuses a body larger than the bus allows, before anything is stored or sent (FR-22).</summary>
@@ -509,7 +513,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
     {
         // Every line this delivery logs carries its trace, message, endpoint and company (D9, FR-24).
         using var logScope = _logger.BeginScope(LogScope(wire));
-        await NotifyAsync(o => o.OnReceived(wire)).ConfigureAwait(false);
+        if (_observers.Count > 0) await NotifyAsync(o => o.OnReceived(wire)).ConfigureAwait(false);
 
         // Transport operations (skip, redeliver, error) always take the wire form, so a sealed body is never written back
         // in the clear. The consumer and its fault see the opened form (D6).
@@ -649,7 +653,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
             return;
         }
 
-        await NotifyAsync(o => o.OnConsumeFaulted(envelope, failure)).ConfigureAwait(false);
+        if (_observers.Count > 0) await NotifyAsync(o => o.OnConsumeFaulted(envelope, failure)).ConfigureAwait(false);
 
         // Ignored exceptions go straight to _error (FR-07), so they skip redelivery as well, and so does a park request.
         var parkRequest = failure as MessageParkException;
@@ -796,14 +800,14 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         var keyId = keys.CurrentKeyId;
         var key = keys.GetKey(keyId) ?? throw new InvalidOperationException($"The current message key '{keyId}' is not available.");
         var type = envelope.Message.GetType();
-        var typeName = MessageUrn.Of(type);
+        var typeName = _wireNames(type);
         var plaintext = JsonSerializer.SerializeToUtf8Bytes(envelope.Message, type, MessageJson.Options);
         var payload = MessageCipher.Encrypt(keyId, key, plaintext, MessageCipher.AssociatedData(envelope, typeName));
         var headers = new Dictionary<string, string>(envelope.Headers, StringComparer.Ordinal)
         {
             [MessagingHeaders.EncryptedType] = typeName,
         };
-        return envelope with { Message = payload, Headers = headers };
+        return envelope with { Message = payload, Headers = headers, WireType = _wireNames(typeof(EncryptedPayload)) };
     }
 
     private static readonly ConcurrentDictionary<Type, bool> EncryptedTypes = new();
@@ -862,7 +866,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
             }
 
             MessagingMetrics.RecordProcess(envelope.Endpoint, started, errorType: null);
-            await NotifyAsync(o => o.OnConsumed(envelope)).ConfigureAwait(false);
+            if (_observers.Count > 0) await NotifyAsync(o => o.OnConsumed(envelope)).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -960,7 +964,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
                 foreach (var envelope in fresh)
                 {
                     MessagingMetrics.Consumed.Add(1, MessagingMetrics.Destination(envelope.Endpoint));
-                    await NotifyAsync(o => o.OnConsumed(envelope)).ConfigureAwait(false);
+                    if (_observers.Count > 0) await NotifyAsync(o => o.OnConsumed(envelope)).ConfigureAwait(false);
                 }
             }
 

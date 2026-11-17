@@ -67,7 +67,7 @@ message that crashes its host on every attempt stops looping. MassTransit has no
 | `.Ignore(E)` | `When(E).Ignore()` |
 | `If` / `IfElse` activity | `When(E).If(condition, block)` / `.IfElse(condition, whenTrue, whenFalse)` |
 | `Catch<T>` activity | `When(E).Then(...).Catch<T>(compensation => ...)`: the attempt is discarded and the compensation runs on the saga as it was |
-| `Request` / `Respond` (saga activities) | `context.Request(address, message)` in a saga reaction. The answer is a message the saga declares with `Event`; a consumer failure is the `RequestFault` event, correlated by `RequestId`. One request is outstanding per saga instance. A request timeout is not built: use `context.Schedule` |
+| `Request` / `Respond` (saga activities) | `context.Request(address, message)` in a saga reaction. The answer is a message the saga declares with `Event`; a consumer failure is the `RequestFault` event, correlated by `RequestId`. One request is outstanding per saga instance. A request timeout is built: `context.Request(address, message, timeout)` sends a `SagaRequestTimedOut` to the saga's endpoint when the answer is late; the saga declares it with `Event` like any other message |
 | `InstanceState` repository (EF Core, Redis, MongoDB) | in-memory (`AddInMemorySagaRepository<TSaga>`), EF Core (`AddEntityFrameworkSagaRepository<TSaga, TContext>`) or PostgreSQL JSONB (`AddPostgreSqlSagaRepository<TSaga>`). Redis and MongoDB have no repository |
 | Consumer sagas (`ISaga` + `InitiatedBy`) | `AddConsumerSaga<TSaga>(endpoint)` with `IInitiatedBy<TSaga, TMessage>` and `ICorrelatedBy<TMessage>` |
 
@@ -76,7 +76,7 @@ Differences that matter for a port:
 - Saga instances are scoped by company when a company is set: the same correlation id in two companies is two sagas.
 - A message's wire identity is its URN (`[MessageUrn]`), not its .NET type name. A type without the attribute gets a
   name-derived URN, so give every released message the attribute before you rename it. Messages already in flight during
-  a deploy still decode through the old name.
+  a deploy still decode through the old name. During a rolling upgrade, a sender can use `UseLegacyWireTypeNames()` for one release, so services that expect the .NET name still decode its messages; receivers accept both forms.
 - The state-machine state is a `SagaInstance` POCO serialised as JSON. Plan a migration of existing MassTransit
   instances if they must carry over: they are not compatible.
 

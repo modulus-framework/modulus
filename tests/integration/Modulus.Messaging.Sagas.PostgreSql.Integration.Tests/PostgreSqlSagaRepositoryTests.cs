@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Modulus.Messaging.Sagas;
+using Modulus.Messaging.Outbox.Npgsql;
 using Modulus.Messaging.Sagas.PostgreSql;
 using Modulus.Messaging.Testing;
 using Modulus.Messaging.Transports.InMemory;
@@ -101,6 +102,58 @@ public sealed class PostgreSqlSagaRepositoryTests(SagaPostgreSqlBroker database)
         }
 
         count.Should().Be(50, "every increment applied once, even when two workers met on the same instance");
+    }
+
+    [Fact]
+    public async Task RULE_06_saga_state_written_in_a_unit_of_work_rolls_back_with_it()
+    {
+        const string table = "sagas_uow_rollback";
+        await using var dataSource = NpgsqlDataSource.Create(database.ConnectionString);
+        await CreateTableAsync(dataSource, table);
+        await using var unitOfWork = new NpgsqlUnitOfWork(dataSource);
+        var repository = new PostgreSqlSagaRepository<TallySaga>(dataSource, table, unitOfWork);
+        var tallyId = Guid.NewGuid();
+
+        await unitOfWork.BeginAsync(CancellationToken.None);
+        await repository.SaveAsync(new TallySaga { CorrelationId = tallyId }, CancellationToken.None);
+        (await repository.FindAsync(tallyId, CancellationToken.None)).Should().NotBeNull("the scope reads its own uncommitted write");
+        await unitOfWork.RollbackAsync(CancellationToken.None);
+
+        var outside = new PostgreSqlSagaRepository<TallySaga>(dataSource, table);
+        (await outside.FindAsync(tallyId, CancellationToken.None)).Should().BeNull("the saga state rolled back with the unit of work");
+    }
+
+    [Fact]
+    public async Task RULE_06_saga_state_and_the_other_writes_of_one_unit_of_work_commit_together()
+    {
+        const string table = "sagas_uow_commit";
+        await using var dataSource = NpgsqlDataSource.Create(database.ConnectionString);
+        await CreateTableAsync(dataSource, table);
+        await using (var setup = dataSource.CreateCommand("CREATE TABLE IF NOT EXISTS uow_marks (id uuid NOT NULL)"))
+        {
+            await setup.ExecuteNonQueryAsync();
+        }
+
+        await using var unitOfWork = new NpgsqlUnitOfWork(dataSource);
+        var repository = new PostgreSqlSagaRepository<TallySaga>(dataSource, table, unitOfWork);
+        var tallyId = Guid.NewGuid();
+        var markId = Guid.NewGuid();
+
+        await unitOfWork.BeginAsync(CancellationToken.None);
+        await repository.SaveAsync(new TallySaga { CorrelationId = tallyId }, CancellationToken.None);
+        await using (var mark = new NpgsqlCommand("INSERT INTO uow_marks (id) VALUES (@id)", unitOfWork.Connection!, unitOfWork.Transaction!))
+        {
+            mark.Parameters.AddWithValue("id", markId);
+            await mark.ExecuteNonQueryAsync();
+        }
+
+        await unitOfWork.CommitAsync(CancellationToken.None);
+
+        var outside = new PostgreSqlSagaRepository<TallySaga>(dataSource, table);
+        (await outside.FindAsync(tallyId, CancellationToken.None)).Should().NotBeNull();
+        await using var count = dataSource.CreateCommand("SELECT count(*) FROM uow_marks WHERE id = @id");
+        count.Parameters.AddWithValue("id", markId);
+        ((long)(await count.ExecuteScalarAsync())!).Should().Be(1);
     }
 
     private static async Task CreateTableAsync(NpgsqlDataSource dataSource, string table)

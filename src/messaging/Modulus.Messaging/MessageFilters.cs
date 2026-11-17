@@ -16,11 +16,12 @@ public enum MessageFilterPoint
 /// <summary>What a filter sees: where it runs, the envelope, and the services of the scope it runs in.</summary>
 public sealed class MessageFilterContext
 {
-    internal MessageFilterContext(MessageFilterPoint point, MessageEnvelope envelope, IServiceProvider services)
+    internal MessageFilterContext(MessageFilterPoint point, MessageEnvelope envelope, IServiceProvider services, IConsumeUnitOfWork? unitOfWork = null)
     {
         Point = point;
         Envelope = envelope;
         Services = services;
+        UnitOfWork = unitOfWork;
     }
 
     public MessageFilterPoint Point { get; }
@@ -28,6 +29,13 @@ public sealed class MessageFilterContext
     public MessageEnvelope Envelope { get; }
 
     public IServiceProvider Services { get; }
+
+    /// <summary>
+    /// The transaction this consume attempt runs in (FR-20 transaction filter), or null when the scope has none or the
+    /// message is not consumed. The bus begins it before the filters and commits or rolls it back after them, so a filter
+    /// sees the same transaction as the consumer and must not begin or commit it itself.
+    /// </summary>
+    public IConsumeUnitOfWork? UnitOfWork { get; }
 }
 
 /// <summary>

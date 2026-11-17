@@ -1,0 +1,9 @@
+<Project>
+
+  <!-- Makes ModulusRequireMessageUrn visible to analyzers, so MOD0006 (message types sent without [MessageUrn]) can be
+       turned on per project with <ModulusRequireMessageUrn>true</ModulusRequireMessageUrn>. Off by default. -->
+  <ItemGroup>
+    <CompilerVisibleProperty Include="ModulusRequireMessageUrn" />
+  </ItemGroup>
+
+</Project>

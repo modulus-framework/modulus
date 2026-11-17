@@ -73,7 +73,7 @@ public static class NpgsqlOutboxDispatch
     private static bool TryRebuild(Row row, out MessageEnvelope envelope)
     {
         envelope = null!;
-        if (Type.GetType(row.MessageType) is not { } type)
+        if (MessageTypeAllowList.ResolveWireType(row.MessageType, allowList: null) is not { } type)
         {
             return false;
         }
