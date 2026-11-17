@@ -157,7 +157,7 @@
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
   </ItemGroup>
   <ItemGroup Label="Cloud Storage">
-    <PackageVersion Include="AWSSDK.S3"                              Version="4.0.104.6" />
+    <PackageVersion Include="AWSSDK.S3"                              Version="4.1.0.1" />
     <PackageVersion Include="Google.Cloud.Storage.V1"                Version="5.0.0" />
     <PackageVersion Include="Azure.Storage.Blobs"                    Version="12.30.1" />
     <!-- Azure Key Vault secret provider: Azure.Security.KeyVault.Secrets and Azure.Identity are MIT (Microsoft Azure SDK; the .nuspec
