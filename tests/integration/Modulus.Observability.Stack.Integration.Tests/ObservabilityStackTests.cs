@@ -1,14 +1,11 @@
 namespace Modulus.Observability.Stack.Integration.Tests;
 
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Modulus.Core;
 using Modulus.OpenTelemetry;
 using Xunit;
 
@@ -28,7 +25,7 @@ public sealed class ObservabilityStackTests(ObservabilityStackFixture stack)
     }
 
     [Fact]
-    public async Task Traces_logs_and_metrics_sent_through_the_collector_reach_tempo_loki_and_prometheus_and_grafana_reads_them()
+    public async Task Traces_logs_and_metrics_sent_through_the_collector_reach_jaeger_victorialogs_and_prometheus()
     {
         var marker = "obs-smoke-" + Guid.NewGuid().ToString("N")[..10];
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -41,11 +38,18 @@ public sealed class ObservabilityStackTests(ObservabilityStackFixture stack)
         services.AddLogging(logging => logging.SetMinimumLevel(LogLevel.Information));
         services.AddModulusOpenTelemetry(configuration, new SmokeEnvironment());
         var provider = services.BuildServiceProvider();
+        // Without a host, OpenTelemetry builds its providers only when something resolves them. The tracer provider registers the
+        // Modulus activity sources; until it exists, StartActivity returns null and no span is produced.
+        _ = provider.GetRequiredService<global::OpenTelemetry.Trace.TracerProvider>();
+        // The same applies to the meter provider: without it, the counter below is never exported.
+        _ = provider.GetRequiredService<global::OpenTelemetry.Metrics.MeterProvider>();
 
         // One request: a span, a counter, and a log record inside the span, so the log carries the span's trace id.
         var logger = provider.GetRequiredService<ILogger<ObservabilityStackTests>>();
+        string? traceId;
         using (var activity = ModulusActivitySources.Mediator.StartActivity(marker))
         {
+            traceId = activity?.TraceId.ToString();
             ModulusMeters.Mediator.CreateCounter<long>("obs.smoke.requests").Add(1, new KeyValuePair<string, object?>("marker", marker));
             logger.LogInformation("{Marker} handled by the smoke test", marker);
         }
@@ -54,19 +58,15 @@ public sealed class ObservabilityStackTests(ObservabilityStackFixture stack)
         await provider.DisposeAsync();
 
         using var http = new HttpClient();
-        (await WaitForAsync(async () => await TraceExists(http, marker))).Should().BeTrue("the span reached Tempo");
-        (await WaitForAsync(async () => await LogExists(http, marker))).Should().BeTrue("the log record reached Loki");
-        (await WaitForAsync(async () => await MetricExists(http))).Should().BeTrue("the counter reached Prometheus");
+        var traceFound = await WaitForAsync(async () => await TraceExists(http, marker));
+        traceFound.Should().BeTrue($"the span reached Jaeger\n{await stack.DiagnosticsAsync()}");
 
-        // Grafana provisioned the three data sources the stack's configuration describes.
-        using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(stack.Grafana, "/api/datasources"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
-            Convert.ToBase64String(Encoding.ASCII.GetBytes($"admin:{ObservabilityStackFixture.GrafanaPassword}")));
-        using var response = await http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        var types = json.RootElement.EnumerateArray().Select(d => d.GetProperty("type").GetString()).ToArray();
-        types.Should().Contain(["prometheus", "loki", "tempo"]);
+        // The log body is the message template, so the marker is not in the line. The record is found by its trace id instead.
+        traceId.Should().NotBeNullOrEmpty("the smoke test ran inside a span");
+        (await WaitForAsync(async () => await LogHasTraceIdAsync(http, traceId!))).Should().BeTrue(
+            "the log record reached VictoriaLogs with its trace id");
+
+        (await WaitForAsync(async () => await MetricExists(http))).Should().BeTrue("the counter reached Prometheus");
     }
 
     private static async Task<bool> WaitForAsync(Func<Task<bool>> condition)
@@ -87,19 +87,22 @@ public sealed class ObservabilityStackTests(ObservabilityStackFixture stack)
 
     private async Task<bool> TraceExists(HttpClient http, string marker)
     {
-        var query = Uri.EscapeDataString($"{{ resource.service.name = \"{ServiceName}\" && name = \"{marker}\" }}");
-        var json = await GetJsonAsync(http, new Uri(stack.Tempo, $"/api/search?q={query}&limit=5"));
-        return json is not null && json.Value.TryGetProperty("traces", out var traces) && traces.GetArrayLength() > 0;
+        // Jaeger's query API: traces of one service and operation (the span name).
+        var json = await GetJsonAsync(http, new Uri(stack.Jaeger, $"/api/traces?service={ServiceName}&operation={Uri.EscapeDataString(marker)}&limit=5"));
+        return json is not null && json.Value.TryGetProperty("data", out var data) && data.GetArrayLength() > 0;
     }
 
-    private async Task<bool> LogExists(HttpClient http, string marker)
+    private async Task<bool> LogHasTraceIdAsync(HttpClient http, string traceId)
     {
-        var query = Uri.EscapeDataString($"{{service_name=\"{ServiceName}\"}} |= \"{marker}\"");
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1_000_000L;
-        var start = now - TimeSpan.FromMinutes(10).Ticks * 100L;
-        var json = await GetJsonAsync(http, new Uri(stack.Loki, $"/loki/api/v1/query_range?query={query}&start={start}&limit=10"));
-        return json is not null
-            && json.Value.GetProperty("data").GetProperty("result").GetArrayLength() > 0;
+        // VictoriaLogs' LogsQL query. The response is one JSON object per matching line.
+        var query = Uri.EscapeDataString($"trace_id:\"{traceId}\"");
+        using var response = await http.GetAsync(new Uri(stack.VictoriaLogs, $"/select/logsql/query?query={query}"));
+        if (!response.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        return (await response.Content.ReadAsStringAsync()).Trim().Length > 0;
     }
 
     private async Task<bool> MetricExists(HttpClient http)

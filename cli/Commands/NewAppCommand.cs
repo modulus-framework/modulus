@@ -588,11 +588,11 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/web.csproj", model,
             Path.Combine(webDir, $"{rootNs}.Web.csproj"));
         _templates.RenderToFile(model.UiEngine switch
-            {
-                "blazor" => "app/Program.Blazor",
-                "fluid" => "app/Program.Fluid",
-                _ => "app/Program.Web",
-            }, model, Path.Combine(webDir, "Program.cs"));
+        {
+            "blazor" => "app/Program.Blazor",
+            "fluid" => "app/Program.Fluid",
+            _ => "app/Program.Web",
+        }, model, Path.Combine(webDir, "Program.cs"));
 
         // The Web project has its own configuration: it connects to nothing but
         // the API host ("Api:BaseUrl"), so it must not share the API's

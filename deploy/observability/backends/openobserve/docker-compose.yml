@@ -1,0 +1,33 @@
+# Backend option: OpenObserve (traces, metrics and logs in one service) behind the OpenTelemetry Collector.
+# LICENSE: the OpenObserve open-source edition is AGPL-3.0 and its enterprise edition is a commercial license. Both are outside the
+# framework's open-source dependency policy (AGENTS.md). Run this option only after the policy is changed to allow it.
+# Start with:
+#   docker compose -f deploy/observability/backends/openobserve/docker-compose.yml up -d
+# Web UI: http://localhost:5080 (email and password below). Applications send OTLP to localhost:4317 (gRPC) or 4318 (HTTP).
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otelcol/otel-collector.yaml"]
+    environment:
+      # Basic auth for the OpenObserve OTLP endpoint: base64 of "email:password". Development value; change it.
+      OPENOBSERVE_AUTH: "Basic cm9vdEBtb2R1bHVzLmxvY2FsOm1vZHVsdXMtZGV2LW9ubHk="
+    volumes:
+      - ./collector.yaml:/etc/otelcol/otel-collector.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on: [openobserve]
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:v0.14.7
+    environment:
+      ZO_ROOT_USER_EMAIL: "root@modulus.local"
+      ZO_ROOT_USER_PASSWORD: "modulus-dev-only"
+      ZO_DATA_DIR: "/data"
+    volumes:
+      - openobserve-data:/data
+    ports:
+      - "5080:5080"
+
+volumes:
+  openobserve-data:

@@ -1,33 +1,18 @@
+# Dependabot (GitHub-native, free): proposes dependency updates as pull requests. Chosen over Renovate, which is AGPL-3.0 (see AGENTS.md).
 version: 2
 updates:
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
     open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "nuget"
-    groups:
-      microsoft-extensions:
-        patterns:
-          - "Microsoft.Extensions.*"
-      entity-framework:
-        patterns:
-          - "Microsoft.EntityFrameworkCore.*"
-      testing:
-        patterns:
-          - "xunit*"
-          - "FluentAssertions"
-          - "NSubstitute"
-          - "Testcontainers*"
-          - "coverlet*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "github-actions"
+
+  - package-ecosystem: "docker"
+    directory: "/deploy/observability"
+    schedule:
+      interval: "weekly"

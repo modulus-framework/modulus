@@ -61,6 +61,7 @@
     <Project Path="src/platform/Modulus.Platform/Modulus.Platform.csproj" />
     <Project Path="src/platform/Modulus.Search/Modulus.Search.csproj" />
     <Project Path="src/platform/Modulus.Secrets.OpenBao/Modulus.Secrets.OpenBao.csproj" />
+    <Project Path="src/platform/Modulus.Secrets.AzureKeyVault/Modulus.Secrets.AzureKeyVault.csproj" />
     <Project Path="src/platform/Modulus.BackgroundJobs.Quartz/Modulus.BackgroundJobs.Quartz.csproj" />
     <Project Path="src/platform/Modulus.Media/Modulus.Media.csproj" />
     <Project Path="src/platform/Modulus.Media.EntityFrameworkCore/Modulus.Media.EntityFrameworkCore.csproj" />
@@ -189,6 +190,7 @@
     <Project Path="tests/unit/Modulus.Tenancy.Lifecycle.EntityFrameworkCore.Tests/Modulus.Tenancy.Lifecycle.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Search.Tests/Modulus.Search.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Secrets.OpenBao.Tests/Modulus.Secrets.OpenBao.Tests.csproj" />
+    <Project Path="tests/unit/Modulus.Secrets.AzureKeyVault.Tests/Modulus.Secrets.AzureKeyVault.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Secrets.OpenBao.Integration.Tests/Modulus.Secrets.OpenBao.Integration.Tests.csproj" />
     <Project Path="tests/unit/Modulus.AuditLogging.EntityFrameworkCore.Tests/Modulus.AuditLogging.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/unit/Modulus.Authorization.EntityFrameworkCore.Tests/Modulus.Authorization.EntityFrameworkCore.Tests.csproj" />
@@ -211,6 +213,7 @@
     <Project Path="tests/integration/Modulus.Analytics.Providers.Integration.Tests/Modulus.Analytics.Providers.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Analytics.EntityFrameworkCore.Integration.Tests/Modulus.Analytics.EntityFrameworkCore.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Analytics.OpenLineage.Integration.Tests/Modulus.Analytics.OpenLineage.Integration.Tests.csproj" />
+    <Project Path="tests/integration/Modulus.Observability.Stack.Integration.Tests/Modulus.Observability.Stack.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.Outbox.Integration.Tests/Modulus.Outbox.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests/Modulus.BackgroundJobs.Quartz.Integration.Tests.csproj" />
     <Project Path="tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode/Modulus.BackgroundJobs.Quartz.ClusterNode.csproj" />

@@ -1,0 +1,36 @@
+name: PR security
+
+# Runs on every pull request and push, not only weekly (security-scan.yml covers the weekly full scan).
+# Both tools are open source: Gitleaks (MIT) and Trivy (Apache-2.0). Images are pinned; upgrade them deliberately.
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Gitleaks scans the history, not only the checked-out tree
+      - name: Detect committed secrets
+        run: >
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.24.2 detect
+          --source /repo --redact --verbose --exit-code 1
+
+  vulnerabilities:
+    name: Vulnerabilities (Trivy filesystem)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vulnerabilities and misconfigurations in the source tree
+        run: >
+          docker run --rm -v "$PWD:/src:ro" aquasec/trivy:0.58.1 fs
+          --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /src

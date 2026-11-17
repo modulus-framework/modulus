@@ -1,0 +1,24 @@
+#nullable enable
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultHealthCheck
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultHealthCheck.AzureKeyVaultHealthCheck(Azure.Security.KeyVault.Secrets.SecretClient! client) -> void
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultHealthCheck.CheckAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Core.Abstractions.ModuleHealthResult!>!
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultNaming
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.AzureKeyVaultOptions() -> void
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.ManagedIdentityClientId.get -> string?
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.ManagedIdentityClientId.set -> void
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.PathPrefix.get -> string?
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.PathPrefix.set -> void
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.RequestTimeout.get -> System.TimeSpan
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.RequestTimeout.set -> void
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.Validate() -> string?
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.VaultUri.get -> string!
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.VaultUri.set -> void
+Modulus.Secrets.AzureKeyVault.AzureKeyVaultSecretsExtensions
+const Modulus.Secrets.AzureKeyVault.AzureKeyVaultNaming.MaxSecretNameLength = 127 -> int
+const Modulus.Secrets.AzureKeyVault.AzureKeyVaultNaming.SingleValueField = "value" -> string!
+const Modulus.Secrets.AzureKeyVault.AzureKeyVaultOptions.SectionName = "Secrets:AzureKeyVault" -> string!
+static Modulus.Secrets.AzureKeyVault.AzureKeyVaultNaming.ReadFields(string! raw) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Modulus.Secrets.AzureKeyVault.AzureKeyVaultNaming.ToSecretName(Modulus.Core.Abstractions.Secrets.SecretReference! reference) -> string!
+static Modulus.Secrets.AzureKeyVault.AzureKeyVaultNaming.ToVersionNumber(System.DateTimeOffset? updatedOn, System.DateTimeOffset? createdOn) -> int
+static Modulus.Secrets.AzureKeyVault.AzureKeyVaultSecretsExtensions.AddAzureKeyVaultSecretStore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

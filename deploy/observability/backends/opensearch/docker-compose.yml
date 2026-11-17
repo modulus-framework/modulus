@@ -1,0 +1,18 @@
+# Backend option: OpenSearch (Apache-2.0) for logs and time-series anomaly detection (Random Cut Forest, built in).
+# Start with:
+#   docker compose -f deploy/observability/backends/opensearch/docker-compose.yml up -d
+# API: http://localhost:9200. Development only: the security plugin is disabled. Enable TLS and authentication before production.
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    ports:
+      - "9200:9200"
+
+volumes:
+  opensearch-data:

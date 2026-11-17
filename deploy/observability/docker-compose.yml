@@ -1,8 +1,9 @@
-# Observability stack for Modulus applications: OpenTelemetry Collector in front of Tempo (traces), Loki (logs),
-# Prometheus (metrics) and Grafana (dashboards). Development and small installations. Start with:
+# Observability stack for Modulus applications, Apache-2.0 / MIT components only (see AGENTS.md, open-source dependency policy):
+# OpenTelemetry Collector in front of Jaeger (traces), Prometheus (metrics) and VictoriaLogs (logs). Development and small installations.
+# Start with:
 #   docker compose -f deploy/observability/docker-compose.yml up -d
 # The applications send OTLP to http://localhost:4317 (gRPC) or http://localhost:4318 (HTTP); see README.md.
-# Grafana: http://localhost:3000 (the development password is in this file; change it before sharing the stack).
+# Web UIs: Jaeger http://localhost:16686 (traces), VictoriaLogs http://localhost:9428/select/vmui (logs), Prometheus http://localhost:9090.
 services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.116.1
@@ -12,25 +13,25 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
-    depends_on: [tempo, loki, prometheus]
+    depends_on: [jaeger, victorialogs, prometheus]
 
-  tempo:
-    image: grafana/tempo:2.6.1
-    command: ["-config.file=/etc/tempo.yaml"]
+  jaeger:
+    image: jaegertracing/jaeger:2.11.0
+    command: ["--config=/etc/jaeger/config.yaml"]
     volumes:
-      - ./tempo/tempo.yaml:/etc/tempo.yaml:ro
-      - tempo-data:/var/tempo
+      - ./jaeger/config.yaml:/etc/jaeger/config.yaml:ro
     ports:
-      - "3200:3200"
+      - "16686:16686"
 
-  loki:
-    image: grafana/loki:3.3.2
-    command: ["-config.file=/etc/loki/loki.yaml"]
+  victorialogs:
+    image: victoriametrics/victoria-logs:v1.20.0-victorialogs
+    command:
+      - "-storageDataPath=/vlogs"
+      - "-retentionPeriod=15d"
     volumes:
-      - ./loki/loki.yaml:/etc/loki/loki.yaml:ro
-      - loki-data:/loki
+      - victorialogs-data:/vlogs
     ports:
-      - "3100:3100"
+      - "9428:9428"
 
   prometheus:
     image: prom/prometheus:v2.55.1
@@ -45,21 +46,6 @@ services:
     ports:
       - "9090:9090"
 
-  grafana:
-    image: grafana/grafana:11.4.0
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: modulus-dev-only
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - grafana-data:/var/lib/grafana
-    ports:
-      - "3000:3000"
-    depends_on: [prometheus, loki, tempo]
-
 volumes:
-  tempo-data:
-  loki-data:
+  victorialogs-data:
   prometheus-data:
-  grafana-data:

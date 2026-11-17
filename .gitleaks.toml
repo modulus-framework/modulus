@@ -1,0 +1,17 @@
+# Gitleaks configuration (MIT). Extends the default rules and allowlists only paths whose values are fake fixtures:
+# unit and integration test data, sample applications and documentation examples. Product code is still scanned.
+title = "Modulus gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake secrets used as test fixtures, sample data and documentation examples"
+paths = [
+  '''^tests/''',
+  '''^samples/''',
+  '''^docs/''',
+  '''^website/''',
+  # Writes a fixed test key for the AI connector in generated test apps; the value is not a credential.
+  '''^cli/Services/AiWiring\.cs$''',
+]

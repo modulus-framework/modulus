@@ -1,5 +1,5 @@
-# OpenTelemetry Collector: receives OTLP from the applications and fans out to Tempo (traces), Prometheus (metrics) and Loki (logs).
-# Applications send to the collector on 4317 (gRPC) or 4318 (HTTP/protobuf); see AddModulusOpenTelemetry (Otlp:Endpoint).
+# OpenTelemetry Collector (Apache-2.0): receives OTLP from the applications and fans out to Jaeger (traces), Prometheus (metrics)
+# and VictoriaLogs (logs). Applications send to 4317 (gRPC) or 4318 (HTTP/protobuf); see AddModulusOpenTelemetry (Otlp:Endpoint).
 receivers:
   otlp:
     protocols:
@@ -18,21 +18,22 @@ processors:
     timeout: 5s
 
 exporters:
-  otlp/tempo:
-    endpoint: tempo:4317
+  otlp/jaeger:
+    endpoint: jaeger:4317
     tls:
       insecure: true
   prometheusremotewrite:
     endpoint: http://prometheus:9090/api/v1/write
-  otlphttp/loki:
-    endpoint: http://loki:3100/otlp
+  # VictoriaLogs accepts OTLP logs at /insert/opentelemetry/v1/logs; the exporter appends /v1/logs to this base path.
+  otlphttp/victorialogs:
+    endpoint: http://victorialogs:9428/insert/opentelemetry
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp/tempo]
+      exporters: [otlp/jaeger]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch]
@@ -40,4 +41,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlphttp/loki]
+      exporters: [otlphttp/victorialogs]

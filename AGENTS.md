@@ -100,6 +100,7 @@ src/
                  Modulus.Tenancy.Lifecycle (+ .EntityFrameworkCore: tenant export, offboarding,
                  legal holds, retention, signed deletion certificates),
                  Modulus.Secrets.OpenBao (OpenBao/Vault KV v2 secret provider),
+                 Modulus.Secrets.AzureKeyVault (Azure Key Vault read path, DefaultAzureCredential; no writer),
                  Modulus.Media (+ .EntityFrameworkCore: validated uploads, tenant-scoped metadata),
                  Modulus.Localization.EntityFrameworkCore (runtime-edited translations),
                  Modulus.Notifications.EntityFrameworkCore (notification inbox + channel preferences).
@@ -1322,6 +1323,42 @@ runtimes by default (`build/Modulus.Test.props`); `-p:ModulusTestTfm=net8.0` nar
 
 Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to
 run), and among those pick the most capable one. Check the license before adding a `<PackageVersion>`.
+
+**Copyleft and source-available licenses are excluded** for anything the framework depends on or ships: SSPL, BSL and
+source-available tiers, and commercial enterprise licenses. **Exception (GPL-3.0), authorized by the repository owner:** the Netdata
+agent (`deploy/observability/backends/netdata/`) is GPL-3.0. It runs as a separate service, unmodified. Netdata Cloud and any
+enterprise component are excluded. Other GPL components still need a decision recorded here first.
+**Exception (AGPL-3.0), authorized by the repository owner:** AGPL-3.0
+components are allowed. The observability backend options in `deploy/observability/backends/` (OpenObserve open-source edition,
+the Grafana, Loki and Tempo image) are AGPL-3.0. They run as separate services, unmodified. If a modified AGPL component is offered
+to users over a network, its source must be offered to them too (AGPL section 13). This exception does not cover the enterprise
+editions of OpenObserve or SigNoz, which remain excluded. **Exception (MPL-2.0):** OpenBao (`Modulus.Secrets.OpenBao`, `deploy/openbao`) and OpenTofu are MPL-2.0. An
+unmodified server run as a separate service is allowed; a modified MPL file must be published under MPL. Adding any other MPL
+component needs a decision recorded here first.
+
+**Tools that run outside the product** (CI scanners, IaC tools, operator workstations) follow the same rule when they are part of
+the delivered process. Current choices:
+
+| Area | Choice | License | Excluded alternative and why |
+|---|---|---|---|
+| Traces | Jaeger v2 | Apache-2.0 | Grafana Tempo (AGPL-3.0) |
+| Logs | VictoriaLogs | Apache-2.0 | Grafana Loki (AGPL-3.0) |
+| Metrics | Prometheus | Apache-2.0 | (none) |
+| Telemetry routing | OpenTelemetry Collector (contrib) | Apache-2.0 | (none) |
+| Secret scanning | Gitleaks | MIT | (none) |
+| Vulnerability scanning | Trivy | Apache-2.0 | (none) |
+| Dependency updates | Dependabot | GitHub-native, free | Renovate (AGPL-3.0) |
+| Secrets | OpenBao (server) and Azure Key Vault (client) | MPL-2.0 (server), MIT (SDK) | (none) |
+| Self-hosted Git | Gitea (MIT) or Forgejo v8 (MIT) | MIT | Forgejo v9+ (GPL-3.0) |
+| Object storage | Cloud S3 through AWSSDK.S3 (Apache-2.0) | Apache-2.0 | MinIO and Garage (AGPL-3.0) |
+| Dashboards | None yet; Prometheus, Jaeger and VictoriaLogs have built-in UIs | — | Grafana OSS (AGPL-3.0) |
+| Log and time-series anomaly detection (option) | OpenSearch | Apache-2.0 | — |
+| Host and container anomaly detection (option) | Netdata agent | GPL-3.0 (approved, see above) | Netdata Cloud and enterprise |
+| Alternative all-in-one backend (option) | OpenObserve open-source edition | AGPL-3.0 (approved, see above) | OpenObserve enterprise (commercial) |
+| Alternative all-in-one backend (option) | Grafana, Loki, Tempo in one image | AGPL-3.0 (approved, see above) | — |
+
+Not adopted: Dokploy (its paid features are source-available), Kubernetes and Argo CD (the framework generates Compose only), and
+Cosign (the framework does not publish container images; NuGet signing uses the code-signing certificate, F-25).
 
 | Need | Package (license) | Not used |
 |------|-------------------|----------|
