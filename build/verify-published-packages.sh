@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Downloads every package in a directory from nuget.org and checks its signature with `dotnet nuget verify --all`.
+# Packages are not author-signed, so this checks the repository signature nuget.org adds to every package it accepts.
 # Usage: build/verify-published-packages.sh <packages-dir>
 # Indexing on nuget.org can lag the push, so a download is retried (PUBLISH_VERIFY_ATTEMPTS x PUBLISH_VERIFY_DELAY seconds).
 set -euo pipefail

@@ -48,8 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   handlers; no module declares any yet.
 - **Retention scheduling**: `TenantLifecycle:RetentionDriver` = `Scheduler` runs the retention sweep as a recurring job on the platform's
   scheduler (`TenantLifecycle:RetentionCron`, Quartz for a durable clustered schedule). `Worker` (default) keeps the lifecycle's own worker.
-- **Release signing**: `release.yml` signs and verifies packages and checks the published signatures. Needs a code-signing certificate
-  in CI secrets before the first signed release.
+- **Release signing**: packages are not author-signed (owner decision, 2026-11-18). `release.yml` no longer has a signing step or needs
+  a certificate; nuget.org adds its repository signature, the workflow attests build provenance and checks the published signatures.
 
 ### Changed
 - **Azure Blob presigned uploads** throw `NotSupportedException` (a SAS upload URL cannot limit the size). Upload through `UploadAsync`.

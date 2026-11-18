@@ -287,7 +287,7 @@ tracked as a checklist item, with file:line, fix and test, in
 [`docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan`](docs/DOCUMENTATION.md#production-readiness-review-findings-and-plan). Tick an item there when its fix lands.
 Completed plans are in `docs/DOCUMENTATION.md`, in the archive sections.
 
-The 2026-10-25 audit (tenancy, bulk operations, per-tenant databases, OpenBao, generated-command permissions, AI fail-open paths, release packaging) is a plan with a checkbox per finding (F-01 to F-30) in [`docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan`](docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan). 29 of 30 findings are fixed and ticked (re-checked 2026-11-09); only F-25 (signing with the commercial code-signing certificate, which the owner must obtain) is open.
+The 2026-10-25 audit (tenancy, bulk operations, per-tenant databases, OpenBao, generated-command permissions, AI fail-open paths, release packaging) is a plan with a checkbox per finding (F-01 to F-30) in [`docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan`](docs/DOCUMENTATION.md#production-readiness-audit-2026-10-25-findings-and-remediation-plan). 29 of 30 findings are fixed and ticked (re-checked 2026-11-09); F-25 (package signing) was closed on 2026-11-18 by owner decision: packages are not author-signed and nuget.org's repository signature applies.
 
 ## Earlier review findings (all fixed)
 
@@ -1303,7 +1303,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Still open:** the provider integration tests (PostgreSQL/SQL Server/MySQL/Mongo, incl. `AiEntitySourceProviderTests`), which need a working container runtime.
+- **Provider integration tests (run 2026-11-18, net10.0, Docker):** `Modulus.EFCore.Integration.Tests` 69/69 (PostgreSQL/SQL Server/MySQL, incl. `AiEntitySourceProviderTests`), `Modulus.Outbox.Integration.Tests` 3/3, `Modulus.Data.MongoDB.Tests` 21/21, `Modulus.Inbox.MongoDB.Tests` 11/11, `Modulus.Outbox.MongoDB.Tests` 8/8, Quartz 9/9, OpenBao 6/6, Storage.S3 6/6, Messaging Outbox.Npgsql 7/7, Sagas.PostgreSql 5/5, Analytics EF Core 8/8, ClickHouse 16/16, OpenLineage 2/2, `Modulus.Messaging.Integration.Tests` 6/6, PostgreSQL transport 36/36, RabbitMQ transport 28/28, Search 2/2, Storage.GoogleCloud 4/4, Analytics.Providers 3/3. Under Docker a stopped container gets a new random host port when it starts again, so fixtures that restart a container (`PostgreSqlBroker`, `RabbitMqBroker`) pin a per-fixture host port. **Not re-run:** Messaging.Chaos, Observability.Stack, Cli.Integration (needs the `modulus-ui` feed and a full pack), and the net8.0 runs.
 - **Decided not to build:**
   - **AOT beyond `Modulus.Core` and `Modulus.Outbox.Abstractions`** (the only packages with `IsAotCompatible`). `Modulus.Mediator` closes generic handler and behavior types at runtime (open-generic `IPipelineBehavior<,>` through DI) and its behaviors use EF Core and reflection. A source generator would not fix that, and EF Core model building, MVC and OpenIddict are not AOT-ready either. Probed 2026-10-09: 10 IL2026/IL3050 errors in the mediator alone.
   - **GraphQL subscriptions.** They need WebSockets (off on purpose); Realtime (SSE / SignalR) already pushes integration events with the same auth and tenant rules.
@@ -1366,7 +1366,7 @@ the delivered process. Current choices:
 | Alternative all-in-one backend (option) | Grafana, Loki, Tempo in one image | AGPL-3.0 (approved, see above) | — |
 
 Not adopted: Dokploy (its paid features are source-available), Kubernetes and Argo CD (the framework generates Compose only), and
-Cosign (the framework does not publish container images; NuGet signing uses the code-signing certificate, F-25).
+Cosign (the framework does not publish container images; packages are not author-signed by owner decision, F-25).
 
 | Need | Package (license) | Not used |
 |------|-------------------|----------|
