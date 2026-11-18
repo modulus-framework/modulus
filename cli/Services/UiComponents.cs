@@ -7,11 +7,25 @@ internal sealed record UiComponent(string Key, string Category, string Descripti
     public string PascalName => string.Concat(Key.Split('-').Select(w => char.ToUpperInvariant(w[0]) + w[1..]));
 
     /// <summary>Whether the package has a template for this component in the engine. A null <see cref="Engines"/> means every engine.</summary>
-    public bool Supports(string engine) => Engines is null || Engines.Contains(engine);
+    public bool Supports(string engine) =>
+        engine == "fluid" ? UiComponents.FluidKeys.Contains(Key) : Engines is null || Engines.Contains(engine);
+
+    /// <summary>The engines the package has this component for.</summary>
+    public IReadOnlyList<string> SupportedEngines => UiScaffold.Engines.Where(Supports).ToList();
 }
 
 internal static class UiComponents
 {
+    /// <summary>
+    /// The components the package ships as Liquid for Fluid (templates/fluid/{key}.liquid). The Fluid set is small: the other
+    /// components are Razor tag helpers or Blazor components, which a Liquid host cannot render.
+    /// </summary>
+    public static readonly IReadOnlySet<string> FluidKeys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "alert", "avatar", "badge", "breadcrumb", "button", "card", "descriptions", "divider", "empty-state", "list", "page-header",
+        "pagination", "progress", "result", "skeleton", "spinner", "statistic", "status-badge", "steps", "tag", "timeline",
+    };
+
     public static readonly IReadOnlyList<UiComponent> All =
     [
         new("auto-complete", "Inputs", "A text field that suggests values while you type."),

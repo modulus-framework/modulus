@@ -39,7 +39,7 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
         {
             if (s.List)
             {
-                Ux.Result = new { components = UiComponents.All.Select(c => new { name = c.Key, category = c.Category, description = c.Description }) };
+                Ux.Result = new { components = UiComponents.All.Select(c => new { name = c.Key, category = c.Category, description = c.Description, engines = c.SupportedEngines }) };
                 if (Ux.Json) return 0;
 
                 var table = new Table().Border(TableBorder.Minimal)
@@ -80,7 +80,7 @@ internal sealed class UiAddComponentCommand : Command<UiAddComponentCommand.Sett
                 {
                     if (s.All) { notForEngine.Add(component.Key); continue; }
                     throw new InvalidOperationException(
-                        $"{component.Key} is not available for {engine}. It is for: {string.Join(", ", component.Engines!)}. Use --engine {component.Engines![0]} or another component.");
+                        $"{component.Key} is not available for {engine}. It is for: {string.Join(", ", component.SupportedEngines)}. Use --engine {component.SupportedEngines[0]} or another component.");
                 }
                 var file = UiScaffold.TemplateFile(templates, engine, component.Key);
                 if (file is null)

@@ -98,12 +98,21 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
             else if (engine == "mvc")
             {
                 // Create and Edit share _Form; the controller routes /new and /edit to their own views.
-                var views = Path.Combine(uiDir, "Views", plural);
+                var views = UiLayout.MvcViewsFolder(uiDir, moduleName, plural);
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-index") ?? throw Missing(engine), Path.Combine(views, "Index.cshtml"), true));
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-create") ?? throw Missing(engine), Path.Combine(views, "Create.cshtml"), true));
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-edit") ?? throw Missing(engine), Path.Combine(views, "Edit.cshtml"), true));
                 pages.Add((UiScaffold.TemplateFile(templates, engine, "crud-form") ?? throw Missing(engine), Path.Combine(views, "_Form.cshtml"), true));
                 pages.Add(("ui/CrudController", UiLayout.ControllerFile(uiDir, moduleName, plural), false));
+                pages.Add(("ui/CrudMvcViewModels", UiLayout.MvcViewModelsFile(uiDir, moduleName, entity), false));
+                // The area's own imports and layout, written once per module and then left alone.
+                var area = UiLayout.MvcArea(uiDir, moduleName);
+                foreach (var (template, name) in new[] { ("ui/MvcAreaViewImports", "_ViewImports.cshtml"), ("ui/MvcAreaViewStart", "_ViewStart.cshtml") })
+                {
+                    var file = Path.Combine(area, "Views", name);
+                    if (!File.Exists(file))
+                        pages.Add((template, file, false));
+                }
             }
             else if (engine == "blazor")
             {
@@ -137,9 +146,11 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
                     $"Already present: {string.Join(", ", existing.Select(f => Path.GetRelativePath(start, f)))}. Pass --force to overwrite.");
 
             var renderer = new TemplateEngine();
-            foreach (var (source, target, _) in pages)
+            foreach (var (source, target, package) in pages)
             {
                 renderer.RenderToFile(source, model, target);
+                if (engine == "mvc" && package && File.Exists(target))
+                    MoveViewModelReference(target, uiNamespace, moduleName, plural, entity);
                 Ux.Success("Page added", Path.GetRelativePath(start, target));
             }
             foreach (var (target, text) in fluidPages)
@@ -172,6 +183,20 @@ internal sealed class UiCreateCrudCommand : Command<UiCreateCrudCommand.Settings
             Ux.Info($"The pages are at /{route}. They call /api/{moduleName.ToLowerInvariant()}/{route} on the API ({entity}'s endpoints from `modulus generate-crud`); set Api:BaseUrl in the Web project's appsettings.json.");
             return 0;
         });
+    }
+
+    /// <summary>
+    /// The package's MVC views name their model as a type nested in the controller; the controller's view models live in the module's area
+    /// (<c>Areas/{Module}/Models</c>), so the <c>@model</c> line is pointed there.
+    /// </summary>
+    private static void MoveViewModelReference(string view, string uiNamespace, string module, string plural, string entity)
+    {
+        var text = File.ReadAllText(view);
+        var old = $"{uiNamespace}.Controllers.{module}.{plural}Controller.";
+        var updated = text.Replace(old + "IndexViewModel", $"{uiNamespace}.Areas.{module}.Models.{entity}IndexViewModel", StringComparison.Ordinal)
+            .Replace(old + "EditViewModel", $"{uiNamespace}.Areas.{module}.Models.{entity}EditViewModel", StringComparison.Ordinal);
+        if (!ReferenceEquals(text, updated) && updated != text)
+            File.WriteAllText(view, updated);
     }
 
     private static void WireHost(ModuleDiscovery.AppInventory inventory, string uiProject, string uiDir, string uiNamespace,

@@ -6,31 +6,33 @@ using Microsoft.Extensions.DependencyInjection;
 using Modulus.Bff;
 using Modulus.Core.Abstractions.Security;
 using Modulus.Platform.Http;
+using {{ namespace }}.Security;
 
 namespace {{ namespace }};
 
 /// <summary>
 /// The pages of the Modulus UI package call the identity endpoints (<c>/account/*</c>) and the permission endpoints
 /// (<c>/authorization/*</c>) on their own host. On a split app those live in the API host, so this controller forwards
-/// the calls there with the signed-in user's token from the BFF session. The API still decides what the caller may do.
+/// the calls there. Signed-in calls go through the BFF (its <c>/account</c> and <c>/authorization</c> routes), which adds the session's
+/// access token; the two recovery calls are anonymous and go straight to the API. The API still decides what the caller may do.
 /// Password recovery is open to anonymous callers on purpose; those two routes are listed in Security/loosening-allowlist.json.
 /// The pages send no antiforgery token, so the cross-site check is the browser's Fetch Metadata header instead: a request from
 /// another site is refused, and the session cookie is SameSite=Lax.
 /// </summary>
 [Authorize]
 [IgnoreAntiforgeryToken]
-public sealed class IdentityApiProxyController(IdentityApiClient api) : Controller
+public sealed class IdentityApiProxyController(IdentityApiClient api, IdentityAnonymousApiClient anonymousApi) : Controller
 {
     [AllowAnonymous, Loosened("Password recovery pages are open to anonymous callers; the API checks the token and the account")]
     [HttpPost("account/forgot-password")]
     [HttpPost("account/reset-password")]
-    public Task<IActionResult> Recovery(CancellationToken ct) => ForwardAsync(ct);
+    public Task<IActionResult> Recovery(CancellationToken ct) => ForwardAsync(anonymousApi.SendAsync, ct);
 
     [Route("account/{**path}")]
     [Route("authorization/{**path}")]
-    public Task<IActionResult> Forward(string path, CancellationToken ct) => ForwardAsync(ct);
+    public Task<IActionResult> Forward(string path, CancellationToken ct) => ForwardAsync(api.SendAsync, ct);
 
-    private async Task<IActionResult> ForwardAsync(CancellationToken ct)
+    private async Task<IActionResult> ForwardAsync(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send, CancellationToken ct)
     {
         // A browser sends Sec-Fetch-Site on every request. Without it, a request that carries the session cookie is an older browser or a
         // forged form, so it is refused; a request with no cookie (a non-browser client) is still allowed.
@@ -49,7 +51,7 @@ public sealed class IdentityApiProxyController(IdentityApiClient api) : Controll
                 request.Content.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
         }
 
-        using var response = await api.SendAsync(request, ct);
+        using var response = await send(request, ct);
         var body = await response.Content.ReadAsByteArrayAsync(ct);
         return new ContentResult
         {
@@ -60,8 +62,24 @@ public sealed class IdentityApiProxyController(IdentityApiClient api) : Controll
     }
 }
 
-/// <summary>Sends the forwarded calls to the API host (<c>Api:BaseUrl</c>), with the caller's token.</summary>
+/// <summary>Sends the signed-in calls through the BFF (<c>Bff:BaseUrl</c>), which forwards them to the API with the session's token.</summary>
 public sealed class IdentityApiClient(HttpClient http, IConfiguration configuration)
+{
+    private readonly HttpClient _http = Configure(http, configuration);
+
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        => _http.SendAsync(request, ct);
+
+    private static HttpClient Configure(HttpClient http, IConfiguration configuration)
+    {
+        var baseUrl = configuration["Bff:BaseUrl"] ?? configuration["Api:BaseUrl"] ?? "http://localhost:5180";
+        http.BaseAddress = new Uri($"{baseUrl.TrimEnd('/')}/");
+        return http;
+    }
+}
+
+/// <summary>Sends the anonymous recovery calls straight to the API host (<c>Api:BaseUrl</c>); they carry no token.</summary>
+public sealed class IdentityAnonymousApiClient(HttpClient http, IConfiguration configuration)
 {
     private readonly HttpClient _http = Configure(http, configuration);
 
@@ -76,13 +94,13 @@ public sealed class IdentityApiClient(HttpClient http, IConfiguration configurat
     }
 }
 
-/// <summary>Registers the forwarding client; add it once in Program.cs (idempotent scaffolds check for it).</summary>
+/// <summary>Registers the forwarding clients; add it once in Program.cs (idempotent scaffolds check for it).</summary>
 public static class IdentityApiProxyExtensions
 {
     public static IServiceCollection AddIdentityApiProxy(this IServiceCollection services)
     {
-        // The forwarded routes are the anonymous account recovery pages, so the client carries no token.
-        services.AddModulusHttpClient<IdentityApiClient>();
+        services.AddBffGatewayClient<IdentityApiClient>();
+        services.AddModulusHttpClient<IdentityAnonymousApiClient>();
         return services;
     }
 }

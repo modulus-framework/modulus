@@ -8,7 +8,7 @@ internal sealed class UiAddAuthCommand : Command<UiAddAuthCommand.Settings>
 {
     internal sealed class Settings : ModulusSettings
     {
-        [Description("UI engine: mvc, razor-pages or blazor (default: the one recorded in .modulus.json)")]
+        [Description("UI engine: mvc, razor-pages, blazor or fluid (default: the one recorded in .modulus.json)")]
         [CommandOption("--engine")]
         public string? Engine { get; init; }
 
@@ -20,9 +20,15 @@ internal sealed class UiAddAuthCommand : Command<UiAddAuthCommand.Settings>
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() => UiPageScaffold.Run(
+        return CommandRunner.Run(() => IsFluid(s) ? UiFluidAuth.Run(s.Output) : UiPageScaffold.Run(
             UiPageScaffold.Recovery, "ui/AuthRecoveryController", "AuthRecoveryController.cs", s.Engine, s.Output, "password recovery pages",
             callsApi: true, anonymous: true, requiresSignIn: true));
+    }
+
+    private static bool IsFluid(Settings s)
+    {
+        var inventory = ModuleDiscovery.Inventory(Path.GetFullPath(s.Output ?? "./"));
+        return inventory is not null && UiScaffold.ResolveEngine(s.Engine, inventory.SolutionDir) == "fluid";
     }
 }
 
@@ -30,7 +36,7 @@ internal sealed class UiAdd2FaCommand : Command<UiAdd2FaCommand.Settings>
 {
     internal sealed class Settings : ModulusSettings
     {
-        [Description("UI engine: mvc, razor-pages or blazor (default: the one recorded in .modulus.json)")]
+        [Description("UI engine: mvc, razor-pages, blazor or fluid (default: the one recorded in .modulus.json)")]
         [CommandOption("--engine")]
         public string? Engine { get; init; }
 
@@ -52,7 +58,7 @@ internal sealed class UiAddSessionManagerCommand : Command<UiAddSessionManagerCo
 {
     internal sealed class Settings : ModulusSettings
     {
-        [Description("UI engine: mvc, razor-pages or blazor (default: the one recorded in .modulus.json)")]
+        [Description("UI engine: mvc, razor-pages, blazor or fluid (default: the one recorded in .modulus.json)")]
         [CommandOption("--engine")]
         public string? Engine { get; init; }
 

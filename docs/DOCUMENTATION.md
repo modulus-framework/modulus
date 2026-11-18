@@ -953,9 +953,8 @@ These need a platform BRS decision first (Architecture §20). Modulus will follo
 Everything still open, by owner. 6a–6d are built (2026-10-04). The items below are not started.
 
 **Waiting on the UI change**
-- [ ] `Modulus.UI.AI`: the assistant host, as designed under 6c (session endpoint, slot contributor, `ai:use`
-  gate, `Ai` feature flag, a CLI wiring step).
-- [ ] Verification step 3: a web app shows the assistant, and its session endpoint refuses anonymous callers.
+- [x] The assistant host, as designed under 6c: built as `modulus ui add-assistant` in the CLI (session endpoint, layout partial, `ai:use`, `Ai:Host` settings; Razor Pages and MVC; Blazor and Fluid hosts are not generated).
+- [~] Verification step 3 (checked 2026-11-17): the generated `POST /ai/session` endpoint, run in a scratch host with a stub platform, answers 404 when `Ai:Host:Enabled` is false, 401 to an anonymous caller, 403 to a signed-in user without `ai:use`, 200 with it and 502 when the platform refuses the key. Not checked: the partial rendering in a browser on a generated web app, and the endpoint inside a generated `webapp+api` app.
 
 **Waiting on the platform**
 - [ ] Run the platform's `AiPlatform.Integrations.Conformance` suite against a generated app before activation (6d).
@@ -975,7 +974,7 @@ Everything still open, by owner. 6a–6d are built (2026-10-04). The items below
 - [x] Per-user masking of `[PersonalInformation]`/`[ProtectedPersonalData]` fields: opt in with `Ai:Connector:MaskPersonalInformation` (Restricted clearance of the field-security profile; fail closed without one).
 - [x] Composite keys for `[AiIndexed]` entities (`AiCompositeKey`; up to 4 columns). Store-generated keys stay unsupported by design: the id is unknown when the journal row is written in the same save, so keys are generated on the client.
 - [x] At-least-once change hints while the process lives (a refused hint is resent on the next check; `/changes` polling remains the safety net across restarts).
-- [~] Aggregate, search, date-filter, keyset-paging and composite-key shapes on PostgreSQL, SQL Server and MySQL: `AiEntitySourceProviderTests` (`tests/integration/Modulus.EFCore.Integration.Tests`, `Category=Integration`) is written and compiles, but has **not been run yet** (no working container runtime when it was written); run it with `DOCKER_HOST=... dotnet test --filter AiEntitySource` and fix any provider-specific translation failure it finds.
+- [x] Aggregate, search, date-filter, keyset-paging and composite-key shapes on PostgreSQL and MySQL: `AiEntitySourceProviderTests` (`tests/integration/Modulus.EFCore.Integration.Tests`) passed 6/6 on PostgreSQL 16 and 6/6 on MySQL 8.4 (2026-11-17, containers started with `podman run`; the Testcontainers readiness `exec` wait times out on this rootless Podman). SQL Server was not run (proprietary, excluded by the open-source-only policy; the SQL Server class needs `sqlcmd`).
 - [x] A timeout-as-deny check in the conformance kit (`AiConformanceOptions.SlowCapability`, category `TimeoutIsDeny`).
 - [ ] `generate-crud --ai` on an older CRUD set and the `ai_changes` migration stay manual steps (`add-ai` prints them).
 
@@ -1924,7 +1923,12 @@ Seven libraries plus `Synvro.Modulus.Ui.Templates`, all at 0.9.0, all from `E:\P
 ### Assumptions and open questions
 
 - `samples/` is out of scope and keeps its current UI 1.4.0 references.
-- The Fluid web host is supported with `--auth none` (`modulus app --ui-engine fluid --auth none`). It has no sign-in pages yet, so `--auth` other than `none` is refused (modulus-ui open task 6).
+- The Fluid web host is supported with every `--auth` (`modulus app --ui-engine fluid --auth openiddict`): the sign-in page is Liquid (`/auth/login`, `AuthEndpoints.Fluid.sbn`) and signs in through the BFF. Verified 2026-11-17: a generated Fluid + openiddict app builds 0/0 and its 16 generated tests pass (landing, 404, login page, Web→BFF→API sign-in).
+- `modulus ui` on a Fluid host (verified 2026-11-17 on generated apps): `add-admin`, `create-crud`, `create-dashboard`, `add-assistant`, `audit` and `add-component` work; `add-auth` adds the forgot/reset-password pages (`Endpoints/AccountRecoveryEndpoints.cs`, `/ResetPassword` as the API's email link). `add-2fa`, `add-session-manager`, `add-chart`, `create-permission-matrix` and `create-form-from-entity` have no Liquid page and say so (use mvc, razor-pages or blazor). `add-component` offers only the 21 Liquid components. On mvc, razor-pages and blazor every `ui` command ran and the app builds 0/0 (`add-assistant` is refused for blazor).
+- MVC host structure (2026-11-18, verified on a generated `webapp+api --ui-engine mvc` app, 19/19 tests, also with `add-search`, `add-jobs`, `add-storage`, `add-keyvault`, `ui add-admin`, `add-auth`, `add-2fa`, `add-session-manager`, `create-module-home`): the account pages are the `Account` area (controllers, view models, views), the error page a controller, and each business module an area written by `ui create-crud`; no Razor Pages are registered. See *Generated layout* in AGENTS.md.
+- New commands: `add-search`, `add-storage`, `add-jobs`, `add-keyvault` (one optional package each, idempotent) and `ui create-module-home <Module>` (the last template of the UI package that no command used). Found on the way and fixed: `AddQuartzJobScheduler` kept the first host's disposed logger factory in Quartz's static log provider, so a second host in the same process (parallel test hosts) failed to start.
+- Also added: `add-media`, `add-notifications`, `add-localization` (store module with its own context; `migrate add` verified). Session manager and 2FA pages on a split app now reach `/account/*` through the web BFF (`RemoteApis` `/account` and `/authorization`; the proxy's signed-in client uses the BFF gateway, recovery stays anonymous): verified `GET /account/sessions` returns 200 for a signed-in user. `UiTemplatePackage.DefaultVersion` is 2.1.0.
+- Not yet commands: SCIM, LDAP and SAML (they need a configured directory or identity provider) and the SignalR backplane. Fluid has no session or 2FA Liquid page yet.
 - Blazor web hosts stay unsupported, because modulus-ui itself has no app host for them yet.
 - Backward compatibility: apps already wired in the host keep working.
 - The framework seams in Part A touch `src/` and need their own review and PublicAPI updates.

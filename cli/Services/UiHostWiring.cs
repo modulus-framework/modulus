@@ -90,7 +90,12 @@ internal static class UiHostWiring
 
         if (!HostSource(programPath).Contains("AddIdentityApiProxy("))
         {
-            File.WriteAllText(programPath, InsertBefore(File.ReadAllText(programPath), "var app = builder.Build();", "builder.Services.AddIdentityApiProxy();"));
+            var program = InsertBefore(File.ReadAllText(programPath), "var app = builder.Build();", "builder.Services.AddIdentityApiProxy();");
+            // The extension lives in the project's root namespace, which Program.cs (top-level statements) does not import by itself.
+            var rootUsing = $"using {rootNamespace};";
+            if (!program.Contains(rootUsing, StringComparison.Ordinal))
+                program = rootUsing + (program.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n") + program;
+            File.WriteAllText(programPath, program);
             changed.Add("AddIdentityApiProxy()");
         }
 
@@ -99,7 +104,31 @@ internal static class UiHostWiring
         if (allowlist is not null && AddAllowlistEntries(allowlist))
             changed.Add(Path.GetRelativePath(webDir, allowlist).Replace('\\', '/'));
 
+        // The signed-in calls go through the web BFF, which forwards only the routes its client lists.
+        foreach (var bff in BffApiClients.Discover(Path.GetFullPath(Path.Combine(webDir, "..", ".."))).Where(b => b.Client == "web"))
+            if (File.Exists(bff.AppSettings) && EnsureBffAccountRoutes(bff.AppSettings))
+                changed.Add($"{bff.ProjectName}/appsettings.json (RemoteApis /account, /authorization)");
+
         return changed;
+    }
+
+    /// <summary>
+    /// Adds the <c>/account</c> and <c>/authorization</c> routes to a web BFF's <c>RemoteApis</c> (to the <c>api</c> service), so the identity and permission
+    /// endpoints are reachable with the session's token. The file is edited as text; true when it changed.
+    /// </summary>
+    internal static bool EnsureBffAccountRoutes(string appSettingsPath)
+    {
+        var text = File.ReadAllText(appSettingsPath);
+        var remote = text.IndexOf("\"RemoteApis\"", StringComparison.Ordinal);
+        if (remote < 0 || text.Contains("\"LocalPath\": \"/account\"", StringComparison.Ordinal))
+            return false;
+        var open = text.IndexOf('[', remote);
+        if (open < 0)
+            return false;
+        var nl = text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        var entries = "{ \"LocalPath\": \"/account\", \"Service\": \"api\" }," + nl + "          { \"LocalPath\": \"/authorization\", \"Service\": \"api\" },";
+        File.WriteAllText(appSettingsPath, text.Insert(open + 1, nl + "          " + entries));
+        return true;
     }
 
     /// <summary>
@@ -177,7 +206,7 @@ internal static class UiHostWiring
     /// The Web host's wiring: Program.cs and the setup files it composes, so a line already present in any of them is not added
     /// twice. Controllers and pages are left out, because their comments may name a registration. Lines are only inserted into Program.cs.
     /// </summary>
-    private static string HostSource(string programPath)
+    internal static string HostSource(string programPath)
     {
         var root = Path.GetDirectoryName(programPath)!;
         var setupFiles = Directory.EnumerateDirectories(root)

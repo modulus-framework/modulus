@@ -160,16 +160,19 @@ public sealed class UiCrudTests : IDisposable
         Run("ui", "create-crud", "Order", "--engine", "mvc").Should().Be(0);
 
         foreach (var file in new[] { "Index.cshtml", "Create.cshtml", "Edit.cshtml", "_Form.cshtml" })
-            File.Exists(P("Views", "Orders", file)).Should().BeTrue(file);
-        File.ReadAllText(P("Views", "Orders", "Index.cshtml")).Should().Contain("href=\"/orders/new\"");
-        File.ReadAllText(P("Views", "Orders", "Create.cshtml")).Should().Contain("<partial name=\"_Form\"");
-        File.ReadAllText(P("Views", "Orders", "Edit.cshtml")).Should().Contain("<partial name=\"_Form\"");
-        File.ReadAllText(P("Views", "Orders", "_Form.cshtml")).Should().Contain("asp-antiforgery=\"true\"");
+            File.Exists(P("Areas", "Orders", "Views", "Orders", file)).Should().BeTrue(file);
+        File.ReadAllText(P("Areas", "Orders", "Views", "Orders", "Index.cshtml")).Should().Contain("href=\"/orders/new\"");
+        File.ReadAllText(P("Areas", "Orders", "Views", "Orders", "Create.cshtml")).Should().Contain("<partial name=\"_Form\"");
+        File.ReadAllText(P("Areas", "Orders", "Views", "Orders", "Edit.cshtml")).Should().Contain("<partial name=\"_Form\"");
+        File.ReadAllText(P("Areas", "Orders", "Views", "Orders", "_Form.cshtml")).Should().Contain("asp-antiforgery=\"true\"");
 
-        var controller = File.ReadAllText(P("Controllers", "Orders", "OrdersController.cs"));
+        var controller = File.ReadAllText(P("Areas", "Orders", "Controllers", "OrdersController.cs"));
         controller.Should().Contain("[HttpGet(\"/orders/new\")]").And.Contain("[HttpPost(\"/orders/new\")]")
             .And.Contain("View(\"Create\"").And.Contain("[HttpPost(\"/orders/edit\")]")
-            .And.Contain("Redirect(\"/orders/new\")");
+            .And.Contain("Redirect(\"/orders/new\")").And.Contain("[Area(\"Orders\")]");
+        File.ReadAllText(P("Areas", "Orders", "Models", "OrderViewModels.cs")).Should().Contain("class OrderEditViewModel");
+        File.ReadAllText(P("Areas", "Orders", "Views", "Orders", "Index.cshtml")).Should().Contain(".Areas.Orders.Models.OrderIndexViewModel");
+        File.Exists(P("Areas", "Orders", "Views", "_ViewImports.cshtml")).Should().BeTrue();
     }
 
     [Fact]

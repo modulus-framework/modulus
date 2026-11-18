@@ -42,7 +42,10 @@ internal sealed class UiAddI18nCommand : Command<UiAddI18nCommand.Settings>
             var programPath = inventory.UiProgramCsPath;
             string? program = null;
             if (programPath.Length > 0 && File.Exists(programPath))
-                program = UiI18n.EnsureLocalization(File.ReadAllText(programPath));
+                // The call may already live in a setup file the host composes (Middleware/PipelineSetup.cs).
+                program = UiHostWiring.HostSource(programPath).Contains("UseModulusLocalization", StringComparison.Ordinal)
+                    ? File.ReadAllText(programPath)
+                    : UiI18n.EnsureLocalization(File.ReadAllText(programPath));
 
             Ux.WriteFile(settingsPath, settings);
             Ux.Success($"Languages set: {string.Join(", ", cultures)}", "appsettings.json: Modulus:Theme:Cultures");

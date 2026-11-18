@@ -1,12 +1,13 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using {{ module_namespace }}.Application.Dtos;
+using {{ ui_namespace }}.Areas.{{ module_name }}.Models;
 using {{ ui_namespace }}.Services.ApiClients;
 
-namespace {{ ui_namespace }}.Controllers.{{ module_name }};
+namespace {{ ui_namespace }}.Areas.{{ module_name }}.Controllers;
 
-/// <summary>Lists, creates, edits and deletes {{ entity_name }}s through the {{ module_name }} API. Views: Views/{{ entity_name_plural }}.</summary>
+/// <summary>Lists, creates, edits and deletes {{ entity_name }}s through the {{ module_name }} API. Views: Areas/{{ module_name }}/Views/{{ entity_name_plural }}; view models: Areas/{{ module_name }}/Models.</summary>
+[Area("{{ module_name }}")]
 {{ if use_auth }}[Authorize]
 {{ end }}public class {{ entity_name_plural }}Controller({{ entity_name }}ApiClient api) : Controller
 {
@@ -15,7 +16,7 @@ namespace {{ ui_namespace }}.Controllers.{{ module_name }};
     [HttpGet("/{{ route }}")]
     public async Task<IActionResult> Index([FromQuery(Name = "p")] int page, CancellationToken ct)
     {
-        var model = new IndexViewModel { PageNumber = Math.Max(1, page) };
+        var model = new {{ entity_name }}IndexViewModel { PageNumber = Math.Max(1, page) };
         model.Message = TempData["Message"] as string;
         model.Failed = TempData["Failed"] is true;
         try
@@ -50,10 +51,10 @@ namespace {{ ui_namespace }}.Controllers.{{ module_name }};
     }
 
     [HttpGet("/{{ route }}/new")]
-    public IActionResult New() => View("Create", new EditViewModel());
+    public IActionResult New() => View("Create", new {{ entity_name }}EditViewModel());
 
     [HttpPost("/{{ route }}/new")]
-    public async Task<IActionResult> Create(EditViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Create({{ entity_name }}EditViewModel model, CancellationToken ct)
     {
         if (!ModelState.IsValid)
             return View("Create", model);
@@ -87,11 +88,11 @@ namespace {{ ui_namespace }}.Controllers.{{ module_name }};
         if (existing is null)
             return NotFound();
 
-        return View("Edit", new EditViewModel { Input = new InputModel { Id = existing.Id, Name = existing.Name } });
+        return View("Edit", new {{ entity_name }}EditViewModel { Input = new {{ entity_name }}InputModel { Id = existing.Id, Name = existing.Name } });
     }
 
     [HttpPost("/{{ route }}/edit")]
-    public async Task<IActionResult> Update(EditViewModel model, CancellationToken ct)
+    public async Task<IActionResult> Update({{ entity_name }}EditViewModel model, CancellationToken ct)
     {
         if (model.IsNew)
             return Redirect("/{{ route }}/new");
@@ -116,36 +117,5 @@ namespace {{ ui_namespace }}.Controllers.{{ module_name }};
 
         TempData["Message"] = "Saved.";
         return Redirect("/{{ route }}");
-    }
-
-    public sealed class IndexViewModel
-    {
-        public IReadOnlyList<{{ entity_name }}Dto> Items { get; set; } = [];
-
-        /// <summary>1-based page number (query string <c>p</c>).</summary>
-        public int PageNumber { get; set; } = 1;
-
-        /// <summary>A full page means there may be another one; the API does not report a total.</summary>
-        public bool HasNext { get; set; }
-
-        public string? Message { get; set; }
-
-        public bool Failed { get; set; }
-    }
-
-    /// <summary>Shared by the create and edit pages: the form posts back to the page it is on.</summary>
-    public sealed class EditViewModel
-    {
-        public InputModel Input { get; set; } = new();
-
-        public bool IsNew => Input.Id == Guid.Empty;
-    }
-
-    public sealed class InputModel
-    {
-        public Guid Id { get; set; }
-
-        [Required, StringLength(200)]
-        public string Name { get; set; } = string.Empty;
     }
 }

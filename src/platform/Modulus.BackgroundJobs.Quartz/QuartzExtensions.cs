@@ -32,7 +32,13 @@ public static class QuartzExtensions
             configureQuartz?.Invoke(q);
         });
 
-        services.AddHostedService<QuartzHostedService>();
+        // Quartz keeps its log provider in a static. Point it at this host's logger factory before the scheduler is built, or a second host
+        // in the same process (parallel test hosts) keeps the first host's disposed factory and fails to start.
+        services.AddHostedService(sp =>
+        {
+            global::Quartz.Logging.LogContext.SetCurrentLogProvider(sp.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>());
+            return ActivatorUtilities.CreateInstance<QuartzHostedService>(sp);
+        });
         services.AddScoped<IJobScheduler, QuartzJobScheduler>();
 
         return services;

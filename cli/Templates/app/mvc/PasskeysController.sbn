@@ -1,0 +1,55 @@
+using System.Net;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Areas.Account.Controllers;
+
+/// <summary>
+/// Adds, lists and removes the signed-in person's passkeys. The browser runs the WebAuthn ceremony (passkeys.js); these actions relay each
+/// step to the API, which does the checks and stores the result. A sign-in is required here and the API refuses anyone without it as well.
+/// </summary>
+[Area("Account")]
+[Route("Passkeys")]
+[Authorize]
+[AutoValidateAntiforgeryToken]
+public sealed class PasskeysController(PasskeyApiClient passkeys) : Controller
+{
+    [HttpGet("")]
+    public IActionResult Index() => View();
+
+    [HttpGet("List")]
+    public Task<IActionResult> List(CancellationToken ct) => Relay(passkeys.ListAsync(ct));
+
+    [HttpPost("Begin")]
+    public Task<IActionResult> Begin(CancellationToken ct) => Relay(passkeys.BeginRegistrationAsync(ct));
+
+    [HttpPost("Complete")]
+    public async Task<IActionResult> Complete(CancellationToken ct)
+    {
+        using var reader = new StreamReader(Request.Body);
+        return await Relay(passkeys.CompleteRegistrationAsync(await reader.ReadToEndAsync(ct), ct));
+    }
+
+    [HttpPost("Remove")]
+    public Task<IActionResult> Remove(Guid id, CancellationToken ct) => Relay(passkeys.RemoveAsync(id, ct));
+
+    private async Task<IActionResult> Relay(Task<HttpResponseMessage> call)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+            return Unauthorized();
+
+        using var response = await call;
+        if (response.StatusCode == HttpStatusCode.NoContent)
+            return new StatusCodeResult(StatusCodes.Status204NoContent);
+
+        var body = await response.Content.ReadAsStringAsync();
+        return new ContentResult
+        {
+            StatusCode = (int)response.StatusCode,
+            ContentType = "application/json",
+            Content = string.IsNullOrEmpty(body) ? "null" : body,
+        };
+    }
+}

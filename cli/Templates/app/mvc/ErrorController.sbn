@@ -1,0 +1,24 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Modulus.Core.Abstractions.Security;
+using {{ root_namespace }}.Web.Models;
+
+namespace {{ root_namespace }}.Web.Controllers;
+
+/// <summary>
+/// The error page: a status code (404, 403, 500 ...) re-runs this action with the code in the route (<c>/Error/404</c>), so every error reads
+/// the same way. Anonymous, because a 404 for a signed-out visitor must not turn into a sign-in redirect.
+/// </summary>
+[AllowAnonymous]
+[Loosened("The error page is shown to every visitor", Framework = true)]
+[IgnoreAntiforgeryToken]
+public sealed class ErrorController : Controller
+{
+    [AcceptVerbs("GET", "POST")]
+    [Route("Error/{code:int?}")]
+    public IActionResult Index(int? code)
+    {
+        var status = code ?? (Response.StatusCode >= StatusCodes.Status400BadRequest ? Response.StatusCode : StatusCodes.Status500InternalServerError);
+        return View(ErrorViewModel.For(status));
+    }
+}

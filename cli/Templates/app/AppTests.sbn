@@ -191,7 +191,32 @@ internal static class Companies
 public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}> factory)
     : IClassFixture<ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}>>
 {
-{{ if use_auth }}    [Fact]
+{{ if ui_engine == "fluid" }}    // The Liquid host serves its landing page and every page under Templates/ to anyone (a page that needs a user checks it itself),
+    // so there is no anonymous challenge on "/": the sign-in page and an unknown path are what the host answers on its own.
+    [Fact]
+    public async Task Landing_page_is_served()
+    {
+        var response = await factory.CreateClient().GetAsync("/");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Unknown_pages_are_not_found()
+    {
+        var response = await factory.CreateClient().GetAsync("/no-such-page-" + Guid.NewGuid().ToString("N"));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+{{ if use_auth }}
+    [Fact]
+    public async Task LoginPage_IsAnonymous()
+    {
+        var response = await factory.CreateClient().GetAsync("/auth/login");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+{{ end }}{{ else if use_auth }}    [Fact]
     public async Task Root_ChallengesAnonymousCallers()
     {
         var client = factory.CreateClient();
@@ -299,13 +324,13 @@ public sealed class WebToApiLoginTests
 
         var rejected = await SubmitLoginAsync(client, AdminEmail, "not-the-password");
         Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
-        Assert.Contains("Invalid user name or password", await rejected.Content.ReadAsStringAsync());
+        Assert.Contains("{{ if ui_engine == "fluid" }}Wrong email or password{{ else }}Invalid user name or password{{ end }}", await rejected.Content.ReadAsStringAsync());
 
         var accepted = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
         Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
     }
 
-{{ if !no_example }}    [Fact]
+{{ if !no_example && ui_engine != "fluid" && ui_engine != "blazor" }}    [Fact]
     public async Task CreatedProduct_IsListedThroughTheBffAndTheApi()
     {
         // The round trip through the whole stack: a {{ example_entity | string.downcase }} created on the Web page is stored by the API and read back by the
@@ -401,13 +426,13 @@ public sealed class WebToApiLoginTests
 
     private static async Task<HttpResponseMessage> SubmitLoginAsync(HttpClient client, string user, string password)
     {
-        var page = await client.GetStringAsync("/Account/Login");
+        var page = await client.GetStringAsync("{{ if ui_engine == "fluid" }}/auth/login{{ else }}/Account/Login{{ end }}");
         var token = System.Text.RegularExpressions.Regex
             .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
-        var response = await client.PostAsync("/Account/Login", new FormUrlEncodedContent(new Dictionary<string, string>
+        var response = await client.PostAsync("{{ if ui_engine == "fluid" }}/auth/login{{ else }}/Account/Login{{ end }}", new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["UserName"] = user,
-            ["Password"] = password,
+            ["{{ if ui_engine == "fluid" }}email{{ else }}UserName{{ end }}"] = user,
+            ["{{ if ui_engine == "fluid" }}password{{ else }}Password{{ end }}"] = password,
             ["__RequestVerificationToken"] = token,
         }));
         // A failed sign-in is answered with the sign-in page itself (Razor Pages) or with a redirect back to it that carries the

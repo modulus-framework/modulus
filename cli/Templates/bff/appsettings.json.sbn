@@ -35,7 +35,9 @@
 {{~ for svc in upstream_services ~}}
           { "LocalPath": "/api/{{ svc.name }}", "Service": "{{ svc.name }}" },
 {{~ end ~}}
-          { "LocalPath": "/api", "Service": "api" }
+          { "LocalPath": "/api", "Service": "api" }{{ if is_web }},
+          { "LocalPath": "/account", "Service": "api" },
+          { "LocalPath": "/authorization", "Service": "api" }{{ end }}
         ]
       }
     }

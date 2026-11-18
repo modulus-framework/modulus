@@ -81,6 +81,29 @@ public static class Program
                 .WithExample("add-realtime")
                 .WithExample("add-realtime", "--bff", "web,mobile")
                 .WithExample("add-realtime", "--signalr");
+            config.AddCommand<Commands.AddSearchCommand>("add-search")
+                .WithDescription("Add full-text search (OpenSearch or Solr) behind ISearchIndex: package, registration and the Search settings.")
+                .WithExample("add-search")
+                .WithExample("add-search", "--provider", "solr");
+            config.AddCommand<Commands.AddStorageCommand>("add-storage")
+                .WithDescription("Move file storage to the cloud (S3, Azure Blob Storage or Google Cloud Storage): package, registration and the Storage settings.")
+                .WithExample("add-storage")
+                .WithExample("add-storage", "--provider", "azure");
+            config.AddCommand<Commands.AddJobsCommand>("add-jobs")
+                .WithDescription("Add the Quartz job scheduler behind IJobScheduler (enqueue, schedule and recurring jobs).")
+                .WithExample("add-jobs");
+            config.AddCommand<Commands.AddKeyVaultCommand>("add-keyvault")
+                .WithDescription("Read secrets from Azure Key Vault (DefaultAzureCredential, read-only): package, registration and the Secrets settings.")
+                .WithExample("add-keyvault");
+            config.AddCommand<Commands.AddMediaCommand>("add-media")
+                .WithDescription("Add the media library: validated uploads with tenant-scoped metadata in a store module of its own, and the /api/media endpoints.")
+                .WithExample("add-media");
+            config.AddCommand<Commands.AddNotificationsCommand>("add-notifications")
+                .WithDescription("Add the notification inbox and channel preferences: a store module of its own and the /api/notifications endpoints.")
+                .WithExample("add-notifications");
+            config.AddCommand<Commands.AddLocalizationCommand>("add-localization")
+                .WithDescription("Keep translations in the database (runtime-edited) instead of memory: a store module of its own.")
+                .WithExample("add-localization");
             config.AddCommand<Commands.AddAiCommand>("add-ai")
                 .WithDescription("Host the AI platform's connector (wire contract v1) in the API host: read-only capabilities, record lookups, extraction and the change feed, behind the platform's API key and signed user envelope.")
                 .WithExample("add-ai");
@@ -202,6 +225,9 @@ public static class Program
                     .WithDescription("Add a page listing the signed-in user's sessions (revoke one or all) and recent sign-ins.")
                     .WithExample("ui", "add-session-manager");
 
+                ui.AddCommand<Commands.UiCreateModuleHomeCommand>("create-module-home")
+                    .WithDescription("Add a landing page for a business module (entity, API and permission counts as sample values).")
+                    .WithExample("ui", "create-module-home", "Catalog");
                 ui.AddCommand<Commands.UiCreateCrudCommand>("create-crud")
                     .WithDescription("Create list, create/edit and delete pages for an entity, over its API (generate-crud) through a typed client. MVC, Razor Pages and Blazor.")
                     .WithExample("ui", "create-crud", "Product")

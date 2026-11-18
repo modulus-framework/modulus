@@ -1,0 +1,25 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+
+namespace {{ store_namespace }}.Infrastructure;
+
+/// <summary>
+/// Design-time factory used by the EF Core tools (<c>dotnet ef</c> / <c>modulus migrate</c>) to construct
+/// <see cref="App{{ key }}DbContext"/> without the application's DI container. The connection string is read from the
+/// <c>{{ key | string.upcase }}_CONNECTION</c> environment variable when set, otherwise it falls back to the development default.
+/// </summary>
+public sealed class App{{ key }}DbContextFactory : IDesignTimeDbContextFactory<App{{ key }}DbContext>
+{
+    public App{{ key }}DbContext CreateDbContext(string[] args)
+    {
+        var connectionString =
+            Environment.GetEnvironmentVariable("{{ key | string.upcase }}_CONNECTION")
+            ?? "{{ connection_string }}";
+
+        var options = new DbContextOptionsBuilder<App{{ key }}DbContext>()
+            .{{ use_db_method }}(connectionString)
+            .Options;
+
+        return new App{{ key }}DbContext(options);
+    }
+}

@@ -1,0 +1,37 @@
+using System.ComponentModel.DataAnnotations;
+using {{ module_namespace }}.Application.Dtos;
+
+namespace {{ ui_namespace }}.Areas.{{ module_name }}.Models;
+
+/// <summary>What the {{ entity_name | string.downcase }} list page shows.</summary>
+public sealed class {{ entity_name }}IndexViewModel
+{
+    public IReadOnlyList<{{ entity_name }}Dto> Items { get; set; } = [];
+
+    /// <summary>1-based page number (query string <c>p</c>).</summary>
+    public int PageNumber { get; set; } = 1;
+
+    /// <summary>A full page means there may be another one; the API does not report a total.</summary>
+    public bool HasNext { get; set; }
+
+    public string? Message { get; set; }
+
+    public bool Failed { get; set; }
+}
+
+/// <summary>Shared by the create and edit pages: the form posts back to the page it is on.</summary>
+public sealed class {{ entity_name }}EditViewModel
+{
+    public {{ entity_name }}InputModel Input { get; set; } = new();
+
+    public bool IsNew => Input.Id == Guid.Empty;
+}
+
+/// <summary>The form values of a {{ entity_name | string.downcase }}.</summary>
+public sealed class {{ entity_name }}InputModel
+{
+    public Guid Id { get; set; }
+
+    [Required, StringLength(200)]
+    public string Name { get; set; } = string.Empty;
+}

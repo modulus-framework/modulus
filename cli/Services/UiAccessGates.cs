@@ -36,7 +36,9 @@ internal static class UiAccessGates
     public static bool HasSignIn(string programContent)
     {
         ArgumentNullException.ThrowIfNull(programContent);
-        return programContent.Contains(PageAuthorizationMarker, StringComparison.OrdinalIgnoreCase);
+        return programContent.Contains(PageAuthorizationMarker, StringComparison.OrdinalIgnoreCase)
+            // The MVC host keeps its account pages in an area, so it carries no Razor Pages folder rule: its sign-in is the BFF session.
+            || programContent.Contains("AddWebAuthentication(", StringComparison.Ordinal);
     }
 
     /// <summary>

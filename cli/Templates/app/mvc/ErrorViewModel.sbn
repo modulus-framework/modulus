@@ -1,0 +1,17 @@
+namespace {{ root_namespace }}.Web.Models;
+
+/// <summary>What the error page shows for one HTTP status.</summary>
+public sealed record ErrorViewModel(int Code, string Heading, string Message)
+{
+    public static ErrorViewModel For(int status) => status switch
+    {
+        StatusCodes.Status400BadRequest => new(status, "The request could not be processed", "Check what you entered and try again."),
+        StatusCodes.Status401Unauthorized => new(status, "Sign in to continue", "This page needs a signed-in account."),
+        StatusCodes.Status403Forbidden => new(status, "Access denied", "Your account does not have permission to open this page."),
+        StatusCodes.Status404NotFound => new(status, "Page not found", "The page you are looking for does not exist or has moved."),
+        StatusCodes.Status429TooManyRequests => new(status, "Too many requests", "Wait a minute, then try again."),
+        StatusCodes.Status409Conflict => new(status, "This changed while you were editing", "Reload the page to see the latest version, then make your change again."),
+        >= StatusCodes.Status500InternalServerError => new(status, "Something went wrong", "An unexpected error occurred. It has been logged. Try again, or go back to the home page."),
+        _ => new(status, "Something went wrong", $"The request failed with status {status}."),
+    };
+}

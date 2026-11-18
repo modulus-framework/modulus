@@ -183,9 +183,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var useUiFramework = UsesUiFramework(kind, uiEngine);
 
         var auth = ResolveAuth(s.Auth);
-        // The Fluid host has no sign-in pages yet: they are Razor Pages, and the Liquid host has no Razor Pages.
-        if (uiEngine == "fluid" && auth != "none")
-            throw new ArgumentException("The fluid engine has no sign-in pages yet (they are Razor Pages). Use --auth none, or pick mvc, razor-pages or blazor for a sign-in.");
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, auth);
 
         // Resolve infrastructure options
@@ -645,19 +642,23 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             return;
         }
 
-        // Razor Pages plumbing: tag helpers (m-*) and the theme's layouts.
-        _templates.RenderToFile("app/WebPagesViewImports", model,
-            Path.Combine(webDir, "Pages", "_ViewImports.cshtml"));
-        _templates.RenderToFile("app/WebPagesViewStart", model,
-            Path.Combine(webDir, "Pages", "_ViewStart.cshtml"));
+        // Razor Pages plumbing: tag helpers (m-*) and the theme's layouts. MVC keeps its own under Views/.
+        if (model.UiEngine != "mvc")
+        {
+            _templates.RenderToFile("app/WebPagesViewImports", model,
+                Path.Combine(webDir, "Pages", "_ViewImports.cshtml"));
+            _templates.RenderToFile("app/WebPagesViewStart", model,
+                Path.Combine(webDir, "Pages", "_ViewStart.cshtml"));
+        }
 
         // The framework's shell layout comes with the package; the sign-in and status pages need a frame without it.
         if (model.UseUiFramework)
         {
+            var layoutDir = model.UiEngine == "mvc" ? "Views" : "Pages";
             _templates.RenderToFile("app/WebBlankLayout", model,
-                Path.Combine(webDir, "Pages", "Shared", "_BlankLayout.cshtml"));
+                Path.Combine(webDir, layoutDir, "Shared", "_BlankLayout.cshtml"));
             _templates.RenderToFile("app/WebAuthLayout", model,
-                Path.Combine(webDir, "Pages", "Shared", "_AuthLayout.cshtml"));
+                Path.Combine(webDir, layoutDir, "Shared", "_AuthLayout.cshtml"));
         }
 
         // Landing page â€” where the sign-in flow redirects after login.
@@ -699,8 +700,13 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
         RenderNavigationMenu(webDir, model);
         _templates.RenderToFile("app/favicon.svg", model, Path.Combine(webDir, "wwwroot", "favicon.svg"));
-        _templates.RenderToFile("app/ErrorModel.Web", model, Path.Combine(webDir, "Pages", "Error.cshtml.cs"));
-        _templates.RenderToFile("app/Error.Web.cshtml", model, Path.Combine(webDir, "Pages", "Error.cshtml"));
+        if (model.UiEngine == "mvc")
+            RenderMvcErrorPage(webDir, model);
+        else
+        {
+            _templates.RenderToFile("app/ErrorModel.Web", model, Path.Combine(webDir, "Pages", "Error.cshtml.cs"));
+            _templates.RenderToFile("app/Error.Web.cshtml", model, Path.Combine(webDir, "Pages", "Error.cshtml"));
+        }
 
         // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
         if (model.UseAuth)
@@ -710,42 +716,89 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             _templates.RenderToFile("app/PrincipalCurrentUser", model,
                 Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
 
-            var accountDir = Path.Combine(webDir, "Pages", "Account");
-            _templates.RenderToFile("app/WebAccountViewStart", model,
-                Path.Combine(accountDir, "_ViewStart.cshtml"));
-            _templates.RenderToFile("app/LoginModel.Web", model,
-                Path.Combine(accountDir, "Login.cshtml.cs"));
-            _templates.RenderToFile("app/Login.Web.cshtml", model,
-                Path.Combine(accountDir, "Login.cshtml"));
-            _templates.RenderToFile("app/LogoutModel.Web", model,
-                Path.Combine(accountDir, "Logout.cshtml.cs"));
-            _templates.RenderToFile("app/Logout.Web.cshtml", model,
-                Path.Combine(accountDir, "Logout.cshtml"));
-            _templates.RenderToFile("app/AccessDeniedModel.Web", model,
-                Path.Combine(accountDir, "AccessDenied.cshtml.cs"));
-            _templates.RenderToFile("app/AccessDenied.Web.cshtml", model,
-                Path.Combine(accountDir, "AccessDenied.cshtml"));
-
-            // Passkey enrolment: the signed-in person adds and removes passkeys through the API (local token server only).
-            if (model.Auth == "openiddict")
+            if (model.UiEngine == "mvc")
             {
-                _templates.RenderToFile("app/PasskeysModel.Web", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml.cs"));
-                _templates.RenderToFile("app/Passkeys.Web.cshtml", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml"));
-                _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
-                _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
-                _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
-                _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
+                RenderMvcAccountArea(webDir, model);
+            }
+            else
+            {
+                var accountDir = Path.Combine(webDir, "Pages", "Account");
+                _templates.RenderToFile("app/WebAccountViewStart", model,
+                    Path.Combine(accountDir, "_ViewStart.cshtml"));
+                _templates.RenderToFile("app/LoginModel.Web", model,
+                    Path.Combine(accountDir, "Login.cshtml.cs"));
+                _templates.RenderToFile("app/Login.Web.cshtml", model,
+                    Path.Combine(accountDir, "Login.cshtml"));
+                _templates.RenderToFile("app/LogoutModel.Web", model,
+                    Path.Combine(accountDir, "Logout.cshtml.cs"));
+                _templates.RenderToFile("app/Logout.Web.cshtml", model,
+                    Path.Combine(accountDir, "Logout.cshtml"));
+                _templates.RenderToFile("app/AccessDeniedModel.Web", model,
+                    Path.Combine(accountDir, "AccessDenied.cshtml.cs"));
+                _templates.RenderToFile("app/AccessDenied.Web.cshtml", model,
+                    Path.Combine(accountDir, "AccessDenied.cshtml"));
 
-                // Password recovery: the forgot and reset pages call the API anonymously (the email link carries the token).
-                _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
-                _templates.RenderToFile("app/ForgotPasswordModel.Web", model, Path.Combine(accountDir, "ForgotPassword.cshtml.cs"));
-                _templates.RenderToFile("app/ForgotPassword.Web.cshtml", model, Path.Combine(accountDir, "ForgotPassword.cshtml"));
-                _templates.RenderToFile("app/ResetPasswordModel.Web", model, Path.Combine(accountDir, "ResetPassword.cshtml.cs"));
-                _templates.RenderToFile("app/ResetPassword.Web.cshtml", model, Path.Combine(accountDir, "ResetPassword.cshtml"));
+                // Passkey enrolment: the signed-in person adds and removes passkeys through the API (local token server only).
+                if (model.Auth == "openiddict")
+                {
+                    _templates.RenderToFile("app/PasskeysModel.Web", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml.cs"));
+                    _templates.RenderToFile("app/Passkeys.Web.cshtml", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml"));
+                    _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
+                    _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
+                    _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
+                    _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
+
+                    // Password recovery: the forgot and reset pages call the API anonymously (the email link carries the token).
+                    _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
+                    _templates.RenderToFile("app/ForgotPasswordModel.Web", model, Path.Combine(accountDir, "ForgotPassword.cshtml.cs"));
+                    _templates.RenderToFile("app/ForgotPassword.Web.cshtml", model, Path.Combine(accountDir, "ForgotPassword.cshtml"));
+                    _templates.RenderToFile("app/ResetPasswordModel.Web", model, Path.Combine(accountDir, "ResetPassword.cshtml.cs"));
+                    _templates.RenderToFile("app/ResetPassword.Web.cshtml", model, Path.Combine(accountDir, "ResetPassword.cshtml"));
+                }
             }
         }
 
         projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
+    }
+
+    /// <summary>MVC error page: <c>Controllers/ErrorController.cs</c>, its view model and <c>Views/Error/Index.cshtml</c>.</summary>
+    private void RenderMvcErrorPage(string webDir, AppModel model)
+    {
+        _templates.RenderToFile("app/mvc/ErrorController", model, Path.Combine(webDir, "Controllers", "ErrorController.cs"));
+        _templates.RenderToFile("app/mvc/ErrorViewModel", model, Path.Combine(webDir, "Models", "ErrorViewModel.cs"));
+        _templates.RenderToFile("app/mvc/Error.cshtml", model, Path.Combine(webDir, "Views", "Error", "Index.cshtml"));
+    }
+
+    /// <summary>
+    /// MVC account pages as an area (<c>Areas/Account</c>): thin controllers, view models and views, so sign-in, password recovery and
+    /// passkeys are one module with its own folders, apart from the app's feature controllers.
+    /// </summary>
+    private void RenderMvcAccountArea(string webDir, AppModel model)
+    {
+        var area = Path.Combine(webDir, "Areas", "Account");
+        var views = Path.Combine(area, "Views");
+        _templates.RenderToFile("app/mvc/AreaViewImports.cshtml", model, Path.Combine(views, "_ViewImports.cshtml"));
+        _templates.RenderToFile("app/mvc/AreaViewStart.cshtml", model, Path.Combine(views, "_ViewStart.cshtml"));
+        _templates.RenderToFile("app/mvc/AccountController", model, Path.Combine(area, "Controllers", "AccountController.cs"));
+        _templates.RenderToFile("app/mvc/LoginViewModel", model, Path.Combine(area, "Models", "LoginViewModel.cs"));
+        _templates.RenderToFile("app/mvc/Login.cshtml", model, Path.Combine(views, "Account", "Login.cshtml"));
+        _templates.RenderToFile("app/mvc/Logout.cshtml", model, Path.Combine(views, "Account", "Logout.cshtml"));
+        _templates.RenderToFile("app/mvc/AccessDenied.cshtml", model, Path.Combine(views, "Account", "AccessDenied.cshtml"));
+
+        // Passkeys and password recovery: the local token server only.
+        if (model.Auth != "openiddict")
+            return;
+        _templates.RenderToFile("app/mvc/PasskeysController", model, Path.Combine(area, "Controllers", "PasskeysController.cs"));
+        _templates.RenderToFile("app/mvc/Passkeys.cshtml", model, Path.Combine(views, "Passkeys", "Index.cshtml"));
+        _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
+        _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
+        _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
+        _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
+        _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
+        _templates.RenderToFile("app/mvc/PasswordController", model, Path.Combine(area, "Controllers", "PasswordController.cs"));
+        _templates.RenderToFile("app/mvc/PasswordViewModels", model, Path.Combine(area, "Models", "PasswordViewModels.cs"));
+        _templates.RenderToFile("app/mvc/ForgotPassword.cshtml", model, Path.Combine(views, "Password", "ForgotPassword.cshtml"));
+        _templates.RenderToFile("app/mvc/ResetPassword.cshtml", model, Path.Combine(views, "Password", "ResetPassword.cshtml"));
     }
 
     /// <summary>The local UI feed for the generated app, or null when the app needs none or the package source already serves it.</summary>

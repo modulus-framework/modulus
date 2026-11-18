@@ -1,0 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+using {{ context_namespace }};
+
+namespace {{ store_namespace }}.Infrastructure;
+
+/// <summary>
+/// The app's {{ title | string.downcase }} store. Its migrations live here:
+/// <c>modulus migrate add InitialCreate --module {{ key }}</c>.
+/// </summary>
+public sealed class App{{ key }}DbContext(DbContextOptions<App{{ key }}DbContext> options)
+    : {{ context_base }}(options);

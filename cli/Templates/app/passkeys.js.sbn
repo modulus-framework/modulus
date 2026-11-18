@@ -29,7 +29,7 @@
 
   // A page handler: the API's answer on success; the API's own problem detail as an error otherwise.
   function send(query, method, body) {
-    return fetch("/Passkeys?handler=" + query, {
+    return fetch({{ if ui_engine == "mvc" }}"/Passkeys/" + query.replace("&", "?"){{ else }}"/Passkeys?handler=" + query{{ end }}, {
       method: method,
       credentials: "same-origin",
       headers: { "RequestVerificationToken": token(), "Content-Type": "application/json" },

@@ -35,7 +35,7 @@
 
   // A page handler on this sign-in page: the handler's answer on success; the problem detail as an error otherwise.
   function send(handler, body) {
-    return fetch("/Account/Login?handler=" + handler, {
+    return fetch({{ if ui_engine == "mvc" }}"/Account/" + handler{{ else }}"/Account/Login?handler=" + handler{{ end }}, {
       method: "POST",
       credentials: "same-origin",
       headers: { "RequestVerificationToken": token(), "Content-Type": "application/json" },

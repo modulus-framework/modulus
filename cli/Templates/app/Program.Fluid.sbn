@@ -116,3 +116,9 @@ static string? MatchPage(string templates, string rel, string[] segments, int i,
 }
 
 static string Join(string rel, string name) => rel.Length == 0 ? name : rel + "/" + name;
+
+// An unambiguous generic argument for booting this host in the integration tests: ModulusWebAppFactory<{{ root_namespace }}.Web.WebEntryPoint>.
+namespace {{ root_namespace }}.Web
+{
+    public sealed class WebEntryPoint;
+}

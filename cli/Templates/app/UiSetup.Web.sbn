@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
-using Microsoft.AspNetCore.Mvc.RazorPages;
-using Modulus.AspNetCore.Mvc;
+{{ if ui_engine != "mvc" }}using Microsoft.AspNetCore.Mvc.RazorPages;
+{{ end }}using Modulus.AspNetCore.Mvc;
 using Modulus.AspNetCore.Security;
 using Modulus.Core.Abstractions.Security;
 {{ if use_auth }}using Modulus.AspNetCore.Security.Policy;
@@ -15,10 +15,10 @@ internal static class UiSetup
 {
     public static IServiceCollection AddWebUi(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddRazorPages();
-{{ if ui_engine == "mvc" }}
-        // MVC controllers and views for the landing page; the sign-in pages stay Razor Pages.
+{{ if ui_engine == "mvc" }}        // MVC: controllers and views. Sign-in, password recovery and passkeys are the Account area (Areas/Account); the landing and
+        // error pages are controllers; the CRUD pages written by `modulus ui create-crud` go under Controllers/{Module}.
         services.AddControllersWithViews().ConfigureApplicationPartManager(RemoveIdentityControllers);
+{{ else }}        services.AddRazorPages();
 {{ end }}
         // Brand and layout settings come from "Modulus:Theme" in appsettings.json; add menu entries with an IMenuContributor.
         services.AddModulusMvc(theme => configuration.GetSection("Modulus:Theme").Bind(theme));
@@ -26,7 +26,7 @@ internal static class UiSetup
 {{ if use_auth }}        // Pages require a signed-in user; the sign-in pages under /Account are the only open folder.
 {{ else }}        // No sign-in configured: the no-sign-in scheme (Security/NoSignInAuthentication.cs) answers 401 to every page that
         // requires a user. Add a sign-in flow (AddAuthentication().AddCookie(...)) when you need one.
-{{ end }}        services.PostConfigure<RazorPagesOptions>(options =>
+{{ end }}{{ if ui_engine != "mvc" }}        services.PostConfigure<RazorPagesOptions>(options =>
         {
 {{ if use_auth }}            options.Conventions.AuthorizeFolder("/");
 {{ end }}            options.Conventions.AllowAnonymousToFolder("/Account");
@@ -37,7 +37,7 @@ internal static class UiSetup
             options.Conventions.AddFolderApplicationModelConvention("/Error", page =>
                 page.EndpointMetadata.Add(new LoosenedAttribute("The error page is shown to every visitor") { Framework = true }));
         });
-
+{{ end }}
         return services;
     }
 {{ if ui_engine == "mvc" }}
