@@ -47,7 +47,7 @@ jobs:
           dotnet CycloneDX modulus.slnx --json --output artifacts/sbom
       # The provenance attests the packages exactly as they are published.
       - name: Build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: 'artifacts/packages/*.nupkg'
       - name: Upload packages and SBOM
