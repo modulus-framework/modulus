@@ -11,7 +11,24 @@ public sealed class RabbitMqBroker : IAsyncLifetime
 
     private const string Secret = "modulus-test-secret";
 
+    // A fixed host port, chosen per fixture: Docker assigns a new random one when a stopped container starts again, and the
+    // transport under test reconnects to the address it was configured with.
+    private static int FreeTcpPort()
+    {
+        var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            return ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
     private readonly RabbitMqContainer _container = new RabbitMqBuilder("rabbitmq:4-management-alpine")
+        .WithPortBinding(FreeTcpPort(), 5672)
         .WithUsername(User)
         .WithPassword(Secret)
         .Build();

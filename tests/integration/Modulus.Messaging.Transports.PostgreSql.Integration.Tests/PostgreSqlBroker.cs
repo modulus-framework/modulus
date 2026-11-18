@@ -8,7 +8,25 @@ namespace Modulus.Messaging.Transports.PostgreSql.Integration.Tests;
 /// <summary>One PostgreSQL 17 database shared by the tests of a class (Podman or Docker).</summary>
 public sealed class PostgreSqlBroker : IAsyncLifetime
 {
+    // A fixed host port: Docker assigns a new random one when a stopped container starts again, which would leave the
+    // connection string (and every host built from it) pointing at the old port after an outage test.
+    // Chosen per fixture, so fixtures of different test classes never share a port.
+    private static int FreeTcpPort()
+    {
+        var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            return ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
+        }
+    }
+
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:17-alpine")
+        .WithPortBinding(FreeTcpPort(), 5432)
         .WithDatabase("modulus_messaging")
         .WithUsername("modulus")
         .WithPassword("modulus-test-secret")
