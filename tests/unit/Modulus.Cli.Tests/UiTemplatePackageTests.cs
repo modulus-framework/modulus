@@ -12,6 +12,57 @@ public sealed class UiTemplatePackageTests
     private static string FeedPackage() =>
         Path.Combine(UiTemplatePackage.UserRoot, "feed", $"{UiTemplatePackage.PackageId}.{UiTemplatePackage.DefaultVersion}.nupkg");
 
+    /// <summary>Runs <paramref name="body"/> with an empty user root holding a cached template package of each given version, offline.</summary>
+    private static void WithCachedVersions(string[] versions, Action<string> body)
+    {
+        var root = Directory.CreateTempSubdirectory("tplroot").FullName;
+        var (oldRoot, oldDownload, oldFeed) = (UiTemplatePackage.UserRoot, UiTemplatePackage.AllowDownload, Environment.GetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable));
+        try
+        {
+            UiTemplatePackage.UserRoot = root;
+            UiTemplatePackage.AllowDownload = false;
+            Environment.SetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable, null);
+            foreach (var v in versions)
+            {
+                var cache = UiTemplatePackage.CacheDir(UiTemplatePackage.PackageId, v);
+                Directory.CreateDirectory(cache);
+                File.WriteAllText(Path.Combine(cache, "marker.txt"), v);
+                File.WriteAllText(Path.Combine(Path.GetDirectoryName(cache)!, UiTemplatePackage.ManifestFile), $$"""{ "version": "{{v}}" }""");
+            }
+
+            body(root);
+        }
+        finally
+        {
+            UiTemplatePackage.UserRoot = oldRoot;
+            UiTemplatePackage.AllowDownload = oldDownload;
+            Environment.SetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable, oldFeed);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Resolve_falls_back_to_the_newest_available_version_when_the_default_is_missing()
+    {
+        if (Environment.GetEnvironmentVariable(UiTemplatePackage.VersionEnvironmentVariable) is { Length: > 0 }) return;
+
+        WithCachedVersions(["1.8.1", "2.0.0-rc.1", "2.0.0"], _ =>
+        {
+            var path = UiTemplatePackage.Resolve();
+
+            path.Should().NotBeNull();
+            File.ReadAllText(Path.Combine(path!, "marker.txt")).Should().Be("2.0.0");
+            UiTemplatePackage.ResolvedVersion.Should().Be("2.0.0");
+        });
+    }
+
+    [Fact]
+    public void Resolve_with_an_explicit_version_does_not_fall_back()
+    {
+        WithCachedVersions(["2.0.0"], _ =>
+            UiTemplatePackage.Resolve(UiTemplatePackage.PackageId, "9.9.9").Should().BeNull());
+    }
+
     [Fact]
     public void Every_template_in_the_package_parses_and_renders()
     {

@@ -492,7 +492,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             version = "1.0",
             framework_version = model.FrameworkVersion,
             ui_engine = model.UiEngine,
-            ui_kit_version = UiTemplatePackage.DefaultVersion
+            ui_kit_version = UiTemplatePackage.ResolvedVersion ?? UiTemplatePackage.DefaultVersion
         };
         var modulusJsonPath = Path.Combine(projectDir, ".modulus.json");
         File.WriteAllText(modulusJsonPath, System.Text.Json.JsonSerializer.Serialize(modulusJson, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
