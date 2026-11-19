@@ -54,7 +54,7 @@ jobs:
         # The core messaging package has its own 85% floor; the solution-wide floor above is too loose to catch it.
         run: python3 build/check-messaging-coverage.py artifacts/coverage 85
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: artifacts/coverage-report
@@ -69,7 +69,7 @@ jobs:
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages
           path: artifacts/packages/*.nupkg
