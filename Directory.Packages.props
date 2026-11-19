@@ -146,7 +146,7 @@
     <PackageVersion Include="Azure.Identity"                           Version="1.21.0" />
   </ItemGroup>
   <ItemGroup Label="Background Jobs">
-    <PackageVersion Include="Cronos"                                    Version="0.9.0" />
+    <PackageVersion Include="Cronos"                                    Version="0.13.0" />
     <PackageVersion Include="Quartz"                                    Version="3.22.7" />
     <PackageVersion Include="Quartz.Extensions.DependencyInjection"     Version="3.22.7" />
     <PackageVersion Include="Quartz.Serialization.SystemTextJson"       Version="3.22.7" />
