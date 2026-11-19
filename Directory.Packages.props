@@ -14,7 +14,7 @@
     <PackageVersion Include="Microsoft.FeatureManagement.AspNetCore"     Version="4.8.0" />
   </ItemGroup>
   <ItemGroup Label="Passkeys (WebAuthn, MIT)">
-    <PackageVersion Include="Fido2"                                      Version="4.3.1" />
+    <PackageVersion Include="Fido2"                                      Version="4.3.3" />
     <!-- SAML 2.0 service provider (BSD-3-Clause) and LDAP/AD bind (MIT). -->
     <PackageVersion Include="ITfoxtec.Identity.Saml2"                    Version="4.21.0" />
     <PackageVersion Include="System.DirectoryServices.Protocols"         Version="10.0.13" />
