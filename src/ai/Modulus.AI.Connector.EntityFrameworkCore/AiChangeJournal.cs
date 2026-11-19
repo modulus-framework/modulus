@@ -119,7 +119,7 @@ internal sealed class AiChangeSaveContributor(TimeProvider time, IOptions<Modulu
             {
                 throw new InvalidOperationException(
                     $"[AiIndexed] '{entry.Metadata.ClrType.Name}' has a store-generated key, which is unknown until saved; " +
-                    "generate the key on the client (for example global::Modulus.GuidV7.Create()).");
+                    "generate the key on the client (for example Guid.CreateVersion7()).");
             }
 
             values.Add(property.CurrentValue);

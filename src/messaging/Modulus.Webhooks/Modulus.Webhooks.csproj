@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Outgoing webhooks for Modulus: integration events fanned out to tenant-scoped subscriptions, Standard Webhooks signing (with secret rotation), durable delivery with retries, lease claiming and leader election, SSRF-guarded HTTP, and a management API behind webhooks:manage.</Description>
+    <Description>Signed outgoing webhooks for Modulus integration events.</Description>
   </PropertyGroup>
 
   <ItemGroup>

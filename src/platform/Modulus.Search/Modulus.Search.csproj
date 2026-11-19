@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- First release: there is no published baseline to compare with yet (see build/Modulus.Packaging.props). Remove this line
          once the package is on nuget.org, so later breaking changes are caught. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Full-text search for Modulus over OpenSearch and Apache Solr: one provider-neutral ISearchIndex, implemented over plain HTTP (no vendor SDK).</Description>
+    <Description>Full-text search for Modulus (OpenSearch and Solr).</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,7 +9,7 @@ internal sealed class OutboxMessageScheduler(MessagingBus bus, IMessageOutbox ou
     public async Task<Guid> ScheduleSend<TMessage>(Uri address, DateTimeOffset deliverAt, TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class
     {
-        var token = Modulus.GuidV7.Create();
+        var token = Guid.CreateVersion7();
         var envelope = bus.EnvelopeForSend(address, message);
         await WriteOrRollBackAsync(token, [envelope], deliverAt, cancellationToken).ConfigureAwait(false);
         return token;
@@ -18,7 +18,7 @@ internal sealed class OutboxMessageScheduler(MessagingBus bus, IMessageOutbox ou
     public async Task<Guid> SchedulePublish<TMessage>(DateTimeOffset deliverAt, TMessage message, CancellationToken cancellationToken = default)
         where TMessage : class
     {
-        var token = Modulus.GuidV7.Create();
+        var token = Guid.CreateVersion7();
         await WriteOrRollBackAsync(token, bus.EnvelopesForPublish(message), deliverAt, cancellationToken).ConfigureAwait(false);
         return token;
     }

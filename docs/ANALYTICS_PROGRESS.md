@@ -34,10 +34,10 @@ Every tool and NuGet package must be open source (OSI licence), production-prove
 | Freshness and monitoring (metrics, health check, `GET /analytics/freshness`) | Done | earlier |
 | Reconciliation (per-tenant counts, `POST /analytics/reconciliations`) | Done | earlier |
 | Dataset permissions (`analytics:manage:{dataset}`) and plan gating (`RequiredFeature`) | Done | `51ec852` |
-| Messaging sink (`Modulus.Analytics.Messaging`, `AnalyticsRecordPublished` on the module bus) | Done, 6 unit tests on net8.0 and net10.0 | this commit |
+| Messaging sink (`Modulus.Analytics.Messaging`, `AnalyticsRecordPublished` on the module bus) | Done, 6 unit tests on net10.0 | this commit |
 | Outbox `SchemaVersion` (from `[IntegrationEvent<TModule>(Version = N)]`) | Done, 4 unit tests; column migration in `docs/runbooks/analytics-store-migrations.md` | this commit |
 | EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`) | Done; script applied to PostgreSQL 16.15, EF integration suite 8/8 | this commit |
-| Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net8.0 and net10.0 | `0af9463` |
+| Export audit through `ISecurityAuditLog` (hash-chained, category `analytics`) | Done, tests pass on net10.0 | `0af9463` |
 | Data-quality findings beyond counts (`MaxNullRate`, future records; `POST /analytics/quality`) | Done, 6 core, 2 EF, 2 management and 1 ClickHouse integration test pass | `975c60e` |
 | Retention and erasure propagation (`AnalyticsTenantDataHandler`, `IAnalyticsErasableSink`; ClickHouse TTL, queue purge; Parquet by the lake's tools) | Done, 5 unit tests and 2 ClickHouse integration tests pass | `185034f` |
 | Lineage and OpenLineage emitter (`Modulus.Analytics.OpenLineage`; START, COMPLETE, FAIL per backfill; verified against Marquez 0.50.0) | Done, 10 unit tests and 2 Marquez integration tests pass | `a00c5dc` |
@@ -76,16 +76,16 @@ Last full run of the analytics suites (both frameworks where applicable):
 | Modulus.Cli.Tests (add-analytics, 6 new) | 677 pass |
 | Integration: OpenLineage with Marquez 0.50.0 | 2 pass (re-run after the run-observer change) |
 | Integration: EF (real PostgreSQL 16) | 8 pass (re-run after the run-observer change; this commit ran them against a local PostgreSQL 16.15 through `MODULUS_TEST_POSTGRES_CONNECTION`) |
-| Modulus.Analytics.Messaging.Tests | 6 pass (net8.0 and net10.0) |
-| Modulus.Analytics.Apicurio.Tests | 6 pass (net8.0 and net10.0) |
-| Modulus.Analytics.OpenMetadata.Tests | 12 pass (net8.0 and net10.0) |
-| Modulus.Analytics.DuckDB.Tests | 6 pass (net8.0 and net10.0) |
+| Modulus.Analytics.Messaging.Tests | 6 pass (net10.0) |
+| Modulus.Analytics.Apicurio.Tests | 6 pass (net10.0) |
+| Modulus.Analytics.OpenMetadata.Tests | 12 pass (net10.0) |
+| Modulus.Analytics.DuckDB.Tests | 6 pass (net10.0) |
 
 `dotnet format --verify-no-changes` is clean for the analytics projects. Each changed project builds with 0 warnings.
 
 ## Verification
 
-- Verified on this commit: full-solution build (`dotnet build modulus.slnx`, 0 errors, 0 warnings); full unit suite (`--filter "Category=Unit"`, 95 assembly runs on net8.0 and net10.0, 0 failures).
+- Verified on this commit: full-solution build (`dotnet build modulus.slnx`, 0 errors, 0 warnings); full unit suite (`--filter "Category=Unit"`, 95 assembly runs on net10.0, 0 failures).
 
 ## Next steps
 

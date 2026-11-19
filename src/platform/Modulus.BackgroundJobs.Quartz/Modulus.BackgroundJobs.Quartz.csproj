@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Quartz.NET adapter for durable background job scheduling with clustering support across replicas.</Description>
+    <Description>Quartz.NET background job scheduling for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

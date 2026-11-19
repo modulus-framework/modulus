@@ -23,7 +23,7 @@ public sealed class DataQualityFindingStore(
         {
             db.DataQualityFindings.Add(new DataQualityFindingRow
             {
-                Id = GuidV7.Create(),
+                Id = Guid.CreateVersion7(),
                 TenantId = finding.TenantId ?? Guid.Empty,
                 CreatedAt = now,
                 ResourceType = finding.ResourceType,

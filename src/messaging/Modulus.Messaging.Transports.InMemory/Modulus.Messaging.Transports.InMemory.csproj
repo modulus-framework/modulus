@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>In-memory transport for Modulus.Messaging: reference implementation for tests and single-process use. Nothing is durable.</Description>
+    <Description>In-memory transport for Modulus.Messaging (tests and single process).</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>MongoDB adapter for the Modulus transactional outbox: writer, processor, dispatcher, and polling service.</Description>
+    <Description>MongoDB transactional outbox for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

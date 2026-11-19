@@ -10,8 +10,11 @@ internal static partial class AppFramework
 {
     public const string Default = "net10.0";
 
-    /// <summary>The targets a generated app can be created for. Guid v7 keyset paging needs net10.0 (see the EF Core package).</summary>
-    public static readonly string[] Supported = ["net8.0", "net10.0"];
+    /// <summary>The SDK a generated app is pinned to (its global.json): the 10.0 band, rolling forward to its newest feature release.</summary>
+    public const string SdkVersion = "10.0.109";
+
+    /// <summary>The only target a generated app can be created for. Modulus targets .NET 10.</summary>
+    public static readonly string[] Supported = ["net10.0"];
 
     /// <summary>
     /// The target of the app that contains <paramref name="filePath"/>: the nearest <c>Directory.Build.props</c> that names
@@ -31,19 +34,25 @@ internal static partial class AppFramework
                 continue;
             var match = TargetFrameworkPattern().Match(File.ReadAllText(props));
             if (match.Success)
-                return match.Groups[1].Value;
+            {
+                var target = match.Groups[1].Value;
+                if (!Supported.Contains(target))
+                    throw new InvalidOperationException(
+                        $"The app at {current} targets {target}. Modulus supports only {string.Join(", ", Supported)}: move the app to net10.0 first.");
+                return target;
+            }
         }
         return Default;
     }
 
-    /// <summary>EF Core and EF Design for a target (the framework's Directory.Packages.props uses the same versions).</summary>
-    public static string EfCoreVersion(string framework) => framework == "net8.0" ? "8.0.32" : "10.0.13";
+    /// <summary>EF Core and EF Design (the framework's Directory.Packages.props uses the same versions).</summary>
+    public static string EfCoreVersion() => "10.0.13";
 
-    /// <summary>The coverlet collector used by the generated tests, per target.</summary>
-    public static string CoverletVersion(string framework) => framework == "net8.0" ? "6.0.4" : "10.0.1";
+    /// <summary>The coverlet collector used by the generated tests.</summary>
+    public static string CoverletVersion() => "10.0.1";
 
-    /// <summary>The System.Security.Cryptography packages pinned by the generated tests, per target.</summary>
-    public static string CryptographyVersion(string framework) => framework == "net8.0" ? "8.0.2" : "10.0.13";
+    /// <summary>The System.Security.Cryptography packages pinned by the generated tests.</summary>
+    public static string CryptographyVersion() => "10.0.13";
 
     [GeneratedRegex(@"<TargetFramework>(net\d+\.\d+)</TargetFramework>")]
     private static partial Regex TargetFrameworkPattern();

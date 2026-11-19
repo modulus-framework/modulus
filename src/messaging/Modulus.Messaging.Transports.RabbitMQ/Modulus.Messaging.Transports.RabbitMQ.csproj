@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>RabbitMQ transport for Modulus.Messaging: quorum queues, publisher confirms, acknowledgement after commit, delayed redelivery through TTL queues, and automatic recovery after outages.</Description>
+    <Description>RabbitMQ transport for Modulus.Messaging.</Description>
   </PropertyGroup>
 
   <ItemGroup>

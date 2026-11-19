@@ -39,7 +39,7 @@ internal static class ProvisioningHost
     {
         public string EfProviderPackage => DbProviderInfo.Package(Engine);
 
-        public string EfProviderVersion => DbProviderInfo.Version(Engine, "net10.0");
+        public string EfProviderVersion => DbProviderInfo.Version(Engine);
 
         public string UseMethod => Engine switch
         {

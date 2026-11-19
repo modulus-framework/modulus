@@ -1303,29 +1303,24 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   with 2+ cores per replica, keep `DOTNET_TieredPGO=1` (default), and prefer `InvariantGlobalization` only when no culture-specific
   formatting is needed (the UI uses invariant-culture text for extension fields, but pages may format by culture). Enable response
   compression at the proxy when one exists, else `AddModulusResponseCompression`.
-- **Provider integration tests (run 2026-11-18, net10.0, Docker):** `Modulus.EFCore.Integration.Tests` 69/69 (PostgreSQL/SQL Server/MySQL, incl. `AiEntitySourceProviderTests`), `Modulus.Outbox.Integration.Tests` 3/3, `Modulus.Data.MongoDB.Tests` 21/21, `Modulus.Inbox.MongoDB.Tests` 11/11, `Modulus.Outbox.MongoDB.Tests` 8/8, Quartz 9/9, OpenBao 6/6, Storage.S3 6/6, Messaging Outbox.Npgsql 7/7, Sagas.PostgreSql 5/5, Analytics EF Core 8/8, ClickHouse 16/16, OpenLineage 2/2, `Modulus.Messaging.Integration.Tests` 6/6, PostgreSQL transport 36/36, RabbitMQ transport 28/28, Search 2/2, Storage.GoogleCloud 4/4, Analytics.Providers 3/3. Under Docker a stopped container gets a new random host port when it starts again, so fixtures that restart a container (`PostgreSqlBroker`, `RabbitMqBroker`) pin a per-fixture host port. **Not re-run:** Messaging.Chaos, Observability.Stack, Cli.Integration (needs the `modulus-ui` feed and a full pack), and the net8.0 runs.
+- **Provider integration tests (run 2026-11-18, net10.0, Docker):** `Modulus.EFCore.Integration.Tests` 69/69 (PostgreSQL/SQL Server/MySQL, incl. `AiEntitySourceProviderTests`), `Modulus.Outbox.Integration.Tests` 3/3, `Modulus.Data.MongoDB.Tests` 21/21, `Modulus.Inbox.MongoDB.Tests` 11/11, `Modulus.Outbox.MongoDB.Tests` 8/8, Quartz 9/9, OpenBao 6/6, Storage.S3 6/6, Messaging Outbox.Npgsql 7/7, Sagas.PostgreSql 5/5, Analytics EF Core 8/8, ClickHouse 16/16, OpenLineage 2/2, `Modulus.Messaging.Integration.Tests` 6/6, PostgreSQL transport 36/36, RabbitMQ transport 28/28, Search 2/2, Storage.GoogleCloud 4/4, Analytics.Providers 3/3. Under Docker a stopped container gets a new random host port when it starts again, so fixtures that restart a container (`PostgreSqlBroker`, `RabbitMqBroker`) pin a per-fixture host port. **Not re-run:** Messaging.Chaos, Observability.Stack, Cli.Integration (needs the `modulus-ui` feed and a full pack).
 - **Decided not to build:**
   - **AOT beyond `Modulus.Core` and `Modulus.Outbox.Abstractions`** (the only packages with `IsAotCompatible`). `Modulus.Mediator` closes generic handler and behavior types at runtime (open-generic `IPipelineBehavior<,>` through DI) and its behaviors use EF Core and reflection. A source generator would not fix that, and EF Core model building, MVC and OpenIddict are not AOT-ready either. Probed 2026-10-09: 10 IL2026/IL3050 errors in the mediator alone.
   - **GraphQL subscriptions.** They need WebSockets (off on purpose); Realtime (SSE / SignalR) already pushes integration events with the same auth and tenant rules.
 
-## Dual targeting (`net8.0` + `net10.0`)
+## Target framework (`net10.0` only)
 
-Every library under `src/` except the UI packages and the analyzer project multi-targets `net8.0;net10.0` (`<TargetFramework />`
-clears the default from `Modulus.Common.props`, then `<TargetFrameworks>`). This includes `Modulus.Realtime` (+ `.Redis`): its SSE endpoint writes
-`text/event-stream` itself (`Transports/SseResult.cs`) instead of `TypedResults.ServerSentEvents` (.NET 10 only). Test projects run on both
-runtimes by default (`build/Modulus.Test.props`); `-p:ModulusTestTfm=net8.0` narrows a run. The CLI (`Modulus.Cli` and its tests) and generated apps stay `net10.0`.
+Modulus targets **.NET 10 only**. Every project (libraries, tests, the CLI and generated apps) sets `<TargetFramework>net10.0</TargetFramework>`
+(`build/Modulus.Common.props`, `build/Modulus.Test.props`). Do not add any other target framework to a `TargetFrameworks` list, a
+`Condition` on `TargetFramework`, or a preprocessor branch for another framework.
 
-- **Package versions** are per TFM in `Directory.Packages.props` (`Condition="'$(TargetFramework)' == 'net8.0'"`): ASP.NET Core / EF Core / providers use their 8.x line on net8
-  (`Microsoft.Extensions.*` stay on 10.x, which supports net8 and is what FusionCache needs).
-- **Polyfills** live in `build/Polyfills/` and are compiled into every `src` library: `System.Threading.Lock`, `Modulus.GuidV7` (use it instead of `Guid.CreateVersion7`),
-  `Modulus.Base64UrlCompat` (instead of `System.Buffers.Text.Base64Url`). Use `Convert.ToHexString(x).ToLowerInvariant()`, not `ToHexStringLower`.
-  Friend assemblies each carry a copy, so `CS0436` is suppressed for `src`.
-- **net8 gaps:** `AddModulusOpenApi*` and the BFF OpenAPI documents are compiled out (the built-in OpenAPI is .NET 9+; `BffBuilder.AddOpenApi` throws on net8);
-  `ForwardedHeadersOptions.KnownNetworks` replaces `KnownIPNetworks`; the logging generator of `Logging.Abstractions` is dropped in `Modulus.AspNetCore` (Telemetry's one stays).
-  PublicAPI checks (`RS0016/17`) run on net10 only: new public API goes in the unshipped file, net10 is the reference surface.
-- **Testing a target:** `dotnet restore tests/unit/X -p:ModulusTestTfm=net8.0 && dotnet test tests/unit/X --no-restore -p:ModulusTestTfm=net8.0` (a few tests are skipped on net8:
-  EF 8's SQLite cannot sum decimals; `System.Uri` limit). Not every test project can run on net8 (UI, CLI, Realtime). Provider/Testcontainers tests were not run on net8.
-
+- **Package versions** are one line each in `Directory.Packages.props`, on the 10.x line.
+- **Use the BCL directly:** `Guid.CreateVersion7()` (not a stand-in), `System.Buffers.Text.Base64Url`, `System.Threading.Lock`.
+- **`#if NET9_0_OR_GREATER` / `NET10_0_OR_GREATER` are always true** and were resolved to the .NET 10 branch; do not reintroduce them.
+- **PublicAPI checks** (`RS0016/17`) apply: new public API goes in the unshipped file.
+- **Generated apps** get `global.json` pinned to the .NET 10 SDK band (`AppFramework.SdkVersion`), so a newer SDK installed beside it cannot change their build.
+  An app that targets another framework is refused by the CLI with a message to move it to `net10.0` first.
+- **Testing:** `dotnet test modulus.slnx --filter "Category=Unit"` runs on net10.0. Provider and Testcontainers tests run on net10.0 too.
 ## Open-source dependency policy
 
 Every dependency must be fully open source (MIT / Apache-2.0 / BSD; no commercial license or paid tier to

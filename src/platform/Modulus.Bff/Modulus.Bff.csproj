@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Backends for Frontends for Modulus: one edge per client type (web SPA, mobile app, partner), each with its own authentication, token handling, CSRF, rate limits, response aggregation and YARP passthrough to the API host or to individual microservices.</Description>
+    <Description>Backends for Frontends (web, mobile, partner) for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +23,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
     <!-- Lifts JwtBearer's transitive 8.0.x floor to the solution's pinned version. -->
     <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
   </ItemGroup>
 
   <ItemGroup>

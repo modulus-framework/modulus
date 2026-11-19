@@ -79,7 +79,7 @@ internal sealed class PasskeyService<TContext, TUser>(
 
             var passkey = new ModulusPasskey
             {
-                Id = GuidV7.Create(),
+                Id = Guid.CreateVersion7(),
                 UserId = userId,
                 CredentialId = registered.Id,
                 PublicKey = registered.PublicKey,
@@ -198,7 +198,7 @@ internal sealed class PasskeyService<TContext, TUser>(
 
         var row = new ModulusPasskeyChallenge
         {
-            Id = GuidV7.Create(),
+            Id = Guid.CreateVersion7(),
             Purpose = purpose,
             UserId = userId,
             Options = optionsJson,

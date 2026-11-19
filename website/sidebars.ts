@@ -2,6 +2,13 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   docsSidebar: [
+    {
+      type: 'category',
+      label: 'Reference',
+      items: [
+        'reference/packages',
+      ],
+    },
     'introduction',
     {
       type: 'category',
@@ -202,6 +209,15 @@ const sidebars: SidebarsConfig = {
         'cli/doctor',
         'cli/outdated',
         'cli/update',
+        'cli/add-search',
+        'cli/add-storage',
+        'cli/add-jobs',
+        'cli/add-keyvault',
+        'cli/add-media',
+        'cli/add-notifications',
+        'cli/add-localization',
+        'cli/add-authorization-store',
+        'cli/add-deployment',
       ],
     },
     'cli/global-flags',

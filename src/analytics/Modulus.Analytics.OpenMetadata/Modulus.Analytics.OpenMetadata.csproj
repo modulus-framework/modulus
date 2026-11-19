@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>OpenMetadata publisher for the Modulus Analytics Integration Layer: registers each dataset version as a table, with its columns, types, nullability and classification, in the OpenMetadata catalog (Apache-2.0, Linux Foundation AI and Data). Catalogs search and lineage for the warehouse.</Description>
+    <Description>OpenMetadata publisher for Modulus analytics datasets.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Transactional outbox for Modulus over EF Core: atomic claiming, retry back-off, dead-lettering, purge, and background relay of pending messages.</Description>
+    <Description>Transactional outbox for Modulus (EF Core).</Description>
   </PropertyGroup>
 
   <ItemGroup>

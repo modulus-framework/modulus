@@ -31,6 +31,17 @@ public sealed class UiFluidCrudTests
     }
 
     [Fact]
+    public void The_form_partial_has_the_fields_only_and_no_page_around_them()
+    {
+        var partial = UiFluidCrud.FormPartial("Product", Fields);
+
+        partial.Should().StartWith("{% comment %} Product form fields");
+        partial.Should().Contain("name=\"name\" value=\"{{ values.name }}\"");
+        partial.Should().Contain("{% if values.isActive == 'true' %} checked{% endif %}");
+        partial.Should().NotContain("m-page-header").And.NotContain("<form").And.NotContain("__INPUTS__");
+    }
+
+    [Fact]
     public void The_form_has_a_control_of_each_kind_and_keeps_the_typed_values()
     {
         var page = UiFluidCrud.FormPage("Product", "Products", "products", Fields);

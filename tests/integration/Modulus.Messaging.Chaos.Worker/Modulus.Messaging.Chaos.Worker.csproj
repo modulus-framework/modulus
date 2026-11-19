@@ -4,7 +4,7 @@
     <!-- A process the chaos run starts and kills: it is not a test project, so it does not take the test SDK. -->
     <IsTestProject>false</IsTestProject>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

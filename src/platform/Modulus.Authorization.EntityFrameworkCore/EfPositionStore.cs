@@ -52,7 +52,7 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
 
         var row = new PositionRow
         {
-            Id = global::Modulus.GuidV7.Create(),
+            Id = Guid.CreateVersion7(),
             Code = code.Trim(),
             NormalizedCode = normalized,
             Name = name.Trim(),
@@ -103,7 +103,7 @@ public sealed class EfPositionStore(IDbContextFactory<AuthorizationStoreDbContex
 
         var row = new PositionAssignmentRow
         {
-            Id = global::Modulus.GuidV7.Create(),
+            Id = Guid.CreateVersion7(),
             PositionId = positionId,
             UserId = userId,
             ValidFrom = validFrom,

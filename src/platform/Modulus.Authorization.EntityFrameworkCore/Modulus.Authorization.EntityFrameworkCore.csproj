@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>EF Core persistence for Modulus authorization: permission grants, org hierarchy and placement, delegation, feature entitlements, and audit records.</Description>
+    <Description>EF Core permission grant store for Modulus authorization.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -17,13 +17,21 @@ internal sealed record UiComponent(string Key, string Category, string Descripti
 internal static class UiComponents
 {
     /// <summary>
-    /// The components the package ships as Liquid for Fluid (templates/fluid/{key}.liquid). The Fluid set is small: the other
-    /// components are Razor tag helpers or Blazor components, which a Liquid host cannot render.
+    /// The components the package ships as Liquid for Fluid (templates/fluid/{key}.liquid). Each Fluid key has a template
+    /// that renders with no data. The other components are Razor tag helpers or Blazor components, which a Liquid host cannot render.
     /// </summary>
     public static readonly IReadOnlySet<string> FluidKeys = new HashSet<string>(StringComparer.Ordinal)
     {
-        "alert", "avatar", "badge", "breadcrumb", "button", "card", "descriptions", "divider", "empty-state", "list", "page-header",
-        "pagination", "progress", "result", "skeleton", "spinner", "statistic", "status-badge", "steps", "tag", "timeline",
+        "alert", "approval-timeline", "audit-trail", "auto-complete", "avatar", "back-top", "badge", "breadcrumb",
+        "button", "calendar", "card", "carousel", "cascader", "checkbox", "checkbox-group", "collapse", "column-header",
+        "column-value-list", "dashboard-grid", "date-picker", "descriptions", "divider", "drawer", "drawer-form",
+        "dropdown", "editable-grid", "file-manager", "footer-toolbar", "gantt", "header-actions", "image",
+        "import-wizard", "input-number", "label-sheet", "menu", "modal", "modal-form", "nested-grid", "page-header",
+        "pagination", "popconfirm", "popover", "print-table", "pro-table", "progress", "query-builder", "query-filter",
+        "radio-group", "rate", "result", "scheduler", "segmented", "select", "skeleton", "slider", "space", "splitter",
+        "statistic", "status-badge", "steps", "switch", "tabs", "tag", "theme-toggle", "time-picker", "timeline",
+        "tooltip", "transfer", "tree", "tree-select", "trend", "upload",
+        "empty-state", "list", "spinner",
     };
 
     public static readonly IReadOnlyList<UiComponent> All =

@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Tenant data lifecycle for Modulus: export (JSON, CSV, attachments, encrypted ZIP), offboarding (suspend, integrations, export, deletion, legal holds), retention, and signed deletion certificates. Each module declares and handles its own tenant data.</Description>
+    <Description>Tenant data lifecycle (export, offboarding, deletion) for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

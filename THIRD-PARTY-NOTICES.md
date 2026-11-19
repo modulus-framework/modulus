@@ -29,7 +29,7 @@ These components are in the shipped native library whether or not the profile-ph
 are the ones that fail the policy. This is the reason SkiaSharp was removed on 2026-10-24 (the bundle, not the wrapper), and the same
 objection applies now.
 
-**Runtimes.** Verified here: Linux x64 only (the tests ran on net8.0 and net10.0 on Linux x64). Windows, macOS, Linux ARM64, Linux ARM and
+**Runtimes.** Verified here: Linux x64 only (the tests ran on net10.0 on Linux x64). Windows, macOS, Linux ARM64, Linux ARM and
 Linux musl are not tested, and the bundle ships separate native files for those platforms (`runtimes/*`).
 
 **Behaviour that protects the upload.** The decoder runs only after: the size check (5 MB), the format check by magic bytes, the animation check,

@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Operational management API for the transactional outbox: list, inspect, and replay dead-lettered messages.</Description>
+    <Description>Operations API for the Modulus transactional outbox.</Description>
   </PropertyGroup>
 
   <ItemGroup>

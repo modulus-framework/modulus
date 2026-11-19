@@ -130,7 +130,7 @@ public sealed class OutboxProcessorTests
         await using var h = await BuildAsync(
             onDispatch: _ =>
             {
-#pragma warning disable VSTHRD103 // CancelAsync is not available on net8.0
+#pragma warning disable VSTHRD103 // synchronous callback: CancelAsync cannot be awaited here
                 stop.Cancel();
 #pragma warning restore VSTHRD103
                 throw new OperationCanceledException(stop.Token);

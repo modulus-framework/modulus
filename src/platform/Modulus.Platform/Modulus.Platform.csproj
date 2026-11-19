@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Platform services for Modulus: multi-tenancy, authorization, background jobs, in-memory and hybrid (FusionCache) caching, local file storage, SignalR integration, settings, audit logging, notifications, and localization.</Description>
+    <Description>Platform services for Modulus (tenancy, authorization, jobs, caching, storage).</Description>
   </PropertyGroup>
 
   <ItemGroup>

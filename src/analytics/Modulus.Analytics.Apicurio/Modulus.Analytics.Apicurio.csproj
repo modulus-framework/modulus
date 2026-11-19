@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Apicurio Registry publisher for the Modulus Analytics Integration Layer: publishes each dataset version's JSON Schema as a versioned artifact (Apache-2.0 registry, Red Hat sponsored), so producers and consumers of the lake read the same contract.</Description>
+    <Description>Apicurio Registry publisher for Modulus analytics schemas.</Description>
   </PropertyGroup>
 
   <ItemGroup>

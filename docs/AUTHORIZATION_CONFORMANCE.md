@@ -92,7 +92,7 @@ fixture has proven.
 ### 4.1 Projects
 
 - **`src/testing/Modulus.Testing.Authorization`** — packable library (standard repo conventions:
-  `net8.0;net10.0`, CPM, `PublicAPI.Shipped/Unshipped.txt`, `TreatWarningsAsErrors`). Contains the
+  `net10.0`, CPM, `PublicAPI.Shipped/Unshipped.txt`, `TreatWarningsAsErrors`). Contains the
   test world, fixture base and per-row fixtures/assertions. References the authorization engine
   (`Modulus.Platform`, `Modulus.Authorization.EntityFrameworkCore`, `Modulus.Core`) and
   `Modulus.Testing`.

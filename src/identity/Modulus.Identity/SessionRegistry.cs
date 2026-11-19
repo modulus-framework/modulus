@@ -78,7 +78,7 @@ internal sealed class SessionRegistry<TContext>(
 
         var session = new ModulusSession
         {
-            Id = GuidV7.Create(),
+            Id = Guid.CreateVersion7(),
             UserId = start.UserId,
             TenantId = start.TenantId,
             ClientId = Trim(start.ClientId, 128),

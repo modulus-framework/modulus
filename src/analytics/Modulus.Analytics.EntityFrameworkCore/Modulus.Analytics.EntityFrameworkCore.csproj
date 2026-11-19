@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Durable analytics delivery and backfill for Modulus on EF Core: per-tenant resumable backfill runs with checkpoints, an entity-backed source, a transactional queue of captured analytics records with duplicate-safe enqueue, atomic claiming across replicas, a retry schedule, dead-lettering and purge, and the background worker that hands batches to the analytics sinks.</Description>
+    <Description>EF Core durable delivery and backfill for Modulus analytics.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>ASP.NET Core integration for Modulus: middleware pipeline, API versioning, health checks, CORS, security headers, OpenAPI, idempotency, feature flags, and rate limiting.</Description>
+    <Description>ASP.NET Core integration for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,8 +24,8 @@
     <PackageReference Include="Microsoft.Extensions.Compliance.Redaction" />
     <PackageReference Include="Microsoft.Extensions.Telemetry" />
     <!-- Built-in OpenApi with IOpenApiDocumentTransformer -->
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Condition="'$(TargetFramework)' != 'net8.0'" />
-    <PackageReference Include="Microsoft.OpenApi" Condition="'$(TargetFramework)' != 'net8.0'" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi" />
   </ItemGroup>
 
   <!-- The analyzer's build output: bin/<Configuration>/netstandard2.0, or with ArtifactsPath bin/<project>/<configuration>. -->
@@ -43,12 +42,6 @@
     <None Include="build/Synvro.Modulus.AspNetCore.props" Pack="true" PackagePath="build/" Visible="false" />
   </ItemGroup>
 
-  <!-- On net8.0 both logging source generators (Logging.Abstractions' and Telemetry's) would emit the same [LoggerMessage]
-       methods; keep the Telemetry one, which also honours data classification and primary-constructor loggers. -->
-  <Target Name="DropDuplicateLoggerGenerator" BeforeTargets="CoreCompile" Condition="'$(TargetFramework)' == 'net8.0'">
-    <ItemGroup>
-      <Analyzer Remove="@(Analyzer)" Condition="'%(Filename)' == 'Microsoft.Extensions.Logging.Generators'" />
-    </ItemGroup>
-  </Target>
+
 
 </Project>

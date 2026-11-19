@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <!-- Single runtime: the worker is net10.0 only. -->
-    <TargetFrameworks>net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>

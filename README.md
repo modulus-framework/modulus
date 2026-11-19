@@ -4,7 +4,7 @@
   <img src="logo.png" alt="Modulus logo" width="160" />
 </p>
 
-An enterprise-grade **modular monolith** framework for **.NET 8 and .NET 10**, built with an
+An enterprise-grade **modular monolith** framework for **.NET 10**, built with an
 explicit-registration module system, CLI scaffolding, a transactional outbox/inbox,
 and first-class multi-tenancy.
 
@@ -201,13 +201,12 @@ enabled globally). Central Package Management is used via
 
 ## Target frameworks
 
-Every library package targets both **.NET 8** (`net8.0`) and **.NET 10** (`net10.0`), so it works in either runtime:
+Every library package targets **.NET 10** (`net10.0`):
 
-- `net8.0`: .NET 8 LTS (ASP.NET Core and EF Core 8.x)
 - `net10.0`: .NET 10 (ASP.NET Core and EF Core 10.x)
 
-Exceptions: the `Synvro.Modulus.Cli` dotnet tool and the code it generates are .NET 10 only.
-Build from either SDK; SDK 10.0.109 or later is required to build the repository.
+The `Synvro.Modulus.Cli` dotnet tool and the apps it generates target .NET 10 too.
+SDK 10.0.109 or later is required to build the repository.
 
 ## License
 

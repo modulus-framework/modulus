@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>MongoDB inbox store for Modulus idempotent integration-event consumption, sharing the decorator pipeline with the EF Core inbox.</Description>
+    <Description>MongoDB inbox store for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

@@ -8,9 +8,8 @@ internal static class OpenApiSetup
     {
         // Hardened document: metadata from the OpenApi config section + a JWT Bearer security scheme, with a padlock on
         // operations that require authorization.
-{{ if target_framework == "net10.0" }}        builder.Services.AddModulusOpenApi(builder.Configuration);
-{{ else }}        // The OpenAPI document needs .NET 10 (the framework's OpenAPI support is compiled out on net8.0).
-{{ end }}
+        builder.Services.AddModulusOpenApi(builder.Configuration);
+
         return builder;
     }
 }

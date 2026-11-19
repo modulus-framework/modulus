@@ -122,13 +122,7 @@ public static class OpenBaoSecretsExtensions
         if (string.IsNullOrWhiteSpace(options.CaCertificatePath))
             return handler;
 
-#if NET9_0_OR_GREATER
         var ca = X509CertificateLoader.LoadCertificateFromFile(options.CaCertificatePath);
-#else
-#pragma warning disable SYSLIB0057 // X509CertificateLoader is .NET 9+; this branch serves net8.0.
-        var ca = new X509Certificate2(options.CaCertificatePath);
-#pragma warning restore SYSLIB0057
-#endif
         handler.ServerCertificateCustomValidationCallback = (_, certificate, chain, errors) =>
             ValidateAgainstCa(certificate, chain, errors, ca);
         return handler;

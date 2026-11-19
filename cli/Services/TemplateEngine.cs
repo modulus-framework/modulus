@@ -55,11 +55,9 @@ internal sealed class TemplateEngine
         // Every project file targets the app's framework; a model that names none gets the one of the app being written.
         if (!scriptObject.ContainsKey("target_framework"))
             scriptObject["target_framework"] = AppFramework.Resolve(outputPath ?? Directory.GetCurrentDirectory());
-        // The package versions that follow the target, so a net8.0 app never references a net10.0 package.
-        var target = scriptObject["target_framework"]!.ToString()!;
-        scriptObject["ef_core_version"] = AppFramework.EfCoreVersion(target);
-        scriptObject["coverlet_version"] = AppFramework.CoverletVersion(target);
-        scriptObject["cryptography_version"] = AppFramework.CryptographyVersion(target);
+        scriptObject["ef_core_version"] = AppFramework.EfCoreVersion();
+        scriptObject["coverlet_version"] = AppFramework.CoverletVersion();
+        scriptObject["cryptography_version"] = AppFramework.CryptographyVersion();
         var context = new TemplateContext { TemplateLoader = new TemplateLoaderImpl(_assembly) };
         context.PushGlobal(scriptObject);
         return template.Render(context);

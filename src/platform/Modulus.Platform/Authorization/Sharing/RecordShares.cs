@@ -46,7 +46,7 @@ public sealed class RecordShares(
 
         var now = clock.GetUtcNow();
         var share = new RecordShare(
-            Modulus.GuidV7.Create(now), tenant.TenantId, resourceType, resourceId,
+            Guid.CreateVersion7(now), tenant.TenantId, resourceType, resourceId,
             granteeUserId, sharedByUserId, now, now + duration, RevokedAt: null);
         await store.AddAsync(share, ct).ConfigureAwait(false);
         return share;

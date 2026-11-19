@@ -1,12 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Operator HTTP API for messaging: replay the parked messages of an endpoint back to it (FR-09, permission-guarded).</Description>
+    <Description>Operator API for Modulus.Messaging.</Description>
   </PropertyGroup>
 
   <ItemGroup>

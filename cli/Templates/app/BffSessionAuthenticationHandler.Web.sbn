@@ -21,8 +21,9 @@ internal sealed class BffSessionAuthenticationHandler(
 {
     public const string SchemeName = "bff-session";
 
-    private const string SignInPath = "/Account/Login";
-    private const string AccessDeniedPath = "/Account/AccessDenied";
+    // The Liquid host has its own sign-in page; a Razor host has the Account pages.
+    private const string SignInPath = {{ if ui_engine == "fluid" }}"/auth/login"{{ else }}"/Account/Login"{{ end }};
+    private const string AccessDeniedPath = {{ if ui_engine == "fluid" }}"/"{{ else }}"/Account/AccessDenied"{{ end }};
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {

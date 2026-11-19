@@ -50,7 +50,7 @@ Modulus follows a **modular-monolith** architecture — a single deployable appl
 
 ## Package Structure
 
-The repository has 69 projects under `src/`, including analyzers, test helpers and the analytics sinks. The main packages are below (plus the `Synvro.Modulus.Cli` tool). Most libraries target `net8.0` and `net10.0`; the UI packages and the analyzer are the exceptions:
+The repository has 69 projects under `src/`, including analyzers, test helpers and the analytics sinks. The main packages are below (plus the `Synvro.Modulus.Cli` tool). Every library targets `net10.0`; the UI packages are built separately:
 
 | Package | Purpose |
 |---------|---------|

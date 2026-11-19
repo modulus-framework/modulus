@@ -70,8 +70,14 @@ internal sealed class UiAddSessionManagerCommand : Command<UiAddSessionManagerCo
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() => UiPageScaffold.Run(
-            UiPageScaffold.Sessions, "ui/SessionsController", "SessionsController.cs", s.Engine, s.Output, "the session manager",
-            callsApi: true, requiresSignIn: true));
+        return CommandRunner.Run(() =>
+        {
+            var inventory = ModuleDiscovery.Inventory(Path.GetFullPath(s.Output ?? "./"));
+            if (inventory is not null && UiScaffold.ResolveEngine(s.Engine, inventory.SolutionDir) == "fluid")
+                return UiFluidSessions.Run(s.Output);
+            return UiPageScaffold.Run(
+                UiPageScaffold.Sessions, "ui/SessionsController", "SessionsController.cs", s.Engine, s.Output, "the session manager",
+                callsApi: true, requiresSignIn: true);
+        });
     }
 }

@@ -347,15 +347,10 @@ public class EfReadRepository<T>(IServiceProvider sp)
         if (keyType != typeof(Guid))
             throw new NotSupportedException(
                 $"Keyset paging needs an integer, decimal, DateTime, DateTimeOffset or TimeSpan key; {keyType.Name} cannot be compared with > in a query.");
-#if NET10_0_OR_GREATER
         if (providerName == NpgsqlProvider)
             return;
         throw new NotSupportedException(
             $"Guid keyset paging is refused on this provider ({providerName}): only PostgreSQL orders uuid values by position. On SQL Server use an integer or timestamp key and keep the Guid as a tie-breaker.");
-#else
-        throw new NotSupportedException(
-            "Guid keyset paging needs .NET 10: only the .NET 10 build of Modulus orders Guid v7 keys on PostgreSQL. Use an integer or timestamp key on this target.");
-#endif
     }
 
     /// <summary>

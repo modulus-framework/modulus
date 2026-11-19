@@ -5,8 +5,8 @@ using Xunit;
 namespace Modulus.Cli.Tests;
 
 /// <summary>
-/// <c>modulus app --framework</c>: the .NET target of a generated app decides the EF Core provider versions, and every
-/// project file follows the target of the app it belongs to.
+/// The .NET target of a generated app: Modulus targets .NET 10 only, so the EF Core provider versions are the 10.0 ones, and
+/// an app that still targets an older framework is refused rather than silently regenerated.
 /// </summary>
 [Trait("Category", "Unit")]
 [Collection(UxStateCollection.Name)]
@@ -23,16 +23,12 @@ public sealed class FrameworkTargetTests : IDisposable
     }
 
     [Theory]
-    [InlineData("SqlServer", "net8.0", "8.0.32")]
-    [InlineData("PostgreSQL", "net8.0", "8.0.11")]
-    [InlineData("MySQL", "net8.0", "8.0.31")]
-    [InlineData("SQLite", "net8.0", "8.0.32")]
-    [InlineData("SqlServer", "net10.0", "10.0.13")]
-    [InlineData("PostgreSQL", "net10.0", "10.0.3")]
-    [InlineData("MySQL", "net10.0", "10.0.12")]
-    [InlineData("SQLite", "net10.0", "10.0.13")]
-    public void The_provider_version_follows_the_target(string provider, string framework, string version)
-        => DbProviderInfo.Version(provider, framework).Should().Be(version);
+    [InlineData("SqlServer", "10.0.13")]
+    [InlineData("PostgreSQL", "10.0.3")]
+    [InlineData("MySQL", "10.0.12")]
+    [InlineData("SQLite", "10.0.13")]
+    public void The_provider_version_is_the_net10_version(string provider, string version)
+        => DbProviderInfo.Version(provider).Should().Be(version);
 
     [Theory]
     [InlineData("SqlServer", "UseSqlServer")]
@@ -43,17 +39,25 @@ public sealed class FrameworkTargetTests : IDisposable
         => DbProviderInfo.UseMethod(provider).Should().Be(method);
 
     [Fact]
-    public void Without_a_target_the_provider_version_is_the_default_target()
-        => DbProviderInfo.Version("PostgreSQL").Should().Be(DbProviderInfo.Version("PostgreSQL", AppFramework.Default));
-
-    [Fact]
     public void The_framework_of_an_app_is_read_from_its_build_props_for_any_file_below_it()
     {
         var app = Path.Combine(_root, "Shop");
         Directory.CreateDirectory(Path.Combine(app, "src", "Modules", "Catalog"));
-        File.WriteAllText(Path.Combine(app, "Directory.Build.props"), "<Project>\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n  </PropertyGroup>\n</Project>");
+        File.WriteAllText(Path.Combine(app, "Directory.Build.props"), "<Project>\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n  </PropertyGroup>\n</Project>");
 
-        AppFramework.Resolve(Path.Combine(app, "src", "Modules", "Catalog", "Catalog.csproj")).Should().Be("net8.0");
+        AppFramework.Resolve(Path.Combine(app, "src", "Modules", "Catalog", "Catalog.csproj")).Should().Be("net10.0");
+    }
+
+    [Fact]
+    public void An_app_that_targets_another_framework_is_refused_with_the_migration_step()
+    {
+        var app = Path.Combine(_root, "Old");
+        Directory.CreateDirectory(app);
+        File.WriteAllText(Path.Combine(app, "Directory.Build.props"), "<Project>\n  <PropertyGroup>\n    <TargetFramework>net9.0</TargetFramework>\n  </PropertyGroup>\n</Project>");
+
+        var act = () => AppFramework.Resolve(Path.Combine(app, "Old.csproj"));
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*net9.0*net10.0*");
     }
 
     [Fact]
@@ -65,13 +69,17 @@ public sealed class FrameworkTargetTests : IDisposable
     }
 
     [Fact]
-    public void The_app_props_for_net8_name_net8_and_the_default_names_net10()
+    public void The_app_props_name_net10()
     {
-        var net8 = new AppModel { RootNamespace = "Shop", AppName = "Shop", TargetFramework = "net8.0" };
-        var net10 = new AppModel { RootNamespace = "Shop", AppName = "Shop" };
+        var model = new AppModel { RootNamespace = "Shop", AppName = "Shop" };
 
-        var engine = new TemplateEngine();
-        engine.Render("app/Directory.Build.props", net8).Should().Contain("<TargetFramework>net8.0</TargetFramework>");
-        engine.Render("app/Directory.Build.props", net10).Should().Contain("<TargetFramework>net10.0</TargetFramework>");
+        new TemplateEngine().Render("app/Directory.Build.props", model).Should().Contain("<TargetFramework>net10.0</TargetFramework>");
+    }
+
+    [Fact]
+    public void A_new_app_is_pinned_to_the_net10_sdk_band()
+    {
+        new TemplateEngine().Render("app/global.json", new { sdk_version = AppFramework.SdkVersion })
+            .Should().Contain("\"version\": \"10.0.").And.Contain("\"rollForward\": \"latestFeature\"");
     }
 }

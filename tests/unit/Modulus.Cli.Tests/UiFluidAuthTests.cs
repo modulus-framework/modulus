@@ -55,6 +55,7 @@ public sealed class UiFluidComponentCatalogTests
         var fluid = UiComponents.All.Where(c => c.Supports("fluid")).Select(c => c.Key);
 
         fluid.Should().BeEquivalentTo(UiComponents.FluidKeys);
-        UiComponents.All.First(c => c.Key == "select").SupportedEngines.Should().NotContain("fluid").And.Contain("mvc");
+        UiComponents.All.First(c => c.Key == "select").SupportedEngines.Should().Contain("fluid").And.Contain("mvc");
+        UiComponents.All.First(c => c.Key == "color-picker").SupportedEngines.Should().NotContain("fluid").And.Contain("mvc");
     }
 }

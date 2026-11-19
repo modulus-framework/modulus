@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Redis-backed distributed idempotency store for Modulus HTTP request de-duplication on multi-node deployments.</Description>
+    <Description>Redis idempotency store for Modulus HTTP requests.</Description>
   </PropertyGroup>
 
   <ItemGroup>

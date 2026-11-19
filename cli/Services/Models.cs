@@ -11,7 +11,7 @@ internal static class FrameworkVersion
     // generated apps pin Modulus.* packages at this version.
     // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (2.0.0-dev.<sha>).
     public static string Current { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "2.1.0";
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "3.0.0";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
@@ -34,22 +34,14 @@ internal static class DbProviderInfo
         _ => "Microsoft.EntityFrameworkCore.Sqlite",
     };
 
-    /// <summary>The EF Core provider version for a target; the same versions as the framework's Directory.Packages.props.</summary>
-    public static string Version(string provider, string framework = AppFramework.Default) => framework == "net8.0"
-        ? provider switch
-        {
-            "SqlServer" => "8.0.32",
-            "PostgreSQL" => "8.0.11",
-            "MySQL" => "8.0.31",
-            _ => "8.0.32",
-        }
-        : provider switch
-        {
-            "SqlServer" => "10.0.13",
-            "PostgreSQL" => "10.0.3",
-            "MySQL" => "10.0.12",
-            _ => "10.0.13",
-        };
+    /// <summary>The EF Core provider version: the same versions as the framework's Directory.Packages.props.</summary>
+    public static string Version(string provider) => provider switch
+    {
+        "SqlServer" => "10.0.13",
+        "PostgreSQL" => "10.0.3",
+        "MySQL" => "10.0.12",
+        _ => "10.0.13",
+    };
 
     public static string UseMethod(string provider) => provider switch
     {
@@ -261,7 +253,7 @@ internal sealed class AppModel
     public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
 
     /// <summary>EF Core package version for the provider.</summary>
-    public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
+    public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
 
 
     /// <summary>
@@ -532,7 +524,7 @@ internal sealed class ModuleModel
     public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
 
     /// <summary>EF Core package version for the provider.</summary>
-    public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
+    public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
 
     /// <summary>Per-module connection string (fallback if not in appsettings).</summary>
     public string ConnectionString =>

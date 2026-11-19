@@ -156,7 +156,7 @@ internal sealed class AddWebhooksCommand : Command<AddWebhooksCommand.Settings>
         public string WebhooksNamespace => $"{RootNamespace}.Modules.Webhooks";
         public string FrameworkVersion => Services.FrameworkVersion.Current;
         public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
-        public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
+        public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
         public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
         public string WebhooksConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Webhooks");
     }

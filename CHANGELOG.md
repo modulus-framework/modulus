@@ -94,18 +94,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Profile photos are decoded with SkiaSharp 4.153.1** (was ImageSharp 2.1.13). The native bundle includes components under other
   licences (see `THIRD-PARTY-NOTICES.md`). The owner accepted it on 2026-10-25; a legal review is still needed before a commercial
   release. The five ImageSharp advisory suppressions were removed from the repository and the CLI templates.
-- **Packages moved to the newest release in their current line** for most packages: ASP.NET Core and EF Core 10.0.13 (8.0.32 for net8),
+- **Packages moved to the newest release in their current line** for most packages: ASP.NET Core and EF Core 10.0.13,
   Microsoft.Extensions 10.0.13, Microsoft.Extensions.Telemetry 10.11.0, Quartz 3.22.7, Npgsql 10.0.3, MongoDB.Driver 3.13.0,
   StackExchange.Redis 3.0.25, Testcontainers 4.16.0, and others.
 - **Major-version upgrades, both build or test tooling:** NSubstitute 6.2.0 (test mocking, BSD-3-Clause) and Roslynator.Analyzers 5.0.1
   (build analyzer, Apache-2.0).
 - **Generated apps** pin the same versions as the framework: `Microsoft.Extensions.Telemetry.Abstractions` 10.11.0, EF Core 10.0.13
-  (8.0.32 for net8), the provider packages (Npgsql 10.0.3, MySQL 10.0.12), `Microsoft.OpenApi` 2.13.0, `SQLitePCLRaw` 3.0.5 and
+ , the provider packages (Npgsql 10.0.3, MySQL 10.0.12), `Microsoft.OpenApi` 2.13.0, `SQLitePCLRaw` 3.0.5 and
   `JwtBearer` 10.0.13. A generated app no longer conflicts with the framework's versions.
 - Test helpers find the repository root from their source file, so the build output can live outside the repository.
 
 ### Not changed
-- **Quartz 4 and Asp.Versioning 10 are not taken.** Both target only .NET 10, and the framework still targets net8. The latest 3.x and
+- **Quartz 4 and Asp.Versioning 10 are not taken.** Both target only .NET 10. The latest 3.x and
   8.x lines are in use (Quartz 3.22.7, Asp.Versioning.Mvc 8.1.1).
 - **FluentAssertions stays on 7.x.** Version 8 is licensed under the Xceed Community License for non-commercial use only.
 - **Microsoft.OpenApi stays on 2.x.** ASP.NET Core 10 requires `[2.12.2, 3.0.0)`.
@@ -160,13 +160,7 @@ This release closes the production-readiness findings of 2026-10-25 (see `docs/D
 ## [1.5.0] - 2026-10-13
 
 ### Added
-- **.NET 8 support for Realtime.** `Synvro.Modulus.Realtime` and `Synvro.Modulus.Realtime.Redis` multi-target `net8.0;net10.0`
-  like the other libraries. The SSE endpoint writes `text/event-stream` itself (`SseResult`) instead of
-  `TypedResults.ServerSentEvents`, which is .NET 10 only; the wire format is unchanged.
-
 ### Changed
-- Test projects run on both `net8.0` and `net10.0` by default (`ModulusTestTfm` narrows a run). The CLI and its tests stay net10.0.
-- CI runs the unit suite on both runtimes in one job (the separate net8 job is removed).
 
 ### Fixed
 - `EvictableFixedWindowLimiterTests` called a missing helper; it now calls `EvictIdlePartitions()`.
@@ -271,7 +265,6 @@ This release closes the production-readiness findings of 2026-10-25 (see `docs/D
 
 ### Added — unit tests for previously untested packages
 - `Modulus.Storage.S3.Tests`, `Modulus.Storage.AzureBlobs.Tests`, `Modulus.SignalR.Backplane.Tests`, `Modulus.Outbox.Management.Tests`.
-- CI job `unit-net8` runs every library unit suite on the .NET 8 runtime (UI, CLI and Realtime stay net10-only).
 
 
 ### Fixed — token re-verification, tenant claim and outbox batches (Modulus.Identity, Modulus.Outbox, Modulus.Outbox.MongoDB)

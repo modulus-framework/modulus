@@ -295,7 +295,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         where TMessage : class
     {
         var scheduled = ScheduledTransport();
-        var token = Modulus.GuidV7.Create();
+        var token = Guid.CreateVersion7();
         var envelope = EnvelopeForSend(address, message);
         await ScheduleOrRollBack(scheduled, token, [envelope], deliverAt, cancellationToken).ConfigureAwait(false);
         return token;
@@ -305,7 +305,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         where TMessage : class
     {
         var scheduled = ScheduledTransport();
-        var token = Modulus.GuidV7.Create();
+        var token = Guid.CreateVersion7();
         await ScheduleOrRollBack(scheduled, token, EnvelopesForPublish(message), deliverAt, cancellationToken).ConfigureAwait(false);
         return token;
     }
@@ -383,7 +383,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
             }
 
             envelopes.Add(SealIfRequired(new MessageEnvelope(
-                Modulus.GuidV7.Create(),
+                Guid.CreateVersion7(),
                 registration.Endpoint,
                 message,
                 DeliveryHeaders(message, registration.Endpoint, registration.Options, now),
@@ -402,7 +402,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         var endpoint = EndpointFromAddress(address);
         var options = _consumers.FirstOrDefault(r => r.Endpoint == endpoint)?.Options;
         return SealIfRequired(new MessageEnvelope(
-            Modulus.GuidV7.Create(), endpoint, message, DeliveryHeaders(message, endpoint, options, _time.GetUtcNow()),
+            Guid.CreateVersion7(), endpoint, message, DeliveryHeaders(message, endpoint, options, _time.GetUtcNow()),
             WireType: _wireNames(message.GetType())), options);
     }
 
@@ -739,7 +739,7 @@ internal sealed class MessagingBus : IBus, IMessageScheduler, IHostedService, IM
         }
 
         var fault = new MessageEnvelope(
-            Modulus.GuidV7.Create(),
+            Guid.CreateVersion7(),
             replyTo,
             new RequestFault(requestId, exceptionType, message),
             new Dictionary<string, string>(StringComparer.Ordinal));

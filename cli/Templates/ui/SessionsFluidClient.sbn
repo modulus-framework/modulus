@@ -1,0 +1,46 @@
+using System.Net;
+using System.Net.Http.Json;
+using Modulus.Platform.Http;
+using {{ root_namespace }}.Web.Security;
+
+namespace {{ root_namespace }}.Web.Services.ApiClients;
+
+/// <summary>
+/// The signed-in user's active sessions, read and ended through the BFF. The call goes through <see cref="BffGatewayHandler"/>, which
+/// carries the browser's BFF cookie; the BFF adds the access token and proxies <c>account/*</c> to the API.
+/// </summary>
+public sealed class SessionsApiClient(HttpClient http)
+{
+    /// <summary>The caller's active tokens, newest first; null when the browser has no valid session.</summary>
+    public async Task<IReadOnlyList<ApiSession>?> ListAsync(CancellationToken ct = default)
+    {
+        var response = await http.GetAsync("account/sessions", ct);
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+            return null;
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<List<ApiSession>>(ct) ?? [];
+    }
+
+    /// <summary>Ends one of the caller's sessions. False when there is no such session.</summary>
+    public async Task<bool> RevokeAsync(string sessionId, CancellationToken ct = default)
+    {
+        var response = await http.DeleteAsync($"account/sessions/{Uri.EscapeDataString(sessionId)}", ct);
+        return response.IsSuccessStatusCode;
+    }
+}
+
+/// <summary>One active token of the caller, as the API lists it.</summary>
+public sealed record ApiSession(string Id, string Type, string? ClientId, DateTimeOffset? CreatedAt, DateTimeOffset? ExpiresAt);
+
+/// <summary>Registers <see cref="SessionsApiClient"/> with the BFF's address and the browser's cookie.</summary>
+public static class SessionsApiClientRegistration
+{
+    public static IHttpClientBuilder AddSessionsApiClient(this IServiceCollection services, IConfiguration configuration)
+    {
+        var bffBaseUrl = configuration["Bff:BaseUrl"]
+            ?? throw new InvalidOperationException("Bff:BaseUrl is not configured.");
+        return services.AddModulusHttpClient<SessionsApiClient>(http => http.BaseAddress = new Uri($"{bffBaseUrl.TrimEnd('/')}/"))
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false })
+            .AddHttpMessageHandler<BffGatewayHandler>();
+    }
+}

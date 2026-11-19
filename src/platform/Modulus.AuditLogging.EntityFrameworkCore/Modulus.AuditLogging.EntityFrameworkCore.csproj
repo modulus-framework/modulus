@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>EF Core storage for Modulus audit logging: the business audit log and the hash-chained, per-tenant security audit (contiguous sequences under concurrency, chain verification, append-only database scripts).</Description>
+    <Description>EF Core audit log storage for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

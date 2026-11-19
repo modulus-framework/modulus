@@ -158,7 +158,6 @@ function HomepageHeader() {
         </Heading>
         <p className={styles.heroSubtitle}>{siteConfig.tagline}</p>
         <div className={styles.badges} aria-label="Highlights">
-          <span className={styles.badge}>.NET 8</span>
           <span className={styles.badge}>.NET 10</span>
           <span className={styles.badge}>45 libraries</span>
           <span className={styles.badge}>Apache 2.0</span>
@@ -258,7 +257,7 @@ function CodeExample() {
 
 const stats = [
   {value: '45', label: 'framework libraries'},
-  {value: '.NET 8 + 10', label: 'every package, both targets'},
+  {value: '.NET 10', label: 'every package, one target'},
   {value: '6', label: 'external identity providers'},
   {value: '4', label: 'layers per module (Domain to Presentation)'},
 ];

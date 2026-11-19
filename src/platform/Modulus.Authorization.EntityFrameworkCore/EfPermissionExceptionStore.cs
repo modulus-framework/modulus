@@ -48,7 +48,7 @@ public sealed class EfPermissionExceptionStore(IDbContextFactory<AuthorizationSt
         ArgumentNullException.ThrowIfNull(exception);
         var row = new PermissionExceptionRow
         {
-            Id = exception.Id == Guid.Empty ? global::Modulus.GuidV7.Create() : exception.Id,
+            Id = exception.Id == Guid.Empty ? Guid.CreateVersion7() : exception.Id,
             Permission = exception.Permission,
             HolderType = exception.HolderType,
             Holder = exception.Holder,

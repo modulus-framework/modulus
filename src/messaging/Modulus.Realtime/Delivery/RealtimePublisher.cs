@@ -39,7 +39,7 @@ internal sealed class RealtimePublisher(IRealtimeBackplane backplane, IServicePr
             return Task.CompletedTask;
 
         var message = new RealtimeMessage(
-            global::Modulus.GuidV7.Create().ToString("N"),
+            Guid.CreateVersion7().ToString("N"),
             type,
             JsonSerializer.Serialize(data, RealtimeMessage.JsonOptions),
             services.GetService<ICurrentTenant>()?.TenantId,

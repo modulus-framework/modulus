@@ -12,5 +12,5 @@ public sealed class GuidV7ValueGenerator : ValueGenerator<Guid>
 {
     public override bool GeneratesTemporaryValues => false;
 
-    public override Guid Next(EntityEntry entry) => global::Modulus.GuidV7.Create();
+    public override Guid Next(EntityEntry entry) => Guid.CreateVersion7();
 }

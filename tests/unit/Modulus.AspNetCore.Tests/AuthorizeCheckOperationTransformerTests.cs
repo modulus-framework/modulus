@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -56,4 +55,3 @@ public sealed class AuthorizeCheckOperationTransformerTests
         (operation.Security ?? []).Should().BeEmpty();
     }
 }
-#endif

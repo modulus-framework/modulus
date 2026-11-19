@@ -22,7 +22,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("-d|--database")]
         public string? Database { get; init; }
 
-        [Description("Target framework: net10.0 (default) or net8.0. Guid v7 keyset paging is available on net10.0 with PostgreSQL.")]
+        [Description("Target framework: net10.0, the only one Modulus supports (the default).")]
         [CommandOption("--framework")]
         public string? Framework { get; init; }
 
@@ -452,6 +452,9 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         // â”€â”€ Directory.Build.props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _templates.RenderToFile("app/Directory.Build.props", model,
             Path.Combine(projectDir, "Directory.Build.props"));
+        // The SDK the app builds with: the 10.0 band, so a newer SDK installed beside it cannot change the build.
+        _templates.RenderToFile("app/global.json", new { sdk_version = AppFramework.SdkVersion },
+            Path.Combine(projectDir, "global.json"));
 
         // â”€â”€ Directory.Packages.props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         // Disables CPM in the generated app and prevents inheriting a
@@ -838,6 +841,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/AuthEndpoints.Fluid", model, Path.Combine(webDir, "Endpoints", "AuthEndpoints.cs"));
         var authDir = Directory.CreateDirectory(Path.Combine(pagesDir, "auth")).FullName;
         File.Copy(Path.Combine(packageTemplates, "fluid", "auth-login.liquid"), Path.Combine(authDir, "login.liquid"), overwrite: true);
+        // The second step when the account has an authenticator app (AuthEndpoints posts the code to /auth/two-factor).
+        File.Copy(Path.Combine(packageTemplates, "fluid", "auth-two-factor.liquid"), Path.Combine(authDir, "two-factor.liquid"), overwrite: true);
     }
 
     /// <summary>

@@ -48,9 +48,5 @@ public sealed class TrustedProxiesTests
     }
 
     private static IEnumerable<string> Networks(ForwardedHeadersOptions options)
-#if NET10_0_OR_GREATER
         => options.KnownIPNetworks.Select(n => n.ToString());
-#else
-        => options.KnownNetworks.Select(n => $"{n.Prefix}/{n.PrefixLength}".Replace("127.0.0.1/", "127.0.0.0/", StringComparison.Ordinal));
-#endif
 }

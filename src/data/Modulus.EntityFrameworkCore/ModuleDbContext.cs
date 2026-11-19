@@ -255,7 +255,6 @@ public abstract class ModuleDbContext(
     /// </summary>
     private void ConfigureGuidKeys(ModelBuilder mb)
     {
-#if NET10_0_OR_GREATER
         if (Database.ProviderName != "Npgsql.EntityFrameworkCore.PostgreSQL")
             return;
 
@@ -273,7 +272,6 @@ public abstract class ModuleDbContext(
 
             mb.Entity(entity.ClrType).Property(property.Name).HasValueGenerator<GuidV7ValueGenerator>();
         }
-#endif
     }
 
     protected override void OnModelCreating(ModelBuilder mb)

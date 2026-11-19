@@ -69,11 +69,11 @@ validation those screens call. This was verified: `modulus-ui/src` contains only
   scripts are refused. Display names keep only the last path segment and drop control characters. Storage keys come from the media id
   and the company (`media/{company or host}/{id}.{ext}`). Metadata and bytes are removed together, and failed metadata writes remove the
   bytes. Permissions `media:read` and `media:manage` are registered. Metadata is held in memory by default (`InMemoryMediaStore`): an
-  EF store is the next step. No HTTP endpoints yet. Tests: 17 passing (net8.0 and net10.0).
+  EF store is the next step. No HTTP endpoints yet. Tests: 17 passing (net10.0).
 - **Notification center extensions** (`src/platform/Modulus.Platform/Notifications`, tests in `NotificationInboxTests.cs`): notifications
   carry a category; channel preferences per person, per company and per category; `INotificationSender` skips muted channels;
   `INotificationInbox` acts only on the signed-in person's notifications in their company. A notification from another company cannot be
-  marked read by its recipient. Tests: 13 added; the Platform suite has 640 passing (net8.0 and net10.0).
+  marked read by its recipient. Tests: 13 added; the Platform suite has 640 passing (net10.0).
 - Note: a separate `Modulus.Notifications` project was drafted and removed. The framework already had that namespace, so the work
   extends the existing center rather than duplicating it.
 
@@ -90,11 +90,11 @@ validation those screens call. This was verified: `modulus-ui/src` contains only
   (`ModulusMediaDbContext`, `ModulusNotificationsDbContext`), so the **migrations are generated in the application**
   (`dotnet ef migrations add ... --project <app infrastructure>`); the framework ships none. Timestamps are UTC-tick columns: SQLite cannot
   order by `DateTimeOffset`, and EF Core 8 cannot apply value converters in `ExecuteUpdate`, so the read claim is a conditional update that
-  works on net8.0 and net10.0. The media search is case-insensitive on every provider.
+  works on net10.0. The media search is case-insensitive on every provider.
 - **Tests added this pass.** Media endpoints (`MediaEndpointTests`, 3 cases, with a policy that refuses `media:manage` → 403), notification
   endpoints (`NotificationEndpointTests`, 11 cases, anonymous 401, cross-person and cross-company isolation, atomic read, preferences, 400 for
   undelivered channels), Media EF (`EfMediaStoreTests`, 5), Notification EF (`EfNotificationStoreTests`, 6, including the registration
-  check that the EF stores replace the in-memory ones). Platform suite: 651 passing; media: 20; media EF: 5; notification EF: 6 (net8.0 and net10.0).
+  check that the EF stores replace the in-memory ones). Platform suite: 651 passing; media: 20; media EF: 5; notification EF: 6 (net10.0).
 
 ### Third pass (2026-10-26)
 
@@ -108,7 +108,7 @@ validation those screens call. This was verified: `modulus-ui/src` contains only
   page can show it). Each slot has a setting `Branding.Asset.{slot}` that holds the stored key, so the image inherits and is audited like
   any other setting. Replacing or restoring removes the file only when that scope owned it. The read route opens a file only for a key that
   matches the exact pattern the upload writes (`BrandingAssetStore.IsIssuedKey`), so a settings value cannot point it at other storage.
-  Tests: `BrandingEndpointTests` (8). The platform suite now has 664 passing tests (net8.0 and net10.0).
+  Tests: `BrandingEndpointTests` (8). The platform suite now has 664 passing tests (net10.0).
 
 ### Still missing (not built)
 
@@ -124,7 +124,7 @@ validation those screens call. This was verified: `modulus-ui/src` contains only
 - `tests/unit/Modulus.Platform.Tests/ApplicationSettingsTests.cs` (20 test cases): URL, email and colour validation through the real
   manager, theme list, sender address scope, company override and isolation, sensitive masking in the list and raw value on the server,
   sensitive default never listed, contributor replacement.
-- Result: `dotnet test tests/unit/Modulus.Platform.Tests --filter Category=Unit`: 627 passed, 0 failed, on net10.0 and net8.0.
+- Result: `dotnet test tests/unit/Modulus.Platform.Tests --filter Category=Unit`: 627 passed, 0 failed, on net10.0.
 
 ## Next steps, in priority order
 

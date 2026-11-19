@@ -1,4 +1,3 @@
-#if NET10_0_OR_GREATER
 namespace Modulus.EFCore.Integration.Tests;
 
 using Microsoft.EntityFrameworkCore;
@@ -119,4 +118,3 @@ public sealed class GuidV7KeysetPostgresTests(PostgreSqlFixture fixture)
         public ProductsIn(IReadOnlyCollection<Guid> ids) => Filter = p => ids.Contains(p.Id);
     }
 }
-#endif

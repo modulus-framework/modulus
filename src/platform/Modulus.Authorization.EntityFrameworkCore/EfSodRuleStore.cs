@@ -55,7 +55,7 @@ public sealed class EfSodRuleStore(IDbContextFactory<AuthorizationStoreDbContext
 
         var row = new SodRuleRow
         {
-            Id = global::Modulus.GuidV7.Create(),
+            Id = Guid.CreateVersion7(),
             Name = constraint.Name.Trim(),
             NormalizedName = normalized,
             Permissions = Serialize(constraint),

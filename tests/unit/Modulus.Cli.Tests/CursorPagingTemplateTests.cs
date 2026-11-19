@@ -24,7 +24,6 @@ public sealed class CursorPagingTemplateTests
 
     [Theory]
     [InlineData("PostgreSQL", "net10.0", true)]
-    [InlineData("PostgreSQL", "net8.0", false)]
     [InlineData("SQLite", "net10.0", false)]
     [InlineData("SqlServer", "net10.0", false)]
     [InlineData("MySQL", "net10.0", false)]
@@ -50,12 +49,12 @@ public sealed class CursorPagingTemplateTests
         var engine = new TemplateEngine();
 
         engine.Render("module/Domain/IRepository", Module("PostgreSQL", "net10.0")).Should().Contain("GetKeysetPageAsync");
-        engine.Render("module/Domain/IRepository", Module("SQLite", "net8.0")).Should().NotContain("GetKeysetPageAsync");
+        engine.Render("module/Domain/IRepository", Module("SQLite", "net10.0")).Should().NotContain("GetKeysetPageAsync");
 
         var enabled = engine.Render("module/Infrastructure/Repository", Module("PostgreSQL", "net10.0"));
         enabled.Should().Contain("IReadRepository<Product> reads")
             .And.Contain("reads.ListKeysetAsync(");
-        var disabled = engine.Render("module/Infrastructure/Repository", Module("SQLite", "net8.0"));
+        var disabled = engine.Render("module/Infrastructure/Repository", Module("SQLite", "net10.0"));
         disabled.Should().NotContain("reads.ListKeysetAsync(").And.NotContain("CursorCodec");
     }
 }

@@ -181,7 +181,7 @@ internal static class StoreModuleInstaller
         public string TargetFramework { get; init; } = AppFramework.Default;
         public string FrameworkVersion => Services.FrameworkVersion.Current;
         public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
-        public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
+        public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
         public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
         public string ConnectionString => DbProviderInfo.ConnectionString(DbProvider, Key);
     }

@@ -1,14 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- First release: there is no published baseline to compare with yet (see build/Modulus.Packaging.props). Remove this line
          once the package is on nuget.org, so later breaking changes are caught. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Mail and SMS providers for Modulus identity: SendGrid email (v3 API) and Twilio SMS, over plain HTTP with no vendor SDK.</Description>
+    <Description>Email and SMS providers for Modulus identity.</Description>
   </PropertyGroup>
 
   <ItemGroup>

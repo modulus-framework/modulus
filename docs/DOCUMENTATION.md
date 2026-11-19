@@ -11,7 +11,6 @@ This document combines 14 source documents. Contents:
 - [Security stage 2: Company = Tenant](#security-stage-2-company--tenant)
 - [Modulus Authorization & Access Control Framework — Architecture Blueprint](#modulus-authorization--access-control-framework--architecture-blueprint)
 - [Modulus.Identity — architecture & review](#modulusidentity--architecture--review)
-- [Dual-Targeting Plan: net8.0 + net10.0](#dual-targeting-plan-net80--net100)
 - [Modulus Improvement Plan](#modulus-improvement-plan)
 - [Tier 3 Roadmap — Remaining API/Platform Robustness](#tier-3-roadmap--remaining-apiplatform-robustness)
 - [Database roles for tenant isolation](#database-roles-for-tenant-isolation)
@@ -2085,14 +2084,14 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
 - **Partly done.**
   - **F-16:** download disposition and the server-side upload cap are done. Presigned uploads cannot be size-capped by S3 or Azure SAS; that needs S3 POST policies or server-side uploads.
   - **F-25:** least-privilege workflow permissions, CycloneDX SBOM, build provenance attestation, Dependabot for Actions, and NuGet trusted publishing are in `release.yml`. Trusted publishing needs the owner to set the policy on nuget.org, and the workflow is not run here. **Decided 2026-11-18 (owner): packages are not author-signed**; the signing step was removed from `release.yml`, nuget.org's own repository signature applies, and no certificate is needed. Author signing can be added later (`dotnet nuget sign` before the provenance step).
-  - **F-27:** the six declared meters are recorded. OpenTelemetry log export is done: `OpenTelemetry:Otlp:ExportLogs` (default true) adds OTLP and console log exporters, and only when an exporter is configured (tests: `ModulusOpenTelemetrySetupTests`, 5/5 on net8.0 and net10.0). Still open: EF Core instrumentation and `OutboxDepth` summed across replicas.
+  - **F-27:** the six declared meters are recorded. OpenTelemetry log export is done: `OpenTelemetry:Otlp:ExportLogs` (default true) adds OTLP and console log exporters, and only when an exporter is configured (tests: `ModulusOpenTelemetrySetupTests`, 5/5 on net10.0). Still open: EF Core instrumentation and `OutboxDepth` summed across replicas.
   - **P2, rate-limiter partition cap:** done. `EvictableFixedWindowLimiter` caps partitions at `MaxPartitions` (100 000) and an idle sweeper evicts the rest.
-  - **F-28:** in-memory jobs retry with back-off and warn outside Development. Quartz durable store, SQLite, PostgreSQL and SQL Server: `QuartzSchema.CreateSqliteAsync` creates the 11 `QRTZ_` tables from the embedded `Schema/quartz-sqlite.sql` (idempotent; refuses a partly created database), and `UseModulusSqliteStore(connectionString)` switches the scheduler to the ADO.NET store with the System.Text.Json serializer (required by Quartz for a persistent store: job arguments are arbitrary objects). Tests in `QuartzSqliteStoreTests` (4): schema on an empty database and idempotent, partial database refused, persistent store in use, and a durable job survives a restart; 11/11 on net8.0 and net10.0. PostgreSQL: `QuartzSchema.CreatePostgresAsync` and `UseModulusPostgresStore(connectionString)` (Npgsql, same JSON serializer), tested against a real PostgreSQL 17 container in `tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests` (3 tests: schema, persistent store in use, durable job across a restart; 3/3 on net8.0 and net10.0 with the Podman socket). A Production host that runs the in-memory store logs a warning at startup (the hosted service reads `quartz.jobStore.type`; it warns, it does not refuse, so existing apps keep booting). SQL Server: `QuartzSchema.CreateSqlServerAsync` and `UseModulusSqlServerStore(connectionString)`, tested against SQL Server 2022 (`mcr.microsoft.com/mssql/server:2022-latest`) in the same integration project (3/3 on net8.0 and net10.0). The application must load `Microsoft.Data.SqlClient`, which EF Core's SQL Server provider does. Clustering: `clustered: true` on `UseModulusPostgresStore` and `UseModulusSqlServerStore` calls `UseClustering()`. Verified on PostgreSQL that a clustered node checks in to `QRTZ_SCHEDULER_STATE` (1 row) and a non-clustered one does not (0 rows). Several nodes at once: `QuartzClusterProcessTests` starts two clustered node processes (`tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode`, a console app) against one PostgreSQL schema and schedules 20 one-shot jobs. Each job fires exactly once, and both nodes take part (9 and 11 jobs in two runs). An in-process two-node test is not valid: Quartz keeps one scheduler per name per process (both providers returned the same instance).
-  - **F-02:** outbox dispatch is per-tenant. Webhook delivery needs no fan-out: `ModulusWebhooksDbContext` is a host-level store by design (no tenant filter, one database serves every tenant, `WebhookDeliveryProcessor`). Inbox purge, EF Core: built (2026-10-30). `InboxPurge` deletes `Processed` rows older than `InboxOptions.ProcessedRetentionDays` (default 30; zero keeps them) in batches of 1000, never touching pending, processing or failed rows; the host pass covers every inbox context, and a per-tenant context is purged in each active tenant. `InboxPurgeService` runs it every `PurgeIntervalMinutes` (default 60) and is registered once by `AddInbox`. Tests: `InboxPurgeTests` (3, including a 2,250-row batch) on SQLite; `Modulus.Inbox.Tests` 24/24 on net8.0 and net10.0. MongoDB inbox: built (2026-10-30). `MongoInboxPurgeService` (registered by `AddMongoInbox`) deletes processed documents past `ProcessedRetentionDays` in batches of 1000, on the same options and interval. Tests: `MongoInboxPurgeTests` (3, Testcontainers `mongo:7.0`, 4 min on Podman) pass on net8.0 and net10.0. A per-tenant webhook store would be a new design decision.
-  - **Build gate (2026-10-25 session):** `TenantConnectionInterceptorTests` called `Guid.CreateVersion7()`, which breaks the net8.0 build; test ids now use `Guid.NewGuid()` (test-only ids, so the `Modulus.GuidV7` polyfill is not needed). `dotnet build modulus.slnx`: 0 warnings, 0 errors.
+  - **F-28:** in-memory jobs retry with back-off and warn outside Development. Quartz durable store, SQLite, PostgreSQL and SQL Server: `QuartzSchema.CreateSqliteAsync` creates the 11 `QRTZ_` tables from the embedded `Schema/quartz-sqlite.sql` (idempotent; refuses a partly created database), and `UseModulusSqliteStore(connectionString)` switches the scheduler to the ADO.NET store with the System.Text.Json serializer (required by Quartz for a persistent store: job arguments are arbitrary objects). Tests in `QuartzSqliteStoreTests` (4): schema on an empty database and idempotent, partial database refused, persistent store in use, and a durable job survives a restart; 11/11 on net10.0. PostgreSQL: `QuartzSchema.CreatePostgresAsync` and `UseModulusPostgresStore(connectionString)` (Npgsql, same JSON serializer), tested against a real PostgreSQL 17 container in `tests/integration/Modulus.BackgroundJobs.Quartz.Integration.Tests` (3 tests: schema, persistent store in use, durable job across a restart; 3/3 on net10.0 with the Podman socket). A Production host that runs the in-memory store logs a warning at startup (the hosted service reads `quartz.jobStore.type`; it warns, it does not refuse, so existing apps keep booting). SQL Server: `QuartzSchema.CreateSqlServerAsync` and `UseModulusSqlServerStore(connectionString)`, tested against SQL Server 2022 (`mcr.microsoft.com/mssql/server:2022-latest`) in the same integration project (3/3 on net10.0). The application must load `Microsoft.Data.SqlClient`, which EF Core's SQL Server provider does. Clustering: `clustered: true` on `UseModulusPostgresStore` and `UseModulusSqlServerStore` calls `UseClustering()`. Verified on PostgreSQL that a clustered node checks in to `QRTZ_SCHEDULER_STATE` (1 row) and a non-clustered one does not (0 rows). Several nodes at once: `QuartzClusterProcessTests` starts two clustered node processes (`tests/integration/Modulus.BackgroundJobs.Quartz.ClusterNode`, a console app) against one PostgreSQL schema and schedules 20 one-shot jobs. Each job fires exactly once, and both nodes take part (9 and 11 jobs in two runs). An in-process two-node test is not valid: Quartz keeps one scheduler per name per process (both providers returned the same instance).
+  - **F-02:** outbox dispatch is per-tenant. Webhook delivery needs no fan-out: `ModulusWebhooksDbContext` is a host-level store by design (no tenant filter, one database serves every tenant, `WebhookDeliveryProcessor`). Inbox purge, EF Core: built (2026-10-30). `InboxPurge` deletes `Processed` rows older than `InboxOptions.ProcessedRetentionDays` (default 30; zero keeps them) in batches of 1000, never touching pending, processing or failed rows; the host pass covers every inbox context, and a per-tenant context is purged in each active tenant. `InboxPurgeService` runs it every `PurgeIntervalMinutes` (default 60) and is registered once by `AddInbox`. Tests: `InboxPurgeTests` (3, including a 2,250-row batch) on SQLite; `Modulus.Inbox.Tests` 24/24 on net10.0. MongoDB inbox: built (2026-10-30). `MongoInboxPurgeService` (registered by `AddMongoInbox`) deletes processed documents past `ProcessedRetentionDays` in batches of 1000, on the same options and interval. Tests: `MongoInboxPurgeTests` (3, Testcontainers `mongo:7.0`, 4 min on Podman) pass on net10.0. A per-tenant webhook store would be a new design decision.
+  - **Build gate (2026-10-25 session):** `TenantConnectionInterceptorTests` called `Guid.CreateVersion7()`, which breaks the build; test ids now use `Guid.NewGuid()` (test-only ids, so the `Modulus.GuidV7` polyfill is not needed). `dotnet build modulus.slnx`: 0 warnings, 0 errors.
   - **F-09:** the no-identity decision is implemented (grants via `Authorization:AdministratorRoles`), and the job path is authorized as its initiator. Nothing open.
 - **Open, not started.**
-  - **F-15:** partly done. `[ProjectionOf(typeof(Entity))]` (Core) declares that a DTO shows an entity's fields; `FieldClassificationMap` applies the entity's classifications to the same-named properties, and the stricter classification wins, so reads and writes are both covered (`ProjectionFieldSecurityTests`, 4 tests; Platform tests 58/58 for the field area). Closed by analyzer **MOD0005** (`UnprojectedClassifiedFieldAnalyzer`, warning): a public property with the name and type of a classified entity field, on a type that declares no `[ProjectionOf]` and does not classify the property, is reported. It matches by name and type inside the compilation, so an unrelated same-named field can be flagged; the fix is `[ProjectionOf]` on the type or `[Classified]` on the property (`UnprojectedClassifiedFieldAnalyzerTests`, 5/5 on net8.0 and net10.0). The full solution builds with no MOD0005 findings.
+  - **F-15:** partly done. `[ProjectionOf(typeof(Entity))]` (Core) declares that a DTO shows an entity's fields; `FieldClassificationMap` applies the entity's classifications to the same-named properties, and the stricter classification wins, so reads and writes are both covered (`ProjectionFieldSecurityTests`, 4 tests; Platform tests 58/58 for the field area). Closed by analyzer **MOD0005** (`UnprojectedClassifiedFieldAnalyzer`, warning): a public property with the name and type of a classified entity field, on a type that declares no `[ProjectionOf]` and does not classify the property, is reported. It matches by name and type inside the compilation, so an unrelated same-named field can be flagged; the fix is `[ProjectionOf]` on the type or `[Classified]` on the property (`UnprojectedClassifiedFieldAnalyzerTests`, 5/5 on net10.0). The full solution builds with no MOD0005 findings.
   - **F-29:** notifications (email, SMS, push), localization store, and money and time-zone primitives. New packages; needs design decisions.
   - **F-30:** tenant export, offboarding, deletion certificate and retention. New package; needs legal and retention decisions.
   - **F-23:** move the Unshipped public API to Shipped at the 1.6.0 release and enable package validation. The owner published 1.6.0; the Shipped baseline needs that exact build.
@@ -2122,10 +2121,10 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
 - [x] **F-06 (High)** The provisioning host marks a tenant store `Active` with an empty schema: `TenantDataStoreProvisioner.MigrateTenantAsync` (`:238-258`) has no module contexts and uses `MigrateOrCreate`. *Fix:* the provisioner runs the app's module migrations with `Migrate`; activate only after history matches. *Test:* provisioned tenant has every module's tables.
   - Done: `TenantDataStoreProvisioner.MigrateTenantAsync` migrates only the module contexts routed to the store being provisioned, requires EF Core migrations (no `EnsureCreated`), refuses a store with no such context (`ConflictException`), and activates only when no migration is pending. Externally managed (dbsh) contexts are skipped; their schema is applied by their own tool, so activation does not verify it. Tests: `TenantDataStoreProvisionerTests` (migrated schema asserted, no-context refusal), `TenantDatabaseInterceptorTests` (no-migrations refusal), `TenantDataStoreEndpointTests`; `Modulus.MultiTenancy.Tests` 162/162, `Modulus.Authorization.EntityFrameworkCore.Tests` 143/143. The F-06 note that the host has no module contexts was not the cause: the scope has them; the defect was activating without checking the schema.
 - [x] **F-07 (Medium)** `MigrateModulusDatabasesForTenantsAsync` reports success when tenant listing fails or `ICurrentTenant` is null (`TenantDatabaseMigrationExtensions.cs:57-71`). *Fix:* throw.
-- [x] **F-08 (Medium)** No migration lock on net8 (EF 8 providers have no `AcquireDatabaseLockAsync`), and `DatabaseStartup.sbn:32-38` migrates on every replica. *Fix:* advisory lock around migrate and seed on net8; template migrates on startup only when `Database:MigrateOnStartup` is set; document a migrator job.
+- [x] **F-08 (Medium)** No migration lock on the older EF Core providers (no `AcquireDatabaseLockAsync`), and `DatabaseStartup.sbn:32-38` migrates on every replica. *Fix:* advisory lock around migrate and seed; template migrates on startup only when `Database:MigrateOnStartup` is set; document a migrator job.
 - [x] **F-19 (Medium, verify)** `ApplyQueryFilters` (`ModuleDbContext.cs:398-410`) sets filters on derived TPH/TPT types, which EF rejects. *Test:* inheritance model builds.
 - [x] **F-20 (Medium, verify)** Soft delete converts to `Modified` (`:539`) and leaves cascaded dependents in `Deleted`, which are then hard-deleted. *Test:* dependent survives a soft delete.
-- [x] **F-30 (High, missing capability)** *(2026-11-08: closed. The earlier "no module declares handlers" gap is gone: `modulus add-tenant-lifecycle` generates a handler per module with entities, and a generated multi-tenant app now builds with 0 warnings and passes its own tests, including a real export round trip over HTTP (request, worker builds the encrypted archive, download, another company refused). Three defects found on the way and fixed: the generated app never gave a company's Admin the `tenant-data:export` grant (grants belong to a company; the command now adds it to `CompanyProvisioning:Grants`), `ICompanyProvisioner.ProvisionAsync` threw "PermissionRegistry is frozen" once the host had started (an unchanged redeclaration is now a no-op), and an analytics offboarding race (see `docs/ANALYTICS_PROGRESS.md`). Still open, by decision: the Quartz retention driver has not run against a Quartz store, and the decision's backup and retention periods are defaults. 2026-11-09: the owner accepted the defaults for now (backups 90 days; financial and security audit unlimited). Revisit before a customer relies on a deletion certificate: it states the backup period, which must match the real backup retention.) 2026-11-02: foundation built as the optional packages `Modulus.Tenancy.Lifecycle` and `Modulus.Tenancy.Lifecycle.EntityFrameworkCore`. Built: a central `TenantDataRegistry` (dataset categories Owned, Retained, Audit, Global, retention classes, validation); module-owned `ITenantDataHandler` and `ITenantOffboardingStep`, run inside the company's tenant context (no generic SQL deletion); `ITenantLifecycleProvider`; encrypted export archive (ZIP with per-dataset JSON and CSV, attachments, a manifest with SHA-256 per entry; chunked AES-256-GCM, every chunk authenticated, a damaged archive writes nothing); download for the company's own administrators behind `tenant-data:export`, expiry after seven days; offboarding (suspend, integrations, optional export, legal hold check, deletion, certificate), resumable step by step; legal holds that stop deletion and override export expiry; retention sweep with receipts; HMAC-signed deletion certificate with per-dataset outcomes and backup expiry; EF Core store in the host database, outside company data. Tests: 43 lifecycle (net8.0 and net10.0), 6 EF store (SQLite). Not done: no module declares handlers in this repository, so the generated apps have no tenant-data handlers yet; retention runs on the lifecycle's worker by default, or on the platform scheduler (Quartz) with `TenantLifecycle:RetentionDriver = Scheduler` (the Quartz path is registered and unit-tested with a recording scheduler, not run against a Quartz store); export archives go through `UploadAsync`, so `Storage:MaxUploadBytes` caps their size; no plaintext reaches disk: the archive is written through the encryption stream, and the CSV waits in a temporary file encrypted under a per-dataset in-memory key (45 lifecycle tests, net8.0 and net10.0); the decision's backup and retention periods are defaults the owner must confirm. Original note 2026-11-01: needs a design for which data each module holds per tenant before any export or deletion can be built.)* No tenant export, offboarding, deletion certificate or retention job (AGENTS.md confirms not built). *Fix:* optional package, not core.
+- [x] **F-30 (High, missing capability)** *(2026-11-08: closed. The earlier "no module declares handlers" gap is gone: `modulus add-tenant-lifecycle` generates a handler per module with entities, and a generated multi-tenant app now builds with 0 warnings and passes its own tests, including a real export round trip over HTTP (request, worker builds the encrypted archive, download, another company refused). Three defects found on the way and fixed: the generated app never gave a company's Admin the `tenant-data:export` grant (grants belong to a company; the command now adds it to `CompanyProvisioning:Grants`), `ICompanyProvisioner.ProvisionAsync` threw "PermissionRegistry is frozen" once the host had started (an unchanged redeclaration is now a no-op), and an analytics offboarding race (see `docs/ANALYTICS_PROGRESS.md`). Still open, by decision: the Quartz retention driver has not run against a Quartz store, and the decision's backup and retention periods are defaults. 2026-11-09: the owner accepted the defaults for now (backups 90 days; financial and security audit unlimited). Revisit before a customer relies on a deletion certificate: it states the backup period, which must match the real backup retention.) 2026-11-02: foundation built as the optional packages `Modulus.Tenancy.Lifecycle` and `Modulus.Tenancy.Lifecycle.EntityFrameworkCore`. Built: a central `TenantDataRegistry` (dataset categories Owned, Retained, Audit, Global, retention classes, validation); module-owned `ITenantDataHandler` and `ITenantOffboardingStep`, run inside the company's tenant context (no generic SQL deletion); `ITenantLifecycleProvider`; encrypted export archive (ZIP with per-dataset JSON and CSV, attachments, a manifest with SHA-256 per entry; chunked AES-256-GCM, every chunk authenticated, a damaged archive writes nothing); download for the company's own administrators behind `tenant-data:export`, expiry after seven days; offboarding (suspend, integrations, optional export, legal hold check, deletion, certificate), resumable step by step; legal holds that stop deletion and override export expiry; retention sweep with receipts; HMAC-signed deletion certificate with per-dataset outcomes and backup expiry; EF Core store in the host database, outside company data. Tests: 43 lifecycle (net10.0), 6 EF store (SQLite). Not done: no module declares handlers in this repository, so the generated apps have no tenant-data handlers yet; retention runs on the lifecycle's worker by default, or on the platform scheduler (Quartz) with `TenantLifecycle:RetentionDriver = Scheduler` (the Quartz path is registered and unit-tested with a recording scheduler, not run against a Quartz store); export archives go through `UploadAsync`, so `Storage:MaxUploadBytes` caps their size; no plaintext reaches disk: the archive is written through the encryption stream, and the CSV waits in a temporary file encrypted under a per-dataset in-memory key (45 lifecycle tests, net10.0); the decision's backup and retention periods are defaults the owner must confirm. Original note 2026-11-01: needs a design for which data each module holds per tenant before any export or deletion can be built.)* No tenant export, offboarding, deletion certificate or retention job (AGENTS.md confirms not built). *Fix:* optional package, not core.
 
 ### Authorization and data exposure
 
@@ -2158,7 +2157,7 @@ Ticked above: every finding whose fix is in code and tested. Still open, with th
 
 - `dotnet build modulus.slnx -c Release`: 0 warnings, 0 errors.
 - `dotnet format modulus.slnx --verify-no-changes`: clean.
-- `dotnet test modulus.slnx --filter "Category=Unit"`: green on net8.0 and net10.0.
+- `dotnet test modulus.slnx --filter "Category=Unit"`: green on net10.0.
 - Integration (Podman, `Category=Integration`): bulk-operation guard (SQLite, PostgreSQL), per-tenant outbox (MySQL/PostgreSQL), host-after-tenant routing, provisioning schema.
 - CLI suite green after template changes; a regenerated `api --auth openiddict --multi-tenancy` app from a local feed passes its tests, including `SecurityProbeTests` and a job-path permission test.
 - Each finding's named test fails before its fix and passes after it.
@@ -2204,7 +2203,7 @@ Decisions taken:
 | `dotnet list package --vulnerable --include-transitive` | PASS, none | PASS |
 | `dotnet build modulus.slnx -c Release` (2026-10-22) | PASS | PASS: 0 warnings, 0 errors |
 | `dotnet format modulus.slnx --verify-no-changes` (2026-10-22) | PASS | PASS (exit 0) |
-| `dotnet test modulus.slnx --filter Category=Unit` (2026-10-22) | PASS | PASS: 71 test assemblies, 0 failed, net8.0 and net10.0 |
+| `dotnet test modulus.slnx --filter Category=Unit` (2026-10-22) | PASS | PASS: 71 test assemblies, 0 failed, net10.0 |
 | `dotnet pack modulus.slnx -c Release` (2026-10-22) | PASS | PASS: Synvro.Modulus.* 1.5.0, Cli 1.5.5 |
 | Generated `api --auth openiddict --multi-tenancy` app, tests from the local feed (2026-10-22) | PASS | PASS: 11/11, including `SecurityProbeTests`. **Fails against the published nuget.org 1.5.0 packages**: see the open item below |
 | Mongo, EF Core and RLS integration tests (Docker or Podman) | not run | Run 2026-10-23 (Podman): EF Core 46/46 and 49/49, Mongo 6/6 |
@@ -2359,7 +2358,7 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
 - [x] **Resolved (verified 2026-11-09):** the CLI templates' use of `IDimensionValueRegistry` / `IResourceScopeGuard` was a gap in the published 1.5.0 Platform. Published `Synvro.Modulus.Platform` 2.0.0 (and 1.6.0 onward) contains both types, and the published CLI 2.0.0 pins 2.0.0. Installing CLI 2.0.0 from nuget.org, running `modulus app Shop --with-example --kind api --auth openiddict --multi-tenancy` with no local feed, then `dotnet build` gave 0 warnings, 0 errors, and `dotnet test` passed 13/13.
 - [x] **Found 2026-10-23, reverted (Step 5 blocker):** the navigation wiring in the API templates (`cli/Templates/app/api/FeatureServicesSetup.sbn` `using Modulus.Navigation;` and `AddModulusNavigation()`, `FeatureEndpoints.sbn` `MapModulusNavigation()`) does not compile against the published `Synvro.Modulus.Platform` 1.5.0: its DLL has no `Modulus.Navigation` namespace. A `webapp+api` app generated today with the default packages fails with CS0234 in `Shop.Api`. It builds with 0 warnings against the local `1.5.0-local.4` feed (`feed4`), which has the namespace. Restored 2026-10-23 for the 1.6.0 release, which contains navigation: generated OpenIddict APIs wire the menu again. Generated apps must use 1.6.0.
 - [x] Mongo, EF Core and RLS integration tests run for this wrap-up (2026-10-23, Podman containers, `Category=Integration`):
-  `Modulus.EFCore.Integration.Tests` 46/46 (net8.0) and 49/49 (net10.0), including PostgreSQL and SQL Server row-level security,
+  `Modulus.EFCore.Integration.Tests` 46/46 and 49/49 (net10.0), including PostgreSQL and SQL Server row-level security,
   MySQL database-per-tenant and tenant isolation; `Modulus.Data.MongoDB.Tests` 6/6 on both targets. Zero skipped.
 - [ ] Tick every box above and set the status to "complete".
 
@@ -2367,7 +2366,7 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
 
 - `dotnet build modulus.slnx -c Release`: 0 warnings, 0 errors.
 - `dotnet format modulus.slnx --verify-no-changes`: clean.
-- `dotnet test modulus.slnx --filter "Category=Unit"`: green. Also run the net8 leg on the touched projects (`-p:ModulusTestTfm=net8.0`).
+- `dotnet test modulus.slnx --filter "Category=Unit"`: green. 
 - `dotnet list modulus.slnx package --vulnerable --include-transitive`: none.
 - Integration tests (Docker or Podman) for Mongo, the outbox and RLS.
 - `dotnet pack modulus.slnx -c Release`, then generate an `api --auth openiddict --multi-tenancy` app from the local feed and run its tests, including `SecurityProbeTests`.
@@ -2399,21 +2398,19 @@ Tests: `tests/unit/Modulus.Data.MongoDB.Tests`, `Modulus.Outbox.Tests`, `Modulus
 - **Generation.** `ModuleDbContext` gives a Guid key the application does not set a `GuidV7ValueGenerator` (time-ordered Guid v7), but only on a .NET 10 build with the Npgsql provider. Other providers and targets keep their own generation. Test: `A_key_the_application_does_not_set_is_generated_as_guid_v7_on_postgres` (PostgreSQL, through Testcontainers).
 - **Keyset.** A Guid key is accepted by `ListKeysetAsync` only on .NET 10 with Npgsql. The seek is `key.CompareTo(after) > 0`, because a Guid has no `>` in expression trees. PostgreSQL orders `uuid` bytewise in RFC order, so the pages follow creation time. Tests: `GuidV7KeysetPostgresTests` (25 rows paged in uuid order; cursor decodes to the last id).
 - **SQL Server.** Guid keys are refused for keyset and cursor paging: SQL Server orders `uniqueidentifier` by a byte order that is not chronological for Guid v7, so a keyset seek would skip or repeat rows. Use an integer or timestamp key there, with the Guid as a tie-breaker.
-- **Other targets.** On .NET 8 a Guid keyset is refused with a message that names the .NET 10 requirement.
 
-### CLI: `modulus app --framework`
+### CLI: target framework
 
-- `--framework net8.0|net10.0` (default `net10.0`) sets the target of the generated app. The app's `Directory.Build.props` carries it, and every project file uses `{{ target_framework }}`, so modules, tests and the shared kernel follow it. Add-commands (`add-module`, `generate-crud`, `add-audit-store`, `add-webhooks`, `add-bff`) read the target from the app's props.
-- **Package versions follow the target.** `DbProviderInfo.Version(provider, framework)` returns the same provider versions as the framework's `Directory.Packages.props` (net8.0: SqlServer 8.0.31, PostgreSQL 8.0.11, MySQL 8.0.8, SQLite 8.0.31; net10.0: 10.0.9, 10.0.2, 10.0.7, 10.0.9). EF Core, EF Design and the test packages (coverlet, System.Security.Cryptography) take their versions from `AppFramework` in the same way.
-- **OpenAPI is net10-only.** The framework's OpenAPI support (`AddModulusOpenApi`, `MapOpenApi`, the BFF `AddOpenApi`) is compiled out on net8.0, so the templates emit it only for net10.0. On net8.0 the OpenAPI setup method stays as a no-op.
-- **Verified.** A generated `--framework net8.0 --database PostgreSQL` app builds with 0 warnings and 0 errors and passes its 7 generated tests. A default net10.0 PostgreSQL app builds with 0 warnings and 0 errors. The CLI suite passes 575/575 (also three runs in a row after a test fix: `ModuleDiscoveryTests` now gives each test its own temp folder, because it scans every file beside the one it is given, which raced with the other tests' temp folders).
-- **Engine fix.** The MySQL provider's options method is `UseMySQL` (capital SQL); the CLI emitted `UseMySql`, which did not compile. Fixed, with a regression test in `FrameworkTargetTests`. Generated SQL Server, MySQL and SQLite apps build on both targets.
+- Generated apps target `net10.0` only. The CLI has no framework option; `AppFramework` (`cli/Services/AppFramework.cs`) supplies the target and the package versions.
+- **OpenAPI.** The framework's OpenAPI support (`AddModulusOpenApi`, `MapOpenApi`, the BFF `AddOpenApi`) is always generated.
+- **Verified.** A default net10.0 PostgreSQL app builds with 0 warnings and 0 errors. The CLI suite passes 575/575 (also three runs in a row after a test fix: `ModuleDiscoveryTests` now gives each test its own temp folder, because it scans every file beside the one it is given, which raced with the other tests' temp folders).
+- **Engine fix.** The MySQL provider's options method is `UseMySQL` (capital SQL); the CLI emitted `UseMySql`, which did not compile. Fixed, with a regression test in `FrameworkTargetTests`. Generated SQL Server, MySQL and SQLite apps build on net10.0.
 
 ### CLI: generated keyset (cursor) endpoints
 
 - **Where.** A generated module gets a cursor query, handler and endpoint (`GET /api/{module}/{route}/cursor?cursor=&pageSize=`) and a keyset method on its repository only when `ModuleModel.CursorPaging` is true: PostgreSQL on .NET 10. Everywhere else the module keeps the offset endpoint alone. `generate-crud` reads the module's engine from the app inventory, so an existing PostgreSQL module gets the cursor files for each new entity.
 - **Response.** The page is the framework's `KeysetPage<T>` inside the usual envelope: `items`, `hasNextPage`, `nextCursor`. The cursor is an opaque token; a malformed one is `400`.
-- **Verified end to end.** A generated `--database PostgreSQL` app on .NET 10 was built, run against PostgreSQL 16 (Podman), and walked page by page with `pageSize=3`: seven products came back once each, in creation order, over three pages, and a malformed cursor returned `400`. Gate-off apps (net8.0 PostgreSQL, SQLite net8.0) build with 0 errors. Template tests: `CursorPagingTemplateTests`.
+- **Verified end to end.** A generated `--database PostgreSQL` app on .NET 10 was built, run against PostgreSQL 16 (Podman), and walked page by page with `pageSize=3`: seven products came back once each, in creation order, over three pages, and a malformed cursor returned `400`. Gate-off apps (other providers) build with 0 errors. Template tests: `CursorPagingTemplateTests`.
 - **Packaging note.** A local feed has to be repacked after framework changes (`dotnet pack -o <feed>`); the generated app otherwise restores the old `Synvro.Modulus.*` packages, which lack `KeysetPage`.
 
 <!-- source: docs/SECURITY_STAGE2_PLAN.md -->
@@ -2912,7 +2909,7 @@ smaller gap), item 7 (account route), item 2 (`--multi-tenancy`) and item 5 (log
    (`ClassifiedLoggerMessageAnalyzer`, 2026-10-23) warns on each classified parameter (other than `[InternalData]`) when the
    project does not reference `Microsoft.Extensions.Telemetry.Abstractions`. It reads the project's references, so a reference
    that arrives only transitively counts as present and the warning is missed, never raised wrongly. Tests:
-   `ClassifiedLoggerMessageAnalyzerTests` (3 tests, analyzer suite 21/21 on net8.0 and net10.0). Repo projects and the CLI
+   `ClassifiedLoggerMessageAnalyzerTests` (3 tests, analyzer suite 21/21 on net10.0). Repo projects and the CLI
    templates pass: the test project references the package directly, and the generated apps' `Directory.Build.props` does too.
 6. ~~Smaller gaps.~~ All done: token revocation audited, `Unscoped(reason)` audited, Mongo database per tenant,
    `OpenTenantConnectionAsync` for Dapper / read models, GraphQL fields and realtime topics in the guard report, and the
@@ -4484,131 +4481,6 @@ Recommended as a follow-up.
       token shape (see §6 matrix).
 
 <!-- source: docs/archive/DUAL_TARGETING_PLAN.md -->
-## Dual-Targeting Plan: net8.0 + net10.0
-
-> **Status: completed (archived 2026-10-11).** As-built notes live in AGENTS.md → "Dual targeting".
-
-Derived from the 2026-07-26 NuGet-packaging review. Goal: every publishable
-`src/` package builds and restores cleanly for **both** `net8.0` and `net10.0`
-consumers, so the framework isn't limited to .NET 10-only apps. `cli/` is
-explicitly **out of scope** — it stays `net10.0`-only.
-
-**Status: implemented.** Every `src/` library except Realtime (+ Redis) and the analyzer multi-targets `net8.0;net10.0`. The UI packages left with the older UI (commit `44befc6`). See `AGENTS.md` (*Dual targeting*). The CI net8 leg is `unit-net8` in `.github/workflows/ci.yml`.
-
-The sections below are the plan as written before implementation, kept for the reasoning. Where they describe the current state, read the status line above.
-
-### Current state
-
-Before this work, every `src/` project (45 csproj files today) hard-pinned
-`<TargetFramework>net10.0</TargetFramework>` via `build/Modulus.Common.props`.
-`Directory.Packages.props` pins a single version — mostly `10.0.9`/`10.x` — for
-every package, including ones whose major version is locked to the runtime
-(ASP.NET Core shared-framework packages, EF Core design-time tooling).
-
-One artifact of an earlier, half-finished attempt already exists:
-`src/core/Modulus.AspNetCore/Modulus.AspNetCore.csproj` has a
-`Condition="'$(TargetFramework)' == 'net8.0'"` branch for Swashbuckle that's
-currently dead code, since the TFM is singular.
-
-### Why this isn't a version-bump — it's per-package conditional versioning
-
-ASP.NET Core / EF Core packages that ship as part of, or bind directly to, the
-shared framework are versioned in lockstep with the runtime major version —
-confirmed a `10.0.x` release of these cannot be referenced from a `net8.0`
-project. Central Package Management (CPM) supports this via
-`Condition="'$(TargetFramework)'=='net8.0'"` on `<PackageVersion>` entries, so
-the fix is per-package, not a single global downgrade.
-
-### Package-by-package scope
-
-**Runtime-locked — needs a net8.0 + net10.0 version pair in `Directory.Packages.props`:**
-
-| Package | Used by | Net10 (current) | Net8 target |
-|---|---|---|---|
-| `Microsoft.AspNetCore.OpenApi` | `Modulus.AspNetCore` | 10.0.9 | 8.0.x latest patch |
-| `Microsoft.AspNetCore.SignalR.StackExchangeRedis` | `Modulus.SignalR.Backplane` | 10.0.9 | 8.0.x latest patch |
-| `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | `Modulus.Identity` | 10.0.9 | 8.0.x latest patch |
-| `Microsoft.AspNetCore.Authentication.OpenIdConnect` | `Modulus.Identity` | 10.0.9 | 8.0.x latest patch |
-| `Microsoft.AspNetCore.Mvc.Testing` | `Modulus.Testing` | 10.0.9 | 8.0.x latest patch |
-| `Microsoft.EntityFrameworkCore.Design` | (CLI templates / dev-time only — not a `src/` PackageReference today, confirm before scaffolding tooling touches it) | 10.0.9 | 8.0.x latest patch |
-
-**ASP.NET Core-adjacent, needs verification but likely fine as multi-target (confirm during implementation, don't assume):**
-
-| Package | Used by |
-|---|---|
-| `Microsoft.EntityFrameworkCore`, `.Relational`, `.SqlServer`, `.Sqlite`, `.InMemory` | `Modulus.EntityFrameworkCore`, `Modulus.Mediator`, `Modulus.Authorization.EntityFrameworkCore`, `Modulus.MultiTenancy.EntityFrameworkCore`, `Modulus.Data.SqlServer`, `Modulus.Data.SQLite`, `Modulus.Testing` |
-| `Npgsql.EntityFrameworkCore.PostgreSQL` | `Modulus.Data.PostgreSQL` |
-| `MySql.EntityFrameworkCore` | `Modulus.Data.MySQL` |
-| `Microsoft.Azure.SignalR` | `Modulus.SignalR.Backplane` |
-| `OpenIddict.AspNetCore`, `OpenIddict.EntityFrameworkCore` | `Modulus.Identity` |
-
-EF Core's own GitHub issue history shows the *Design* package needed an
-explicit min-dependency fix to unblock net8 consumers — implying the core EF
-runtime packages already multi-target net8/9/10 normally. Still needs a
-restore-and-build check per package, not an assumption.
-
-**Not runtime-locked, single version is fine:** `Microsoft.Extensions.*`,
-`MongoDB.Driver`, `StackExchange.Redis`, `RabbitMQ.Client`, `Confluent.Kafka`,
-`FluentValidation(.DependencyInjectionExtensions)`, `ErrorOr`,
-`OpenTelemetry*`, `Polly`, `Microsoft.Extensions.Http.Resilience`,
-`AWSSDK.S3`, `Azure.Storage.Blobs`, `Asp.Versioning.Mvc(.ApiExplorer)`,
-`Microsoft.FeatureManagement.AspNetCore`, `Swashbuckle.AspNetCore`,
-`Microsoft.IdentityModel.*`, `System.IdentityModel.Tokens.Jwt`, `Cronos`,
-`Rebus*`.
-
-### Execution steps
-
-1. **`build/Modulus.Common.props`**: change
-   `<TargetFramework>net10.0</TargetFramework>` to
-   `<TargetFrameworks>net8.0;net10.0</TargetFrameworks>` (the shared default
-   every `src/` project inherits). Exclude `cli/` (it imports its own props
-   or is excluded from this import already — verify).
-2. **`Directory.Packages.props`**: for each runtime-locked package in the
-   table above, split the single `<PackageVersion>` into two entries gated by
-   `Condition="'$(TargetFramework)'=='net8.0'"` /
-   `Condition="'$(TargetFramework)'=='net10.0'"`.
-3. **Per-project conditional `PackageReference`s where the package itself
-   differs by TFM**, not just the version (e.g. the existing
-   Swashbuckle-vs-built-in-OpenApi split in `Modulus.AspNetCore.csproj` —
-   confirm no other project needs an equivalent branch, e.g. anywhere using
-   .NET 10-only OpenApi transformer APIs, params collections, or other
-   net10-exclusive BCL/ASP.NET Core APIs).
-4. **Source-level compat audit**: grep for any net10.0-only APIs currently in
-   use (the `AuthorizeCheckOperationTransformer` / `ModulusOpenApiDocumentTransformer`
-   in `src/core/Modulus.AspNetCore/OpenApi/` are built against the .NET 10
-   `Microsoft.AspNetCore.OpenApi` transformer pipeline — need a Swashbuckle
-   equivalent code path or `#if NET10_0` guards for net8.0). This is likely
-   the largest actual code-change surface, not the csproj/CPM plumbing.
-5. **Restore + build both TFMs** (`dotnet build -f net8.0`, `-f net10.0`) and
-   fix fallout package-by-package rather than assuming the "likely fine"
-   table is correct.
-6. **Tests**: decide whether `tests/` also multi-targets (run the full suite
-   against both TFMs) or stays net10.0-only and just validates the net10
-   build — recommend multi-targeting tests too since behavioral drift between
-   TFMs (e.g. the OpenApi/Swashbuckle branch) is exactly what tests should
-   catch.
-7. **Samples**: `samples/*` currently pin their own `Directory.Build.props` —
-   decide whether they demonstrate net8.0 consumption too, or stay net10.0
-   reference apps (lower priority than the framework packages themselves).
-8. **CI**: build matrix needs both TFMs (and likely both a .NET 8 SDK and
-   .NET 10 SDK installed in the runner) — check current workflow file(s) for
-   what needs updating.
-
-### Open questions (as written before implementation)
-
-- Does the .NET 8 SDK need to be installed alongside .NET 10 in dev/CI
-  environments, or does `net8.0` targeting just need the runtime pack (no
-  separate SDK)?
-- Should package `Version`/`VersionSuffix` in `Modulus.Packaging.props` stay
-  single per package (one `.nupkg` with two `lib/net8.0` and `lib/net10.0`
-  folders — the normal multi-target NuGet layout), confirming this is the
-  intended packaging shape rather than two separate packages per TFM.
-- Scope check: does "the framework" mean all of `src/` uniformly, or could
-  some platform-specific packages (e.g. `Modulus.AspNetCore.Redis`,
-  `Modulus.SignalR.Backplane`) reasonably stay net10.0-only if their net8.0
-  equivalents are impractical?
-
-<!-- source: docs/archive/IMPROVEMENT_PLAN.md -->
 ## Modulus Improvement Plan
 
 > **Status: completed (archived 2026-10-11).** All P0 items are done. This file is kept as the decision log.
@@ -4969,7 +4841,7 @@ field-level security → feature entitlements → delegation + governance).
 
 #### R1. Trust & hygiene — ✅ DONE
 - **`PROJECT_STRUCTURE.md` rewritten** — it described an unrelated project
-  (FoodDeliveryApp, .NET 8, MediatR/MassTransit/Quartz); now documents the actual
+  (FoodDeliveryApp, MediatR/MassTransit/Quartz); now documents the actual
   repo. Policy: never let a doc describe a codebase that isn't this one.
 - **Phantom package pins pruned** from `Directory.Packages.props` (Hangfire, Quartz,
   Dapper, Cassandra, Cosmos, Elastic, DynamoDB, SQS, Service Bus, Serilog,
@@ -5119,7 +4991,7 @@ in `samples/cobytemed-erp-app/README.md`; headline points:
   already dead code, never wired into the live pipeline); `AddModulusIdempotency`
   is net new. `Modulus.Observability` wires Mediator command/query spans into
   the app's existing OpenTelemetry pipeline.
-- Forced a `net8.0` → `net10.0` bump (Modulus doesn't multi-target) and a
+- Forced a bump to `net10.0` (Modulus targets one framework) and a
   matching wave of EF Core/Npgsql/FluentValidation/Swashbuckle package bumps,
   plus a local `Directory.Build.props`/`Directory.Packages.props` so the
   sample doesn't inherit the framework repo's own build props.
@@ -6036,7 +5908,7 @@ map → 2. A3 → 3. A4 → 4. A10 → 5. A1/A2 (additive, migration-gated) → 
 expanded — A6–A8, A11 retention, advanced A12 and A13–A15 stay in later phases.
 
 **Mandatory repository gates** (definition of done for every affected work item): dual targeting
-`net8.0;net10.0` with per-TFM versions; new public contracts in `PublicAPI.Unshipped.txt`;
+`net10.0` with per-TFM versions; new public contracts in `PublicAPI.Unshipped.txt`;
 InMemoryStoreCheck naming/defaults review for new stores; SecurityGuard + loosening-allowlist +
 CLI template-test compatibility for any enforcement/default change; Central Package Management +
 open-source-only dependencies; this registration pointer updated in the same change. Unresolved
@@ -6094,7 +5966,7 @@ Phase 7 is the `modulus-ui` adapter, in that repository.
 - [x] Health check against `sys/health`.
 - [x] Assets in `deploy/openbao/`: `runtime-read.hcl`, `provisioner.hcl`, `bootstrap-dev.sh`.
 - [x] Unit tests (`Modulus.Secrets.OpenBao.Tests`, 39) and container tests against `openbao/openbao:2.1.0`
-  (`Modulus.Secrets.OpenBao.Integration.Tests`, 6), on net8.0 and net10.0.
+  (`Modulus.Secrets.OpenBao.Integration.Tests`, 6), on net10.0.
 - **Fixed during Phase 2:** the AppRole login went to `auth/kubernetes/login` because the mount defaulted to `kubernetes`. The
   mount now follows the method unless `MountPath` is set.
 
@@ -6187,7 +6059,7 @@ The organization entities follow the same pattern as the tenant store. Step 3 (i
 - `IOrgUnitAdministration` (new) carries the add and re-parent operations that the management API uses, so the management extension no
   longer depends on the concrete default hierarchy class.
 - Tests: `OrganizationExtensibilityTests` (an application org unit column persists; the hierarchy works on the application's type).
-  Existing authorization EF tests (51) and management tests (85) pass on net8.0 and net10.0.
+  Existing authorization EF tests (51) and management tests (85) pass on net10.0.
 
 ### Phase 4: provisioning and rotation (built, 2026-10-19)
 
@@ -6242,7 +6114,7 @@ Completed in the third pass:
 
 Still open in Phase 4 (deployment, not code):
 
-- [x] **Provisioning host (built 2026-10-24).** `modulus add-openbao --provisioner` (PostgreSQL and SQL Server) generates `src/Provisioning/{App}.Provisioning`: a separate web host, the only one with an OpenBao write identity. It registers `AddOpenBaoSecretWriter` (refused unless `Secrets:RuntimeReadOnly` is false), the EF tenant catalog and its probe, and serves only `MapModulusTenantProvisioning` behind `tenancy:data-stores:manage` (Critical). The grant store defaults to an empty one, so nobody can provision until it points at the API host's authorization database (fail closed). Verified on a generated PostgreSQL app against the local pack: it builds with 0 warnings; it starts in Development; `/health/live` answers 200 through a reviewed `Loosen`; the provisioning routes answer 401 to anonymous callers; and with `Secrets:RuntimeReadOnly=true` it refuses to start. Tests: `ProvisioningHostTests` (15 rows); the CLI suite is 602/602 on net10.0. **Authenticated path (verified 2026-10-24, against a generated API on PostgreSQL):** the API's token server issued an admin access token; the provisioning host validated it (signature, issuer, lifetime) and refused the provisioning route with 403, because the host's grant store holds no `tenancy:data-stores:manage` grant. That is the authenticated-but-unauthorized path working. Two findings from that run: the API must issue unencrypted access tokens (`Identity:EncryptAccessTokens=false`), since the provisioning host cannot read encrypted ones; and the identity module could not issue an audience claim; it now can, through `Identity:Audiences` (every access token carries the configured audiences; test `AccessTokenAudienceTests`, identity suite 426/426 on net10.0 and net8.0). The host checks the audience only when `Provisioning:Audience` is set, and the generator's hint tells the operator to set both to the same value (the generated Development settings leave it empty). **Success path (verified 2026-10-23, generated PostgreSQL API and provisioning host, OpenBao dev server).** The API keeps its grants in the Authorization database (`AddEfCoreAuthorizationStores`) and writes its first-boot seed once (`SeedPermissionGrantsAsync`, guarded by a marker row in `ModulusAuthorizationSeeds`); the provisioning host reads the same database. An administrator with `tenancy:data-stores:manage` provisioned a tenant: `POST` returned 200 (`Active`), the connection string is in OpenBao at `modulus-dev/tenant-db/{tenant}/primary`, a repeated `POST` is idempotent, `GET` returns the row, an anonymous call gets 401, and the same call without the grant gets 403. Defects found and fixed on the way: (1) the host used `AddMultiTenancy()`, which fails closed on an unresolved request, so it could not see the host-level grants; it now runs in the host context (`NullCurrentTenant`, a singleton). (2) Two hosts on one database each reconciled the whole permission catalog, so one host's startup deleted the rows the other declared; the provisioning host no longer writes the catalog, and the API is its only writer. (3) Revoking the last seeded grant re-seeded it on the next boot; a seed now leaves a marker. Verified also: the generated PostgreSQL app and a fresh SQLite app each pass their own tests (9/9), the CLI suite passes (608/608), and the Authorization EF suite passes (108/108, including five seed tests). **Known limits:** the shared catalog keeps one set of rows per host (`PermissionCatalogOptions.Owner`), so a host's restart never touches another host's permissions; this replaced an earlier single-writer workaround that let one host's startup delete another's rows. An existing `ModulusPermissionCatalog` table needs the upgrade in `docs/upgrades/identity-platform-2026-10.authorization.postgresql.sql` (new `Owner` column, primary key `(Owner, Permission)`; existing rows take the API host's owner). The authorization store, the seed marker and the tenant catalog ship no migrations, so a production deployment must author them; without them the first grant read or write fails. An existing deployment needs the new `ModulusAuthorizationSeeds` table. The generator now covers SQLite and MySQL as well (2026-10-25). An end-to-end run on each engine (generated API with the OpenBao dev server, a provisioning call with an audience-bearing token, a grant check and an OpenBao secret check) returned 200 for a granted admin, 403 without the grant and 401 anonymously. Running it found and fixed: (1) the authorization store and the identity store could not be created on MySQL: the scoped-grant unique key and OpenIddict's token index exceeded MySQL's 3072-byte index limit (the scoped `Scope` is 200 characters on MySQL; OpenIddict's token columns get explicit lengths there); (2) the grant, position, approval and dimension queries sent a captured list as one collection parameter, which the MySQL provider cannot type (they now use scalar comparisons, with the same results on SQLite: authorization suite 116/116); (3) the generated SQLite provisioning host lacked the patched native SQLite library (its build reported a known advisory); (4) the generated code passed a nullable connection string to the MySQL provider's `UseMySQL`, which warned under `TreatWarningsAsErrors`. The index limit is guarded by unit tests (`ScopedGrantKeyTests`, `MySqlIndexLimitTests`), and the query translations by `MySqlQueryTranslationTests`. |
+- [x] **Provisioning host (built 2026-10-24).** `modulus add-openbao --provisioner` (PostgreSQL and SQL Server) generates `src/Provisioning/{App}.Provisioning`: a separate web host, the only one with an OpenBao write identity. It registers `AddOpenBaoSecretWriter` (refused unless `Secrets:RuntimeReadOnly` is false), the EF tenant catalog and its probe, and serves only `MapModulusTenantProvisioning` behind `tenancy:data-stores:manage` (Critical). The grant store defaults to an empty one, so nobody can provision until it points at the API host's authorization database (fail closed). Verified on a generated PostgreSQL app against the local pack: it builds with 0 warnings; it starts in Development; `/health/live` answers 200 through a reviewed `Loosen`; the provisioning routes answer 401 to anonymous callers; and with `Secrets:RuntimeReadOnly=true` it refuses to start. Tests: `ProvisioningHostTests` (15 rows); the CLI suite is 602/602 on net10.0. **Authenticated path (verified 2026-10-24, against a generated API on PostgreSQL):** the API's token server issued an admin access token; the provisioning host validated it (signature, issuer, lifetime) and refused the provisioning route with 403, because the host's grant store holds no `tenancy:data-stores:manage` grant. That is the authenticated-but-unauthorized path working. Two findings from that run: the API must issue unencrypted access tokens (`Identity:EncryptAccessTokens=false`), since the provisioning host cannot read encrypted ones; and the identity module could not issue an audience claim; it now can, through `Identity:Audiences` (every access token carries the configured audiences; test `AccessTokenAudienceTests`, identity suite 426/426 on net10.0). The host checks the audience only when `Provisioning:Audience` is set, and the generator's hint tells the operator to set both to the same value (the generated Development settings leave it empty). **Success path (verified 2026-10-23, generated PostgreSQL API and provisioning host, OpenBao dev server).** The API keeps its grants in the Authorization database (`AddEfCoreAuthorizationStores`) and writes its first-boot seed once (`SeedPermissionGrantsAsync`, guarded by a marker row in `ModulusAuthorizationSeeds`); the provisioning host reads the same database. An administrator with `tenancy:data-stores:manage` provisioned a tenant: `POST` returned 200 (`Active`), the connection string is in OpenBao at `modulus-dev/tenant-db/{tenant}/primary`, a repeated `POST` is idempotent, `GET` returns the row, an anonymous call gets 401, and the same call without the grant gets 403. Defects found and fixed on the way: (1) the host used `AddMultiTenancy()`, which fails closed on an unresolved request, so it could not see the host-level grants; it now runs in the host context (`NullCurrentTenant`, a singleton). (2) Two hosts on one database each reconciled the whole permission catalog, so one host's startup deleted the rows the other declared; the provisioning host no longer writes the catalog, and the API is its only writer. (3) Revoking the last seeded grant re-seeded it on the next boot; a seed now leaves a marker. Verified also: the generated PostgreSQL app and a fresh SQLite app each pass their own tests (9/9), the CLI suite passes (608/608), and the Authorization EF suite passes (108/108, including five seed tests). **Known limits:** the shared catalog keeps one set of rows per host (`PermissionCatalogOptions.Owner`), so a host's restart never touches another host's permissions; this replaced an earlier single-writer workaround that let one host's startup delete another's rows. An existing `ModulusPermissionCatalog` table needs the upgrade in `docs/upgrades/identity-platform-2026-10.authorization.postgresql.sql` (new `Owner` column, primary key `(Owner, Permission)`; existing rows take the API host's owner). The authorization store, the seed marker and the tenant catalog ship no migrations, so a production deployment must author them; without them the first grant read or write fails. An existing deployment needs the new `ModulusAuthorizationSeeds` table. The generator now covers SQLite and MySQL as well (2026-10-25). An end-to-end run on each engine (generated API with the OpenBao dev server, a provisioning call with an audience-bearing token, a grant check and an OpenBao secret check) returned 200 for a granted admin, 403 without the grant and 401 anonymously. Running it found and fixed: (1) the authorization store and the identity store could not be created on MySQL: the scoped-grant unique key and OpenIddict's token index exceeded MySQL's 3072-byte index limit (the scoped `Scope` is 200 characters on MySQL; OpenIddict's token columns get explicit lengths there); (2) the grant, position, approval and dimension queries sent a captured list as one collection parameter, which the MySQL provider cannot type (they now use scalar comparisons, with the same results on SQLite: authorization suite 116/116); (3) the generated SQLite provisioning host lacked the patched native SQLite library (its build reported a known advisory); (4) the generated code passed a nullable connection string to the MySQL provider's `UseMySQL`, which warned under `TreatWarningsAsErrors`. The index limit is guarded by unit tests (`ScopedGrantKeyTests`, `MySqlIndexLimitTests`), and the query translations by `MySqlQueryTranslationTests`. |
 - [x] **Production runbook, Modulus side (written 2026-10-23).** The `add-openbao` output is a development setup. For production:
   1. **Schema.** The authorization store, its seed marker and the tenant catalog ship no migrations. Author them in the application (a context derived from `AuthorizationStoreDbContext` / `TenantStoreDbContext`, with `dotnet ef migrations add`) and apply them before the host starts. Outside Development the helpers refuse to start without migrations (`MigrateAuthorizationStoreAsync` / `MigrateTenantStoreAsync` throw "No migrations are compiled").
   2. **Write identity.** Only the provisioning host runs with `Secrets:RuntimeReadOnly=false`; the API host stays read-only, and `AddOpenBaoSecretWriter` refuses to register anywhere else.
@@ -6350,11 +6222,11 @@ Tests: `NavigationTests` (visibility and order, groups, overrides, write checks,
 
 ### Verification so far
 
-- Unit, on net8.0 and net10.0: `Modulus.Core.Tests`, `Modulus.EntityFrameworkCore.Tests`, `Modulus.MultiTenancy.Tests` (84),
+- Unit, on net10.0: `Modulus.Core.Tests`, `Modulus.EntityFrameworkCore.Tests`, `Modulus.MultiTenancy.Tests` (84),
   `Modulus.Platform.Tests` (328), `Modulus.Secrets.OpenBao.Tests` (39), `Modulus.AspNetCore.Tests`. All pass.
-- Integration, on net8.0 and net10.0: `Modulus.Secrets.OpenBao.Integration.Tests` (6, Docker).
+- Integration, on net10.0: `Modulus.Secrets.OpenBao.Integration.Tests` (6, Docker).
 - `dotnet format --verify-no-changes` is clean for every project touched.
-- Full `dotnet build modulus.slnx` (0 warnings, 0 errors) and the full `Category=Unit` run (73 test assemblies, 0 failures) pass as of 2026-10-23. `Modulus.Secrets.OpenBao.Integration.Tests` passes (6/6 on net8.0 and net10.0) against a real OpenBao container under podman.
+- Full `dotnet build modulus.slnx` (0 warnings, 0 errors) and the full `Category=Unit` run (73 test assemblies, 0 failures) pass as of 2026-10-23. `Modulus.Secrets.OpenBao.Integration.Tests` passes (6/6 on net10.0) against a real OpenBao container under podman.
 
 ## Premodule removal (2026-11-02)
 
@@ -6430,13 +6302,13 @@ Iceberg Kafka Connect sink commits the table.
 
 - [x] Phase 0: licence gate run and recorded in `THIRD-PARTY-NOTICES.md` (2026-11-04). `ClickHouse.Driver` 1.5.0 adopted; `JsonSchema.Net` rejected (OSMF EULA).
 - [x] Phase 1: dataset and field metadata, `SchemaVersion` and upcasters, JSON Schema export, `IAnalyticsSink`, conformance tests
-  - Done in `Modulus.Analytics` and `Modulus.Analytics.Testing` (29 unit tests, net8.0 and net10.0): dataset and field descriptors with validation,
+  - Done in `Modulus.Analytics` and `Modulus.Analytics.Testing` (29 unit tests, net10.0): dataset and field descriptors with validation,
     the versioned dataset catalog, `IAnalyticsSink` and `AnalyticsSinkException`, classification-driven batch masking (keep, hash, drop),
     record upcasters and `AnalyticsUpcasting`, JSON Schema export (`AnalyticsDatasetSchema`), `AddModulusAnalytics`, the in-memory sink and
     the sink conformance suite (`AnalyticsSinkConformance`).
   - Still open: writing `SchemaVersion` on outbox rows and envelopes (it is carried today but never set), so captured events can be upcast.
 - [x] Phase 2: capture, mapper, masking, delivery queue, ClickHouse sink, messaging sink
-  - Done (51 unit tests across `Modulus.Analytics.Tests` and `Modulus.Analytics.EntityFrameworkCore.Tests`, net8.0 and net10.0):
+  - Done (51 unit tests across `Modulus.Analytics.Tests` and `Modulus.Analytics.EntityFrameworkCore.Tests`, net10.0):
     - `AnalyticsDispatcher`: reject records with no tenant or dataset, upcast, mask, one batch per dataset to each sink, per-sink outcomes.
     - Event tap: `AnalyticsBuilder.MapEvent<TEvent>(dataset, version, map)` registers a capture handler, so modules never reference analytics.
       The event id is the record id and the current tenant is the record's tenant.
@@ -6450,7 +6322,7 @@ Iceberg Kafka Connect sink commits the table.
     (`tenant_id`, day, `event_id`) so a redelivered record collapses on merge, `TTL` from the dataset's retention, column comments recording classification and
     masking, an existing table checked against the contract (a changed version is refused, permanently), `CreateTables=false` for DBA-owned DDL, and failures
     classified as transient (network, overload) or permanent (bad credentials, unknown table, type mismatch). Verified against a real ClickHouse 25.8 server
-    through Testcontainers (11 integration tests, net8.0 and net10.0) and 23 unit tests. Until parts merge a duplicate can be visible: read with `FINAL`.
+    through Testcontainers (11 integration tests, net10.0) and 23 unit tests. Until parts merge a duplicate can be visible: read with `FINAL`.
   - Sinks receive the declared CLR types (`AnalyticsValueSerializer.Normalize` runs at capture, so inline and queued delivery look the same).
   - Management API (`Modulus.Analytics.Management`, `analytics:manage`, Critical): `GET /analytics/status` (pending, delivered, dead-lettered, age of the oldest
     pending record, so a rising age shows delivery falling behind), list and inspect dead letters, replay by id (at most 1000), purge old dead letters. Queued rows hold
@@ -6458,7 +6330,7 @@ Iceberg Kafka Connect sink commits the table.
   - Gaps closed (2026-11-04): circuit breaker, consent, quality-finding sinks, and the optional OpenMetadata, Apicurio and DuckDB packages, plus the MLflow runbook. See the table in docs/ANALYTICS_PROGRESS.md.
   - Done since: the messaging sink (`Modulus.Analytics.Messaging`, publishes each record as `AnalyticsRecordPublished` on the module bus; append-only, so it blocks tenant erasure while registered) and an EF migration sample (`samples/Modulus.Analytics.MigrationSample`, migration `InitialAnalyticsStore`, applied to PostgreSQL 16.15). Outbox rows carry the event's `SchemaVersion`; the column migration is in `docs/runbooks/analytics-store-migrations.md`.
 - [x] Phase 3: extraction, change journal, per-tenant backfill with checkpoints, Parquet sink
-  - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net8.0 and net10.0):
+  - Done (`Modulus.Analytics` and `Modulus.Analytics.EntityFrameworkCore`, 36 tests across net10.0):
     - `IAnalyticsSource`: reads one tenant at a time with a cursor. `EntityAnalyticsSource` / `AddEntitySource<TContext, TEntity, TKey>` is the EF version: the entity
       must have `IHasTenantId`, the query filters on `TenantId` itself (on top of any global filter), and the paging key must be unique per tenant (integer, decimal or
       timestamp; a Guid key is refused because providers order Guids differently).
@@ -6496,7 +6368,7 @@ Iceberg Kafka Connect sink commits the table.
     everyone), lost races are retried with jittered back-off (the provider wraps a deadlock in an `InvalidOperationException`, so the whole exception chain is searched), and a
     claim that loses a deadlock skips the cycle. 24 consecutive runs of the PostgreSQL suite pass; it failed about once in twelve before.
   - SQL Server run: closed without a run. SQL Server is proprietary, so the open-source-only policy rules it out as a test dependency. The backfill is provider-agnostic EF: the unit tests use SQLite and the integration tests PostgreSQL 16.15 (8 of 8 pass). Teams that run SQL Server can run the backfill against their own instance.
-  - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 8 tests on net8.0 and net10.0): eight parallel enqueues of the same 60
+  - Real PostgreSQL 16 (Testcontainers, `Modulus.Analytics.EntityFrameworkCore.Integration.Tests`, 8 tests on net10.0): eight parallel enqueues of the same 60
     records store 60 rows without an error; four concurrent delivery workers deliver 400 records exactly once each; two workers split two backfill runs (750 and 420 orders) and
     queue every order once; a claim that expired is taken over and a live one is not; the freshness and reconciliation aggregate queries and the purge run correctly. A
     mutation check (dropping the claim ownership filter) makes the exactly-once test fail, so it guards the behaviour.

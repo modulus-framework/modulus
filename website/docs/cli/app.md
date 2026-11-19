@@ -17,7 +17,7 @@ modulus app <name> [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-d, --database` | Database provider: `SQLite`, `SqlServer`, `PostgreSQL`, `MySQL` | prompted |
-| `--framework` | Target framework: `net10.0` or `net8.0` | `net10.0` |
+| `--framework` | Target framework: `net10.0`, the only one Modulus supports | `net10.0` |
 | `--auth` | Auth provider: `none`, `openiddict`, `auth0`, `authentik`, `azuread`, `duende`, `keycloak`, `okta` | prompted |
 | `--kind` | App kind: `api` (an API host, no UI) or `webapp+api` (a web project on the Modulus UI framework plus the API) | prompted |
 | `--ui-engine` | Web apps only: `mvc`, `razor-pages`, `blazor`, `fluid` or `none`. Only `mvc`, `razor-pages` and `blazor` can be generated. See [the UI overview](../ui/overview). | prompted for web apps |

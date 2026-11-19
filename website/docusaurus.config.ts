@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Modulus Framework',
-  tagline: 'A modular-monolith framework for .NET 8 and .NET 10',
+  tagline: 'A modular-monolith framework for .NET 10',
   favicon: 'img/icon.png',
 
   url: 'https://modulus.dev',
@@ -52,13 +52,13 @@ const config: Config = {
 
   themeConfig: {
     image: 'img/social-card.png',
-    imageAlt: 'Modulus Framework — a modular-monolith framework for .NET 8 and .NET 10',
+    imageAlt: 'Modulus Framework — a modular-monolith framework for .NET 10',
     colorMode: {
       respectPrefersColorScheme: true,
     },
     metadata: [
-      { name: 'description', content: 'Modulus is a modular-monolith framework for .NET 8 and .NET 10 — CQRS, transactional outbox, multi-tenancy, identity, and CLI scaffolding out of the box.' },
-      { name: 'keywords', content: 'modular monolith, .NET 8, .NET 10, CQRS, DDD, microservices, asp.net core' },
+      { name: 'description', content: 'Modulus is a modular-monolith framework for .NET 10 — CQRS, transactional outbox, multi-tenancy, identity, and CLI scaffolding out of the box.' },
+      { name: 'keywords', content: 'modular monolith, .NET 10, CQRS, DDD, microservices, asp.net core' },
       { property: 'og:type', content: 'website' },
       { property: 'og:image', content: 'img/social-card.png' },
       { property: 'og:image:width', content: '1200' },

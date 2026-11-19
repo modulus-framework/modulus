@@ -185,7 +185,7 @@ internal sealed class AddTenantLifecycleCommand : Command<AddTenantLifecycleComm
         public string ModuleNamespace => $"{RootNamespace}.Modules.TenantLifecycle";
         public string FrameworkVersion => Services.FrameworkVersion.Current;
         public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
-        public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
+        public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
         public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
         public string ConnectionString => DbProviderInfo.ConnectionString(DbProvider, "TenantLifecycle");
     }

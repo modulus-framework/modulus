@@ -1,4 +1,7 @@
+using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.DataProtection;
 using Modulus.AspNetCore.Fluid;
 using Modulus.AspNetCore.Security.Policy;
 using {{ root_namespace }}.Web.Configuration;
@@ -22,14 +25,21 @@ internal static class AuthEndpoints
             }))
             .Loosen("Sign-in page: anonymous by design");
 
-        app.MapPost("/auth/login", async (HttpContext context, IAntiforgery antiforgery, BffSessionClient session, ModulusLiquid liquid) =>
+        app.MapPost("/auth/login", async (HttpContext context, IAntiforgery antiforgery, BffSessionClient session, IDataProtectionProvider protection, ModulusLiquid liquid) =>
         {
             if (!await ValidAntiforgery(context, antiforgery)) return Results.BadRequest();
             var form = await context.Request.ReadFormAsync();
             var email = form["email"].ToString().Trim();
+            var password = form["password"].ToString();
             var returnUrl = SafeReturnUrl(form["return_url"].ToString());
-            var result = await session.SignInAsync(email, form["password"].ToString(), rememberMe: form["remember"] == "true", context.RequestAborted);
+            var rememberMe = form["remember"] == "true";
+            var result = await session.SignInAsync(email, password, rememberMe, context.RequestAborted);
             if (result.Succeeded) return Results.LocalRedirect(returnUrl);
+
+            // The account has an authenticator app: the code is the second step. The password waits in a protected, short-lived token.
+            if (result.Error == BffSignInResult.MfaRequiredError)
+                return TwoFactorPage(liquid, templates, PendingSignIn.Protect(protection, new PendingSignIn(email, password, returnUrl, rememberMe)),
+                    null, antiforgery, context);
 
             var error = result.Error == "temporarily_unavailable"
                 ? "The sign-in service is not available right now. Try again in a moment."
@@ -42,6 +52,32 @@ internal static class AuthEndpoints
             });
         }).RequireRateLimiting(RateLimitingSetup.SignInPolicy)
           .Loosen("Sign-in: the BFF checks the credentials");
+
+        app.MapGet("/auth/two-factor", () => Results.LocalRedirect("/auth/login"))
+            .Loosen("Redirects to the sign-in page; it checks nothing");
+
+        app.MapPost("/auth/two-factor", async (HttpContext context, IAntiforgery antiforgery, BffSessionClient session, IDataProtectionProvider protection, ModulusLiquid liquid) =>
+        {
+            if (!await ValidAntiforgery(context, antiforgery)) return Results.BadRequest();
+            var form = await context.Request.ReadFormAsync();
+            var pendingToken = form["pending"].ToString();
+            var pending = PendingSignIn.Open(protection, pendingToken);
+            if (pending is null)
+                return Results.LocalRedirect("/auth/login");
+
+            // An authenticator code is six digits; a recovery code is a short word. Anything else is not sent.
+            var code = new string(form["code"].ToString().Trim().Where(c => char.IsLetterOrDigit(c) || c == '-').ToArray());
+            var result = code.Length == 0
+                ? new BffSignInResult(false, BffSignInResult.MfaRequiredError)
+                : await session.SignInAsync(pending.Email, pending.Password, pending.RememberMe, context.RequestAborted, mfaCode: code);
+            if (result.Succeeded) return Results.LocalRedirect(pending.ReturnUrl);
+
+            var error = result.Error == "temporarily_unavailable"
+                ? "The sign-in service is not available right now. Try again in a moment."
+                : "That code is not right. Try again, or sign in again to start over.";
+            return TwoFactorPage(liquid, templates, pendingToken, error, antiforgery, context);
+        }).RequireRateLimiting(RateLimitingSetup.SignInPolicy)
+          .Loosen("Sign-in: the BFF checks the code");
 
         app.MapPost("/auth/logout", async (HttpContext context, IAntiforgery antiforgery, BffSessionClient session) =>
         {
@@ -59,6 +95,13 @@ internal static class AuthEndpoints
             ? u
             : "/";
 
+    private static IResult TwoFactorPage(ModulusLiquid liquid, string templates, string pending, string? error, IAntiforgery antiforgery, HttpContext context)
+    {
+        var values = new Dictionary<string, object?> { ["pending"] = pending };
+        if (error is not null) values["error"] = error;
+        return AuthPage(liquid, templates, "auth/two-factor", "Two-factor authentication", context, antiforgery, values);
+    }
+
     private static IResult AuthPage(ModulusLiquid liquid, string templates, string page, string title, HttpContext context, IAntiforgery antiforgery, Dictionary<string, object?> values)
     {
         values["title"] = title;
@@ -69,6 +112,31 @@ internal static class AuthEndpoints
             liquid.Load(Path.Combine(templates, "_layout.liquid")),
             values);
         return Results.Content(html, "text/html; charset=utf-8");
+    }
+
+    /// <summary>
+    /// The sign-in waiting for its second factor. It is protected with Data Protection and lives five minutes, so the password is
+    /// never in the page's hidden field in clear and cannot be reused after the window.
+    /// </summary>
+    internal sealed record PendingSignIn(string Email, string Password, string ReturnUrl, bool RememberMe)
+    {
+        private const string Purpose = "Modulus.Fluid.TwoFactor";
+
+        public static string Protect(IDataProtectionProvider protection, PendingSignIn pending) =>
+            protection.CreateProtector(Purpose).ToTimeLimitedDataProtector().Protect(JsonSerializer.Serialize(pending), TimeSpan.FromMinutes(5));
+
+        public static PendingSignIn? Open(IDataProtectionProvider protection, string token)
+        {
+            if (token.Length == 0) return null;
+            try
+            {
+                return JsonSerializer.Deserialize<PendingSignIn>(protection.CreateProtector(Purpose).ToTimeLimitedDataProtector().Unprotect(token));
+            }
+            catch (CryptographicException)
+            {
+                return null;
+            }
+        }
     }
 
     private static async Task<bool> ValidAntiforgery(HttpContext context, IAntiforgery antiforgery)

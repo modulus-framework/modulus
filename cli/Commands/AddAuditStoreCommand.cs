@@ -85,7 +85,7 @@ internal sealed class AddAuditStoreCommand : Command<AddAuditStoreCommand.Settin
         public string AuditNamespace => $"{RootNamespace}.Modules.Audit";
         public string FrameworkVersion => Services.FrameworkVersion.Current;
         public string EfProviderPackage => DbProviderInfo.Package(DbProvider);
-        public string EfProviderVersion => DbProviderInfo.Version(DbProvider, TargetFramework);
+        public string EfProviderVersion => DbProviderInfo.Version(DbProvider);
         public string UseDbMethod => DbProviderInfo.UseMethod(DbProvider);
         public string AuditConnectionString => DbProviderInfo.ConnectionString(DbProvider, "Audit");
     }

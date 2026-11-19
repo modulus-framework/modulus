@@ -9,7 +9,7 @@ internal readonly record struct SseFrame(string Data, string? Event = null, stri
 
 /// <summary>
 /// Writes an <c>text/event-stream</c> response from an async sequence of frames. Hand-rolled instead of
-/// <c>TypedResults.ServerSentEvents</c> (.NET 10 only) so the same stream works on net8.0 and net10.0.
+/// <c>TypedResults.ServerSentEvents</c> so the stream's framing and flushing stay under the framework's control.
 /// Each frame is flushed as it is written, so a subscriber sees it immediately.
 /// </summary>
 internal sealed class SseResult(IAsyncEnumerable<SseFrame> frames) : IResult

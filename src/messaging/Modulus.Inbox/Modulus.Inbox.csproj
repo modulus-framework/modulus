@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>Idempotent integration-event consumption for Modulus over EF Core: atomic claim decorator, dead-lettering, and per-module InboxMessage model mapping.</Description>
+    <Description>Idempotent integration event consumption for Modulus (EF Core).</Description>
   </PropertyGroup>
 
   <ItemGroup>

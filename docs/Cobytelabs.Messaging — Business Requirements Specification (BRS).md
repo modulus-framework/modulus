@@ -139,7 +139,7 @@ The plan depends on PostgreSQL being present in every product and on the scope s
 ### Constraints
 
 - C-1: Licence must be MIT, with no copyleft or commercial runtime dependency.
-- C-2: Runtime targets are .NET 8 and .NET 10; Native AOT and trimming must work.
+- C-2: Runtime targets are .NET 10; Native AOT and trimming must work.
 - C-3: The core package has no third-party dependencies; each external library is isolated in its own package.
 - C-4: Public API names follow MassTransit v8 where a feature exists in both.
 - C-5: No breaking change to wire format or public API within a major version.
@@ -252,7 +252,7 @@ The bus must be reliable first, then fast, then small; the targets below are des
 | NFR-10 | Security | Deserialization safety | Only registered message types are deserialized; no type name trusted from the wire | Must |
 | NFR-11 | Security | Least privilege | Apps run with publish/consume rights; topology deployed separately with admin rights | Should |
 | NFR-12 | Security | Sensitive data | `[Sensitive]` properties redacted in logs and traces | Should |
-| NFR-13 | Compatibility | Runtime | .NET 8 and .NET 10; Native AOT and trimming safe | Must |
+| NFR-13 | Compatibility | Runtime | .NET 10; Native AOT and trimming safe | Must |
 | NFR-14 | Compatibility | Stability | No breaking wire or public API change within a major version; API baseline enforced in CI | Must |
 | NFR-15 | Maintainability | Size | Core under 6k lines and under 150 KB; zero third-party dependencies in core | Should |
 | NFR-16 | Maintainability | Test coverage | 85% or more line coverage on core; conformance suite per transport and per saga repository | Must |

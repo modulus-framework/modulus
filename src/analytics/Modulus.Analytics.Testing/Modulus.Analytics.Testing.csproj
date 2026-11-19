@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Test kit for Modulus analytics providers: an in-memory sink and a conformance suite that checks any IAnalyticsSink for idempotent dataset setup, duplicate-safe writes and tenant separation. Test-framework neutral.</Description>
+    <Description>Test kit for Modulus analytics sinks.</Description>
   </PropertyGroup>
 
   <ItemGroup>

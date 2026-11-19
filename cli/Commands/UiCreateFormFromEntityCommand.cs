@@ -46,6 +46,9 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
             if (fields.Count == 0)
                 throw new InvalidOperationException($"{entity} has no editable properties (public get/set) to build a form from.");
 
+            if (engine == "fluid")
+                return WriteFluidPartial(start, inventory, entity, moduleDir, moduleName);
+
             var templates = UiTemplatePackage.Resolve()
                 ?? throw new InvalidOperationException(
                     $"Could not find the {UiTemplatePackage.PackageId} {UiTemplatePackage.DefaultVersion} package. " +
@@ -89,5 +92,29 @@ internal sealed class UiCreateFormFromEntityCommand : Command<UiCreateFormFromEn
             Ux.Info($"This is a form partial, not a page. For list, create and edit pages that save through the API, run `modulus ui create-crud {entity} --module {moduleName}`.");
             return 0;
         });
+    }
+
+    /// <summary>
+    /// The Fluid form: a Liquid partial with the entity's fields, under <c>Templates/Shared/Forms</c> (never served as a page).
+    /// It reads the values from a <c>values</c> hash, so a page renders it with the entity it edits.
+    /// </summary>
+    private static int WriteFluidPartial(string start, ModuleDiscovery.AppInventory inventory, string entity, string moduleDir, string moduleName)
+    {
+        var fields = CrudFields.Resolve(moduleDir, entity);
+        var uiDir = Path.GetDirectoryName(inventory.UiProjectPath)!;
+        var target = Path.Combine(uiDir, "Templates", "Shared", "Forms", $"{entity}Form.liquid");
+        if (File.Exists(target) && !Ux.Force)
+            throw new InvalidOperationException($"{Path.GetRelativePath(start, target)} already exists. Pass --force to overwrite it.");
+
+        if (!Ux.DryRun)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.WriteAllText(target, UiFluidCrud.FormPartial(entity, fields));
+        }
+
+        Ux.Success($"Form for {entity} created", Path.GetRelativePath(start, target));
+        Ux.Info($"{fields.Count} field{(fields.Count == 1 ? "" : "s")}: {string.Join(", ", fields.Select(f => f.Name))}");
+        Ux.Info($"This is a Liquid form partial for {moduleName}. Render it with {{% render 'Shared/Forms/{entity}Form', values: values %}} inside a form that posts to the page.");
+        return 0;
     }
 }

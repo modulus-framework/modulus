@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- New package: nothing of this ID is on nuget.org yet, so there is no baseline to validate against. Remove this line after its first release. -->
     <EnablePackageValidation>false</EnablePackageValidation>
-    <Description>Test harness for Modulus.Messaging: an in-memory bus, a virtual clock, fault injection, a saga harness, and the transport conformance kit.</Description>
+    <Description>Test harness for Modulus.Messaging.</Description>
   </PropertyGroup>
 
   <ItemGroup>

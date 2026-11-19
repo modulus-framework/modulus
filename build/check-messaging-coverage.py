@@ -2,8 +2,8 @@
 
 Reads every Cobertura report under a directory and measures only the source files of
 src/messaging/Modulus.Messaging itself. The sub-packages (transports, sagas, adapters) are
-separate directories and are not counted. A line covered on net8 and not on net10 counts as
-covered, so the two targets are merged by taking the highest hit count per line.
+separate directories and are not counted. When a report holds more than one target (the
+merge keeps working), a line covered in any of them counts as covered: the highest hit count per line wins.
 
 Usage: python3 build/check-messaging-coverage.py <coverage-dir> [floor-percent]
 """

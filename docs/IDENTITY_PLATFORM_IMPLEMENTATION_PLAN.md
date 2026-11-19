@@ -244,7 +244,7 @@ BRS: ID-01/02/04, ID-13, ID-17, ID-19, BR-25, D3.
   isolation negatives; expiry deactivation + notification.
 - **Migration:** additive columns (backfill `PrincipalKind = Employee`) + new table — existing
   deployments need a migration.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** fixtures green; existing membership/seat tests unchanged and passing.
 
 ### A2. Formal lifecycle and transition history — P1a
@@ -267,7 +267,7 @@ BRS: ID-05, §17.1, BR-25.
 - **Tests:** full legal-transition matrix; illegal transitions refused; transition audit written;
   session/credential invalidation on disable/archive; rehire behavior.
 - **Migration:** status column (backfill mapping implicit states) + transitions table — additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** matrix tests green; existing lockout/`IsActive` behavior unchanged.
 
 ### A3. Creation and resulting-scope guard — P1a (step 2 of the P1a order)
@@ -292,7 +292,7 @@ BRS: DS-15, AUTH-12.
 - **Tests:** in/out-of-scope create and update for org and dimension scopes; composition with the
   tenant write guard; imports and bulk writes; direct-read and list bypass attempts.
 - **Migration:** none (engine only).
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-12 fixture green; no supported write path can introduce out-of-scope
   records.
 
@@ -318,7 +318,7 @@ BRS: AS-05, AUTH-08/09, BR-23.
 - **Tests:** AUTH-08 (deny + finding raised, no data leakage); AUTH-09 (declared grant allows only
   within its scope); narrow-exception behavior; no ordinary broad grant matches.
 - **Migration:** findings table — additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-08/09 fixtures green.
 
 ### A5. Generic attribute dimensions — P1a core (step 4 dependency), P1b full
@@ -346,7 +346,7 @@ BRS: DS-01/02/03.
   A4 finding, list/search/count/aggregate/dashboard/export all filtered.
 - **Migration:** `ModulusDimensionAssignments`, `ModulusDimensionHierarchies` + dimension registry —
   additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-29 fixture green; NF-03 bench on representative data.
 
 ### A6. Job principal and execution-time authorization — P1b
@@ -374,7 +374,7 @@ BRS: AZ-04/18/19/20/21, AUTH-23/24.
   system identity boundaries; sensitive-operation re-check; step-up permissions refused without a
   principal (existing rule).
 - **Migration:** none (envelope serialization only).
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-23/24 fixtures green.
 
 ### A7. Field authorization and output safety net — P1b
@@ -396,7 +396,7 @@ BRS: DS-07/10, AUTH-21/22.
 - **Tests:** AUTH-21 (unauthorized field write rejected, not ignored); AUTH-22 (a masked field does
   not leak through any endpoint, export, bulk path, related lookup or nested DTO).
 - **Migration:** none.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-21/22 fixtures green including nested and alternate output paths.
 
 ### A8. Record sharing and masked references — P1b, only after core scope gates pass
@@ -418,7 +418,7 @@ BRS: DS-05, DS-09, AUTH-31, BR-10.
 - **Tests:** share grants view/edit; expiry + revoke; counts/totals unaffected by invisible shares;
   direct reads, lists, search, aggregates, exports; partner isolation.
 - **Migration:** `ModulusSharedRecords` — additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-31 green; no tenant-boundary or deny bypass via shares. **Do not start
   until the A3/A4/A5 gates pass.**
 
@@ -440,7 +440,7 @@ BRS: AZ-17/22, BR-22, AUTH-25.
 - **Tests:** agent call beyond the principal's effective scope denied; intersection never exceeds
   either side; direct tool bypass denied; every operation auditable.
 - **Migration:** none.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-25 green.
 
 ### A10. Permission catalog lifecycle — P1a (step 4)
@@ -465,7 +465,7 @@ BRS: RP-13/14, AUTH-30, BR-18.
   assignment refused; retired denies; rollback.
 - **Migration:** catalog lifecycle columns — additive, no data migration, defaults preserve
   behavior.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** AUTH-30 green; catalog changes never silently grant access.
 
 ### A11. Audit retention and evidence engine — P1c engine; P2 administration (B5)
@@ -491,7 +491,7 @@ BRS: AD-03/05/11, §16.4, BR-14.
 - **Tests:** chain verification across disposal; hold blocks disposal; pseudonym stable after map
   erasure; evidence query reproduces a past state and discloses its limits; restore validation.
 - **Migration:** schedules, holds, identity map, disposal records — additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** spike approved; integrity tests green across archive/disposal/restore.
 
 ### A12. Authentication hardening — P1c slice; P2 slice
@@ -524,7 +524,7 @@ BRS: AU-03/05/06/08/09/12, §18.1.
 - **Tests:** timeout math; escalation schedule; breach-check hook incl. provider failure; assurance
   matrix; impersonation blocked-action list; risk-signal outcomes.
 - **Migration:** options-led; minimal schema (impersonation audit rides the security audit).
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** P1c session/lockout fixtures green; P2 items land only under approved
   requirements.
 
@@ -543,7 +543,7 @@ BRS: GV-10, BR-16.
 - **Tests:** exception allows a grant and flags it; expiry re-blocks; self-approval of an exception
   refused; revocation.
 - **Migration:** table — additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** GV fixtures green.
 
 ### A14. Security alert events — P2
@@ -562,7 +562,7 @@ BRS: AD-08, CT-10.
 - **Conformance:** AD/CT rows (P2 set).
 - **Tests:** exactly one classified event per trigger; threshold math; dedup; delivery outage.
 - **Migration:** none (rides audit + events).
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** alert fixtures green.
 
 ### A15. Governance engine completions — P2
@@ -586,7 +586,7 @@ BRS: GV-05/06/07, CT-03/07/08, AA-06, RP-11, DN-10, RE-10.
 - **Tests:** rollup correctness; auto-revoke fires with exclusions; accumulator blocks over-limit
   approval under concurrency; impact report matches a seeded setup; 404-vs-403.
 - **Migration:** `ModulusPermissionUsage`, `ModulusAuthorityUsage` — additive.
-- **TFMs:** net8.0;net10.0.
+- **TFMs:** net10.0.
 - **Exit criterion:** P2 engine fixtures green.
 
 ## 5. Layer B — optional platform modules (ERP-agnostic)
@@ -625,10 +625,8 @@ Key flows:
 
 ## 6. Mandatory repository gates (definition of done for every affected work item)
 
-1. **Target frameworks:** every affected Layer A/B library preserves `net8.0;net10.0`
-   multi-targeting — per-TFM dependency versions in `Directory.Packages.props`, conditional
-   compilation for net8 gaps, the `build/Polyfills/` polyfills, and the existing net8 test
-   exceptions (`-p:ModulusTestTfm=net8.0`).
+1. **Target frameworks:** every affected Layer A/B library preserves `net10.0`
+   single target `net10.0`: no per-TFM versions, conditional compilation or polyfills.
 2. **Public API compatibility:** new public contracts go in `PublicAPI.Unshipped.txt`
    (`build/Modulus.PublicApi.props`; RS0016/RS0017 effectively run on net10, the reference
    surface) and follow the normal shipped-API process.

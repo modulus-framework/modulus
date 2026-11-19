@@ -112,7 +112,7 @@ internal sealed class BackChannelLogoutQueue<TContext>(
 
             rows.Add(new ModulusLogoutNotification
             {
-                Id = GuidV7.Create(),
+                Id = Guid.CreateVersion7(),
                 SessionId = session.Id,
                 UserId = session.UserId,
                 ClientId = session.ClientId,

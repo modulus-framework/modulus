@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework />
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>OpenIddict-based identity and authorization server for Modulus with external IdP adapters (Auth0, Okta, Azure AD, Duende, Authentik).</Description>
+    <Description>OpenIddict identity and authorization server for Modulus.</Description>
   </PropertyGroup>
 
   <ItemGroup>

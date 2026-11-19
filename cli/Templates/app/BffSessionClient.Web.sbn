@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace {{ root_namespace }}.Web.Security;
 
@@ -10,13 +11,16 @@ namespace {{ root_namespace }}.Web.Security;
 /// </summary>
 public sealed class BffSessionClient(HttpClient http)
 {
-    /// <summary>Signs the user in at the BFF. A failed attempt says why in <see cref="BffSignInResult.Error"/>.</summary>
-    public async Task<BffSignInResult> SignInAsync(string userName, string password, bool rememberMe, CancellationToken ct = default)
+    /// <summary>
+    /// Signs the user in at the BFF. A failed attempt says why in <see cref="BffSignInResult.Error"/>: <see cref="BffSignInResult.MfaRequiredError"/>
+    /// when the account has a second factor and no <paramref name="mfaCode"/> was sent (send the code and call again).
+    /// </summary>
+    public async Task<BffSignInResult> SignInAsync(string userName, string password, bool rememberMe, CancellationToken ct = default, string? mfaCode = null)
     {
         HttpResponseMessage response;
         try
         {
-            response = await http.PostAsJsonAsync("bff/login", new { userName, password, rememberMe }, ct);
+            response = await http.PostAsJsonAsync("bff/login", new { userName, password, rememberMe, mfaCode }, ct);
         }
         catch (HttpRequestException)
         {
@@ -31,6 +35,9 @@ public sealed class BffSessionClient(HttpClient http)
             return BffSignInResult.Unavailable;
 
         var problem = await response.Content.ReadFromJsonAsync<BffError>(ct);
+        // The BFF passes the identity server's answer through: a missing code is invalid_grant with this description.
+        if (problem?.ErrorDescription?.Contains("verification code is required", StringComparison.OrdinalIgnoreCase) == true)
+            return new BffSignInResult(false, BffSignInResult.MfaRequiredError);
         return new BffSignInResult(false, problem?.Error ?? "invalid_request");
     }
 
@@ -97,6 +104,9 @@ public sealed record BffSignInResult(bool Succeeded, string? Error)
 {
     public static BffSignInResult Ok { get; } = new(true, null);
 
+    /// <summary>The error of a sign-in whose account needs a second factor and got no code.</summary>
+    public const string MfaRequiredError = "mfa_required";
+
     /// <summary>The BFF could not reach the auth server or the API (its 503 answer).</summary>
     public static BffSignInResult Unavailable { get; } = new(false, "temporarily_unavailable");
 }
@@ -104,6 +114,6 @@ public sealed record BffSignInResult(bool Succeeded, string? Error)
 /// <summary>One claim as returned by <c>bff/user</c>.</summary>
 public sealed record BffClaim(string Type, string Value);
 
-public sealed record BffError(string? Error, string? ErrorDescription);
+public sealed record BffError(string? Error, [property: JsonPropertyName("error_description")] string? ErrorDescription);
 
 public sealed record BffEndSession(string? EndSessionUrl);

@@ -1,0 +1,80 @@
+using Microsoft.AspNetCore.Antiforgery;
+using Modulus.AspNetCore.Fluid;
+using {{ root_namespace }}.Web.Services.ApiClients;
+
+namespace {{ root_namespace }}.Web.Endpoints;
+
+/// <summary>
+/// The session manager on the Fluid host: the signed-in user's active sessions (Templates/auth/sessions.liquid) and ending one. Both
+/// routes need a signed-in user; the data comes from the BFF through <see cref="SessionsApiClient"/>.
+/// </summary>
+public static class SessionsEndpoints
+{
+    public static WebApplication MapAccountSessions(this WebApplication app, string templates)
+    {
+        app.MapGet("/auth/sessions", async (HttpContext context, IAntiforgery antiforgery, SessionsApiClient sessions, ModulusLiquid liquid, CancellationToken ct) =>
+        {
+            var values = new Dictionary<string, object?>();
+            try
+            {
+                var list = await sessions.ListAsync(ct);
+                if (list is null)
+                    values["error"] = "Your session has ended. Sign in again to see your sessions.";
+                else
+                    values["sessions"] = list.Select(Row).ToList();
+            }
+            catch (Exception) when (!ct.IsCancellationRequested)
+            {
+                // The BFF or the API did not answer in time (or refused the call): the page says so instead of failing.
+                values["error"] = "Your sessions could not be loaded right now. Try again in a moment.";
+            }
+            return Render(liquid, templates, context, antiforgery, values);
+        }).RequireAuthorization();
+
+        app.MapPost("/auth/sessions/end", async (HttpContext context, IAntiforgery antiforgery, SessionsApiClient sessions) =>
+        {
+            if (!await ValidAntiforgery(context, antiforgery)) return Results.BadRequest();
+            var form = await context.Request.ReadFormAsync(context.RequestAborted);
+            var id = form["id"].ToString();
+            if (id.Length > 0)
+                await sessions.RevokeAsync(id, context.RequestAborted);
+            return Results.LocalRedirect("/auth/sessions");
+        }).RequireAuthorization();
+
+        return app;
+    }
+
+    private static Dictionary<string, object?> Row(ApiSession session) => new()
+    {
+        ["id"] = session.Id,
+        ["type"] = session.Type,
+        ["client"] = session.ClientId ?? "",
+        ["created"] = session.CreatedAt?.UtcDateTime.ToString("yyyy-MM-dd HH:mm") ?? "",
+        ["expires"] = session.ExpiresAt?.UtcDateTime.ToString("yyyy-MM-dd HH:mm") ?? "",
+    };
+
+    private static IResult Render(ModulusLiquid liquid, string templates, HttpContext context, IAntiforgery antiforgery, Dictionary<string, object?> values)
+    {
+        values["title"] = "Sessions";
+        values["app_name"] = "{{ root_namespace }}";
+        values["antiforgery_token"] = antiforgery.GetAndStoreTokens(context).RequestToken;
+        var html = liquid.RenderPage(
+            liquid.Load(Path.Combine(templates, "auth", "sessions.liquid")),
+            liquid.Load(Path.Combine(templates, "_layout.liquid")),
+            values);
+        return Results.Content(html, "text/html; charset=utf-8");
+    }
+
+    private static async Task<bool> ValidAntiforgery(HttpContext context, IAntiforgery antiforgery)
+    {
+        try
+        {
+            await antiforgery.ValidateRequestAsync(context);
+            return true;
+        }
+        catch (AntiforgeryValidationException)
+        {
+            return false;
+        }
+    }
+}

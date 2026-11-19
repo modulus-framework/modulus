@@ -73,7 +73,7 @@ public sealed class SagaContext<TSaga, TMessage>
         var replyEndpoint = _effects.ReplyEndpoint
             ?? throw new InvalidOperationException("A saga request needs a saga endpoint to answer to.");
         var requestId = Saga.CorrelationId;
-        var timeoutId = Modulus.GuidV7.Create();
+        var timeoutId = Guid.CreateVersion7();
         Saga.OpenRequestTimeoutId = timeoutId;
         var timedOut = new SagaRequestTimedOut(requestId, timeoutId, address.ToString(), typeof(TRequest).FullName ?? typeof(TRequest).Name);
         _effects.AddSchedule((scheduler, ct) => scheduler.ScheduleSend(new Uri($"queue:{replyEndpoint}"), timeout, timedOut, ct));

@@ -39,11 +39,11 @@ The CLI scaffolding (`modulus add-messaging`) is in `cli/`.
 
 ## Current verification (2026-11-16)
 
-Run on this machine (Ryzen 5 8600G, 12 threads, Podman for containers). Unit suites on net8.0 and net10.0 unless noted.
+Run on this machine (Ryzen 5 8600G, 12 threads, Podman for containers). Unit suites on net10.0 unless noted.
 
 | Suite | Result |
 |---|---|
-| `tests/unit/Modulus.Messaging.Tests` (core) | 141 of 141, net8.0 and net10.0 (2026-11-16, after the per-bus wire-name change) |
+| `tests/unit/Modulus.Messaging.Tests` (core) | 141 of 141, net10.0 (2026-11-16, after the per-bus wire-name change) |
 | `tests/unit/Modulus.Messaging.Sagas.Tests` | 29 of 29, both TFMs (2026-11-16) |
 | `tests/unit/Modulus.Messaging.Modulus.Tests` (host adapter) | 7 of 7, both TFMs |
 | `tests/unit/Modulus.Messaging.Outbox.EntityFrameworkCore.Tests` | 11 of 11, both TFMs (2026-11-16) |
@@ -62,7 +62,7 @@ Run on this machine (Ryzen 5 8600G, 12 threads, Podman for containers). Unit sui
 | NFR-05 PostgreSQL throughput (2k to 5k msg/s) | Measured 2026-11-16 on Docker Desktop (PostgreSQL 17 container, `PostgreSqlThroughputTests`): 20,000 messages in 16.39 s = 1,220 msg/s, every message handled once. **Below the target**; the Docker Desktop VM is a plausible cause, not confirmed. Judged on target hardware |
 | Full requirements audit (2026-11-16, second pass) | [docs/messaging/brs-audit-2026-11-16.md](messaging/brs-audit-2026-11-16.md): every BRS requirement with its status and evidence |
 | RabbitMQ throughput (`G2_measures_end_to_end_throughput_with_publisher_confirms`) | 23.4k and 23.3k msg/s; 25k target not met here |
-| Coverage, `Modulus.Messaging` line coverage (CI gate, core unit suite, net10.0 only; CI also merges net8.0, so the merged figure is at least this) | 87.2% (1,649 of 1,891 lines; floor 85%), measured 2026-11-16 |
+| Coverage, `Modulus.Messaging` line coverage (CI gate, core unit suite, net10.0 only) | 87.2% (1,649 of 1,891 lines; floor 85%), measured 2026-11-16 |
 | `tests/unit/Modulus.Analyzers.Tests` (MOD0001 to MOD0006) | 30 of 30, both TFMs (2026-11-16) |
 | `tests/unit/Modulus.Cli.Tests` (`MessagingWiringTests`) | 7 of 7, net10.0 (2026-11-16): the `add-messaging` wiring |
 
@@ -214,7 +214,7 @@ What blocks a production release, or remains to be done before one. The status o
 - **`samples/` folder:** needs the owner's permission. It blocks the G0 consumer-shape generator and the G3 TradeFlow sample.
 
 ### Must fix before production (engineering)
-Status as of 2026-11-16, verified by tests (unit on net8.0 and net10.0; integration on Podman).
+Status as of 2026-11-16, verified by tests (unit on net10.0; integration on Podman).
 - **Outbox stores the .NET type name.** *Done:* the EF and Npgsql writers store the URN; dispatchers resolve it. Legacy assembly-qualified rows still dispatch (`TransactionalOutboxTests`). The dispatchers pass no allow-list, so a URN resolves to any loaded class carrying it; rows are written by the app itself.
 - **Rolling upgrade across the URN change.** *Done, per bus (MassTransit-style):* `MessagingBusBuilder.UseMessageNameFormatter(Func<Type,string>)` chooses the name each message is sent under; the default is the URN. `UseLegacyWireTypeNames()` is the one-release bridge that sends the .NET name. The choice travels on each `MessageEnvelope.WireType`, so the RabbitMQ and PostgreSQL codecs, both outboxes and encrypted-message headers all use it, and two buses in one process can differ (`LegacyWireTypeNameTests`). Receivers accept both forms. Remove the legacy bridge once every consumer reads URNs. Nothing has been released, so there is no mixed fleet yet.
 - **Npgsql saga repository (item 14).** *Explained:* the current repository passes 10 of 10 repeats at 7 messages and the 50-message test. An unconditional-upsert variant loses updates (count 1 instead of 7), which is the failure the version check prevents. The exact "0" from the earlier run was not reproduced.
