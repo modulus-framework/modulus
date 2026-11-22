@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Modulus.Identity.Abstractions;
 using Modulus.Identity.Auth0;
 using Modulus.Identity.Authentik;
+using Modulus.Identity.Casdoor;
 using Modulus.Identity.AzureAd;
 using Modulus.Identity.Duende;
 using Modulus.Identity.Keycloak;
@@ -66,6 +67,19 @@ public sealed class ExternalProviderOptionsRegistrationTests
         });
 
         ShouldResolveProvider(config, b => b.AddAuthentik(config));
+    }
+
+    [Fact]
+    public void AddCasdoor_RegistersResolvableProvider()
+    {
+        var config = Config("Casdoor", new Dictionary<string, string?>
+        {
+            ["Authority"] = "https://door.example.com",
+            ["ClientId"] = "meetup",
+            ["Audience"] = "meetup",
+        });
+
+        ShouldResolveProvider(config, b => b.AddCasdoor(config));
     }
 
     [Fact]

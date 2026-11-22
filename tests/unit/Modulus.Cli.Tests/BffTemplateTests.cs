@@ -45,6 +45,7 @@ public sealed class BffTemplateTests
     [InlineData("azuread", "AzureAd", "https://login.microsoftonline.com/your-tenant-id/v2.0")]
     [InlineData("duende", "Duende", "https://localhost:5001")]
     [InlineData("authentik", "Authentik", "https://authentik.example.com/application/o/shop/")]
+    [InlineData("casdoor", "Casdoor", "https://door.example.com")]
     public void Every_supported_auth_server_gets_its_authority(string auth, string server, string authority)
     {
         var model = BffHostModel.For(App(auth, AppKind.Api, "mobile"), "mobile", 0);

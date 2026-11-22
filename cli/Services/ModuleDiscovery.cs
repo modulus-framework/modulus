@@ -141,6 +141,7 @@ internal static partial class ModuleDiscovery
             ("Auth: OpenIddict",       "AddModulusOpenIddict("),
             ("Auth: Auth0",            "AddAuth0("),
             ("Auth: Authentik",        "AddAuthentik("),
+            ("Auth: Casdoor",         "AddCasdoor("),
             ("Auth: Azure AD",         "AddAzureAd("),
             ("Auth: Duende",           "AddDuendeIdentityServer("),
             ("Auth: Keycloak",         "AddKeycloak("),

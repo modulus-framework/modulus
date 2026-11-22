@@ -30,6 +30,7 @@ public class AppModelTests
     [Theory]
     [InlineData("auth0")]
     [InlineData("authentik")]
+    [InlineData("casdoor")]
     [InlineData("azuread")]
     [InlineData("duende")]
     [InlineData("keycloak")]

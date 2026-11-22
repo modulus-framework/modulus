@@ -18,7 +18,7 @@ modulus app <name> [options]
 |--------|-------------|---------|
 | `-d, --database` | Database provider: `SQLite`, `SqlServer`, `PostgreSQL`, `MySQL` | prompted |
 | `--framework` | Target framework: `net10.0`, the only one Modulus supports | `net10.0` |
-| `--auth` | Auth provider: `none`, `openiddict`, `auth0`, `authentik`, `azuread`, `duende`, `keycloak`, `okta` | prompted |
+| `--auth` | Auth provider: `none`, `openiddict`, `auth0`, `authentik`, `casdoor`, `azuread`, `duende`, `keycloak`, `okta` | prompted |
 | `--kind` | App kind: `api` (an API host, no UI) or `webapp+api` (a web project on the Modulus UI framework plus the API) | prompted |
 | `--ui-engine` | Web apps only: `mvc`, `razor-pages`, `blazor`, `fluid` or `none`. Only `mvc`, `razor-pages` and `blazor` can be generated. See [the UI overview](../ui/overview). | prompted for web apps |
 | `--with-example` | Include the example Catalog module | off (no example) |
@@ -53,7 +53,7 @@ The CLI prompts for:
 
 1. **Database**: SQLite, SqlServer, PostgreSQL, MySQL
 2. **App kind and UI**: `api`, or `webapp+api` with a UI engine (`blazor`, `mvc` or `razor-pages`)
-3. **Authentication**: none, openiddict, auth0, authentik, azuread, duende, keycloak, okta
+3. **Authentication**: none, openiddict, auth0, authentik, casdoor, azuread, duende, keycloak, okta
 4. **Message Broker**: none, rabbitmq, kafka
 5. **Caching**: inmemory, redis
 6. **Storage**: local, s3, azureblobs

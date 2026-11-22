@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # External Providers
 
-Modulus supports 6 external identity providers with local token validation.
+Modulus supports 7 external identity providers with local token validation.
 
 ## Supported Providers
 
@@ -12,6 +12,7 @@ Modulus supports 6 external identity providers with local token validation.
 |----------|---------|-----------------|
 | **Auth0** | `Modulus.Identity` | OIDC discovery + JWKS |
 | **Authentik** | `Modulus.Identity` | OIDC discovery + JWKS |
+| **Casdoor** | `Modulus.Identity` | OIDC discovery + JWKS |
 | **Azure AD** | `Modulus.Identity` | OIDC discovery + JWKS |
 | **Duende** | `Modulus.Identity` | OIDC discovery + JWKS |
 | **Keycloak** | `Modulus.Identity` | RFC 7662 introspection |
@@ -49,6 +50,15 @@ Config binds under `Identity:ExternalProviders:{Provider}`.
   }
 }
 ```
+
+### Casdoor
+
+`AddCasdoor(configuration)` reads Casdoor's discovery document (`{Authority}/.well-known/openid-configuration`;
+set `Application` to use `/.well-known/{application}/openid-configuration`). `Authority` is the Casdoor endpoint
+(for example `https://door.example.com`), `ClientId`/`ClientSecret` are the Casdoor application's. Access tokens
+carry the application's client id as audience, so set `Audience` to it in production. Roles are read from the
+`roles` claim. `AddCasdoorWithProfileFetch` additionally reads users through `/api/get-user` using the application's
+client id and secret (Basic auth). `modulus app MyApp --auth casdoor` scaffolds it; `Bff:AuthServer` is `Casdoor`.
 
 Only **one** external provider per app is supported (`AllowMultipleExternalProviders`
 is off by default — multiple registrations silently last-wins and are treated

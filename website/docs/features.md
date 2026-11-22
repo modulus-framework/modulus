@@ -42,7 +42,7 @@ Modulus is a set of opt-in packages. Each feature below is one package or one re
 ## Identity
 
 - **OpenIddict** token server with password, client-credentials, refresh, token-exchange, device-code and passkey grants.
-- **External identity:** OIDC adapters for Auth0, Keycloak, Azure AD, Okta, Duende and Authentik, plus LDAP and Active Directory, SAML 2.0, and SCIM 2.0 provisioning.
+- **External identity:** OIDC adapters for Auth0, Keycloak, Azure AD, Okta, Duende, Authentik and Casdoor, plus LDAP and Active Directory, SAML 2.0, and SCIM 2.0 provisioning.
 - **Sessions:** sign-ins are tracked, can be capped, and can be ended from the server. See [Identity](./identity/overview).
 
 ## Service edges

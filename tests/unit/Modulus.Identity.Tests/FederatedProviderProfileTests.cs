@@ -124,6 +124,14 @@ public sealed class FederatedProviderProfileTests
     }
 
     [Fact]
+    public void Casdoor_reads_the_roles_claim()
+    {
+        var token = Token(new Claim("sub", "u-1"), new Claim("roles", "app-admins"));
+
+        FederatedClaims.Read(token, Options(FederatedProviders.Casdoor))!.LocalRoles.Should().Equal("Admin");
+    }
+
+    [Fact]
     public void An_explicit_setting_overrides_the_profile()
     {
         var token = Token(new Claim("sub", "x"), new Claim("uid", "custom-subject"));

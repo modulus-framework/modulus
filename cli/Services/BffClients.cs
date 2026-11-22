@@ -84,6 +84,7 @@ internal static class BffClients
         "azuread" => "AzureAd",
         "duende" => "Duende",
         "authentik" => "Authentik",
+        "casdoor" => "Casdoor",
         _ => "Generic",
     };
 
@@ -100,6 +101,7 @@ internal static class BffClients
         "azuread" => "https://login.microsoftonline.com/your-tenant-id/v2.0",
         "duende" => "https://localhost:5001",
         "authentik" => $"https://authentik.example.com/application/o/{appNameLower}/",
+        "casdoor" => "https://door.example.com",
         _ => "",
     };
 }

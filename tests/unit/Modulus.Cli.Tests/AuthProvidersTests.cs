@@ -8,10 +8,10 @@ namespace Modulus.Cli.Tests;
 public class AuthProvidersTests
 {
     [Fact]
-    public void All_contains_eight_choices()
+    public void All_contains_nine_choices()
     {
-        // none + openiddict + 6 external providers = 8
-        AuthProviders.All.Should().HaveCount(8);
+        // none + openiddict + 7 external providers = 9
+        AuthProviders.All.Should().HaveCount(9);
     }
 
     [Fact]
@@ -34,6 +34,7 @@ public class AuthProvidersTests
     [Theory]
     [InlineData("auth0", "AddAuth0", "Modulus.Identity.Auth0", "Identity:ExternalProviders:Auth0")]
     [InlineData("authentik", "AddAuthentik", "Modulus.Identity.Authentik", "Identity:ExternalProviders:Authentik")]
+    [InlineData("casdoor", "AddCasdoor", "Modulus.Identity.Casdoor", "Identity:ExternalProviders:Casdoor")]
     [InlineData("azuread", "AddAzureAd", "Modulus.Identity.AzureAd", "Identity:ExternalProviders:AzureAd")]
     [InlineData("duende", "AddDuendeIdentityServer", "Modulus.Identity.Duende", "Identity:ExternalProviders:Duende")]
     [InlineData("keycloak", "AddKeycloak", "Modulus.Identity.Keycloak", "Identity:ExternalProviders:Keycloak")]
@@ -53,11 +54,12 @@ public class AuthProvidersTests
     [Theory]
     [InlineData("auth0")]
     [InlineData("authentik")]
+    [InlineData("casdoor")]
     [InlineData("azuread")]
     [InlineData("duende")]
     [InlineData("keycloak")]
     [InlineData("okta")]
-    public void IsExternalProvider_true_for_six_providers(string key)
+    public void IsExternalProvider_true_for_every_external_provider(string key)
     {
         AuthProviders.IsExternalProvider(key).Should().BeTrue();
     }
@@ -96,10 +98,10 @@ public class AuthProvidersTests
     }
 
     [Fact]
-    public void Keys_contains_all_eight_keys()
+    public void Keys_contains_all_nine_keys()
     {
         AuthProviders.Keys.Should().BeEquivalentTo(
-            new[] { "none", "openiddict", "auth0", "authentik", "azuread", "duende", "keycloak", "okta" });
+            new[] { "none", "openiddict", "auth0", "authentik", "casdoor", "azuread", "duende", "keycloak", "okta" });
     }
 
     [Fact]

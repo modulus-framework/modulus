@@ -42,6 +42,9 @@ public enum BffAuthServer
 
     /// <summary>Authentik. Authority is <c>{host}/application/o/{slug}/</c>; roles in <c>groups</c>.</summary>
     Authentik,
+
+    /// <summary>Casdoor. Authority is the Casdoor endpoint (<c>https://{host}</c>); roles in <c>roles</c>.</summary>
+    Casdoor,
 }
 
 /// <summary>How a web client signs users in.</summary>

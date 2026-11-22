@@ -69,6 +69,22 @@ internal static class AuthProviders
                 }
               }
             """),
+        new("casdoor", "Casdoor",
+            "AddCasdoor",
+            "Modulus.Identity.Casdoor",
+            "Identity:ExternalProviders:Casdoor",
+            """
+              "Identity": {
+                "ExternalProviders": {
+                  "Casdoor": {
+                    "Authority": "https://door.example.com",
+                    "ClientId": "your-client-id",
+                    "ClientSecret": "",
+                    "Scope": "openid profile email"
+                  }
+                }
+              }
+            """),
         new("azuread", "Azure AD (Microsoft Entra ID)",
             "AddAzureAd",
             "Modulus.Identity.AzureAd",
@@ -153,7 +169,7 @@ internal static class AuthProviders
             : All.FirstOrDefault(p =>
                 string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>True for the six external identity providers (not none, not openiddict).</summary>
+    /// <summary>True for the external identity providers (not none, not openiddict).</summary>
     internal static bool IsExternalProvider(string auth) =>
-        auth is "auth0" or "authentik" or "azuread" or "duende" or "keycloak" or "okta";
+        auth is "auth0" or "authentik" or "casdoor" or "azuread" or "duende" or "keycloak" or "okta";
 }

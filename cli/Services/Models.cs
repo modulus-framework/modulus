@@ -11,7 +11,7 @@ internal static class FrameworkVersion
     // generated apps pin Modulus.* packages at this version.
     // MODULUS_FRAMEWORK_VERSION points generated apps at another build, e.g. a local pack (2.0.0-dev.<sha>).
     public static string Current { get; } =
-        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "3.0.0";
+        Environment.GetEnvironmentVariable("MODULUS_FRAMEWORK_VERSION") is { Length: > 0 } v ? v : "3.1.0";
 
     // Keep in sync with Microsoft.Extensions.Telemetry.Abstractions in Directory.Packages.props: every project of a generated
     // app references it so classified [LoggerMessage] parameters are redacted (RedactionTemplateTests checks it).
@@ -176,7 +176,7 @@ internal sealed class AppModel
 
     /// <summary>
     /// Auth provider key: "none" (default), "openiddict", or one of the six
-    /// external IdPs ("auth0", "authentik", "azuread", "duende", "keycloak", "okta").
+    /// external IdPs ("auth0", "authentik", "casdoor", "azuread", "duende", "keycloak", "okta").
     /// </summary>
     public string Auth { get; set; } = "none";
 

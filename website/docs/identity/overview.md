@@ -12,7 +12,7 @@ sidebar_position: 1
 |-----------|---------|------|
 | **OpenIddict server** | Issues tokens at `/connect/token`, authorizes at `/connect/authorize`, revokes at `/connect/revoke` | [OpenIddict](./openiddict) |
 | **ASP.NET Core Identity** | Users, roles, password hashing, lockout, password policy and history | [OpenIddict](./openiddict) |
-| **External providers** | Sign in with Auth0, Keycloak, Azure AD, Okta, Duende or Authentik | [External providers](./external-providers) |
+| **External providers** | Sign in with Auth0, Keycloak, Azure AD, Okta, Duende, Authentik or Casdoor | [External providers](./external-providers) |
 | **LDAP and Active Directory** | Password sign-in against a directory, with local fallback | this page |
 | **SAML 2.0** | Single sign-on with an identity provider, service-provider initiated | this page |
 | **Passkeys** | WebAuthn sign-in with a passkey | this page |
@@ -30,7 +30,7 @@ The CLI generates an identity host for you:
 
 ```bash
 modulus app MyApp --auth openiddict     # local token server
-modulus app MyApp --auth keycloak       # external provider (also auth0, authentik, azuread, duende, okta)
+modulus app MyApp --auth keycloak       # external provider (also auth0, authentik, casdoor, azuread, duende, okta)
 ```
 
 ## Grants
@@ -59,7 +59,7 @@ Access tokens are encrypted by default (`EncryptAccessTokens`). Set it to `false
 
 ## External providers
 
-The adapters for Auth0, Keycloak, Azure AD, Okta, Duende and Authentik validate tokens locally through the provider's OpenID discovery document. They check the signature, issuer and lifetime, and audience when `validAudiences` is set. See [External providers](./external-providers).
+The adapters for Auth0, Keycloak, Azure AD, Okta, Duende, Authentik and Casdoor validate tokens locally through the provider's OpenID discovery document. They check the signature, issuer and lifetime, and audience when `validAudiences` is set. See [External providers](./external-providers).
 
 ## LDAP and Active Directory
 

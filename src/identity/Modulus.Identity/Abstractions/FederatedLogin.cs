@@ -17,7 +17,7 @@ public sealed class FederatedLoginOptions
 
     /// <summary>
     /// The identity provider kind, which sets the default claim names (see <see cref="FederatedProviders"/>). One of
-    /// <c>Generic</c>, <c>Authentik</c>, <c>AzureAd</c>, <c>Auth0</c>, <c>Okta</c>, <c>Keycloak</c>, <c>Duende</c>,
+    /// <c>Generic</c>, <c>Authentik</c>, <c>Casdoor</c>, <c>AzureAd</c>, <c>Auth0</c>, <c>Okta</c>, <c>Keycloak</c>, <c>Duende</c>,
     /// <c>OpenIddict</c>. Default <c>Generic</c>: the standard OpenID Connect claim names.
     /// </summary>
     public string Provider { get; set; } = FederatedProviders.Generic;
@@ -164,6 +164,7 @@ public static class FederatedProviders
 {
     public const string Generic = "Generic";
     public const string Authentik = "Authentik";
+    public const string Casdoor = "Casdoor";
     public const string AzureAd = "AzureAd";
     public const string Auth0 = "Auth0";
     public const string Okta = "Okta";
@@ -177,6 +178,9 @@ public static class FederatedProviders
             "The ID token (audience = the client id) or an access token that carries the audience you list."),
         new(Authentik, "sub", "email", "email_verified", "name", ["groups"],
             "The access token (audience = the client id) or the ID token."),
+        // Casdoor: "sub" is the user's id (uuid); roles arrive in a "roles" claim and the access token's audience is the application's client id.
+        new(Casdoor, "sub", "email", "email_verified", "name", ["roles"],
+            "The access token (audience = the application's client id) or the ID token."),
         // Entra ID: "oid" is the stable object id (sub is pairwise per application). The email is often absent, and the
         // optional xms_edov claim marks a verified domain when the tenant emits it.
         new(AzureAd, "oid", "email", "xms_edov", "name", ["roles", "groups"],

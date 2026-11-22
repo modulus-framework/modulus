@@ -58,6 +58,7 @@ public static class BffClaims
     {
         BffAuthServer.Keycloak => [Role, "roles", "realm_access"],
         BffAuthServer.Okta or BffAuthServer.Authentik => [Role, "roles", "groups"],
+        BffAuthServer.Casdoor => [Role, "roles"],
         BffAuthServer.AzureAd => [Role, "roles", "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"],
         BffAuthServer.Generic => [Role, "roles", "groups", "realm_access"],
         _ => [Role, "roles"],

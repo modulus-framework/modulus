@@ -85,6 +85,7 @@ public class ModuleDiscoveryTests
     [Theory]
     [InlineData("AddAuth0(", "Auth: Auth0")]
     [InlineData("AddAuthentik(", "Auth: Authentik")]
+    [InlineData("AddCasdoor(", "Auth: Casdoor")]
     [InlineData("AddAzureAd(", "Auth: Azure AD")]
     [InlineData("AddDuendeIdentityServer(", "Auth: Duende")]
     [InlineData("AddKeycloak(", "Auth: Keycloak")]

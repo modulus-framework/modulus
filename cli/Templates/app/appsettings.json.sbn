@@ -141,6 +141,16 @@
       }
     }
   },
+{{ else if auth == "casdoor" }}  "Identity": {
+    "ExternalProviders": {
+      "Casdoor": {
+        "Authority": "https://door.example.com",
+        "ClientId": "your-client-id",
+        "ClientSecret": "",
+        "Scope": "openid profile email"
+      }
+    }
+  },
 {{ else if auth == "azuread" }}  "Identity": {
     "ExternalProviders": {
       "AzureAd": {

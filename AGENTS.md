@@ -67,7 +67,7 @@ src/
   analyzers/     Modulus.Analyzers (Roslyn, MOD0001; packed inside Modulus.AspNetCore, not its own package)
   data/          Modulus.Data.Abstractions, Modulus.EntityFrameworkCore,
                  EF Core providers (SqlServer, PostgreSQL, MySQL, SQLite, MongoDB)
-  identity/      Modulus.Identity (OpenIddict server + 6 IdP adapters +
+  identity/      Modulus.Identity (OpenIddict server + 7 IdP adapters +
                  EF Core mapping merged into one package), Modulus.Identity.IntegrationEvents
   messaging/     Modulus.Events (abstractions merged), Modulus.Mediator
                  (abstractions merged), Modulus.Inbox, Modulus.Outbox,
@@ -722,7 +722,7 @@ history is discoverable:
   are intersected with a registered allow-list via `PasswordGrant.AuthorizeScopes`
   (defence-in-depth). The refresh-token branch now returns a proper
   `invalid_grant` error instead of a bare `Forbid()`.
-- **External IdP token validation** (Auth0, Okta, AzureAd, Duende, Authentik) —
+- **External IdP token validation** (Auth0, Okta, AzureAd, Duende, Authentik, Casdoor) —
   the adapters validated bearer tokens by GETting the userinfo endpoint and
   treating `200` as valid (validated nothing locally and mutated the shared
   `HttpClient`'s auth header). They now use a shared `OidcDiscoveryValidator`
@@ -1447,8 +1447,8 @@ app.MapBffClient("mobile").MapGet("/home", ...);   // aggregators behind the cli
   `TokenValidation`, `RefreshBeforeExpiry`, `SessionLifetime`, `RateLimit`, app-version and ETag settings,
   `RequireIdempotencyKey`, `RemoteApis` (`LocalPath`/`Service`/`RemotePath`/`RequireAuthentication`).
 - **Every supported auth server.** Endpoints come from OIDC discovery (`.well-known/openid-configuration`); none
-  are hard-coded. `BffAuthServer` (`OpenIddict`, `Keycloak`, `Auth0`, `Okta`, `AzureAd`, `Duende`, `Authentik`,
-  `Generic`) only picks claim defaults. `BffClaims` normalizes what the servers spell differently: client id
+  are hard-coded. `BffAuthServer` (`OpenIddict`, `Keycloak`, `Auth0`, `Okta`, `AzureAd`, `Duende`, `Authentik`, `Casdoor`,
+  `Casdoor`, `Generic`) only picks claim defaults. `BffClaims` normalizes what the servers spell differently: client id
   (`client_id`, `azp`, `cid`, `appid`), scopes (`scope`/`scp`, string or array) and roles (`role`, `roles`, `groups`,
   Keycloak's `realm_access.roles`, plus `Bff:RoleClaimTypes`) into `role`. Auth0 needs its API identifier in
   `AuthorizationParameters:audience`. Entra ID has no revocation or introspection endpoint: logout skips revocation and

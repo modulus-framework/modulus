@@ -1,1 +1,2 @@
 #nullable enable
+Modulus.Bff.BffAuthServer.Casdoor = 8 -> Modulus.Bff.BffAuthServer

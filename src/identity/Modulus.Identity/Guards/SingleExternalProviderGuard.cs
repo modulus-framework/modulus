@@ -47,7 +47,7 @@ internal sealed class SingleExternalProviderGuard(
             $"Modulus allows at most ONE external identity provider per app, " +
             $"but {registered.Count} are registered: {names}. " +
             "Call only one of AddAuthentik/AddAuth0/AddOkta/AddAzureAd/" +
-            "AddDuendeIdentityServer/AddKeycloak. " +
+            "AddDuendeIdentityServer/AddKeycloak/AddCasdoor. " +
             "Multiple registrations otherwise silently last-wins on the " +
             "IExternalIdentityProvider service. " +
             "(To bypass — unsupported, not recommended in production — set " +

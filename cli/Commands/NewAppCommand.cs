@@ -26,7 +26,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--framework")]
         public string? Framework { get; init; }
 
-        [Description("Auth provider: none, openiddict, auth0, authentik, azuread, duende, keycloak, okta. Omit to be prompted.")]
+        [Description("Auth provider: none, openiddict, auth0, authentik, casdoor, azuread, duende, keycloak, okta. Omit to be prompted.")]
         [CommandOption("--auth")]
         public string? Auth { get; init; }
 
@@ -212,7 +212,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         var bff = BffClients.Parse(s.Bff);
         if (bff.Count > 0 && auth == "none")
-            throw new ArgumentException("--bff needs an auth server (--auth openiddict, keycloak, auth0, okta, azuread, duende or authentik): a BFF authenticates its clients.");
+            throw new ArgumentException("--bff needs an auth server (--auth openiddict, keycloak, auth0, okta, azuread, duende, authentik or casdoor): a BFF authenticates its clients.");
         var bffServices = BffClients.ParseServices(s.Services);
         if (bffServices.Count > 0 && bff.Count == 0)
             throw new ArgumentException("--services lists the BFFs' upstream services; add --bff web,mobile,partner.");

@@ -19,7 +19,7 @@ internal sealed class AddBffCommand : Command<AddBffCommand.Settings>
         [CommandArgument(0, "<client>")]
         public string Client { get; init; } = "";
 
-        [Description("Auth server: openiddict, keycloak, auth0, okta, azuread, duende, authentik. Omit to detect it from the API host.")]
+        [Description("Auth server: openiddict, keycloak, auth0, okta, azuread, duende, authentik, casdoor. Omit to detect it from the API host.")]
         [CommandOption("--auth")]
         public string? Auth { get; init; }
 
@@ -50,7 +50,7 @@ internal sealed class AddBffCommand : Command<AddBffCommand.Settings>
         if (auth == "none" || AuthProviders.Find(auth) is null)
         {
             throw new InvalidOperationException(
-                "A BFF needs an auth server and none was found in the API host. Pass --auth openiddict|keycloak|auth0|okta|azuread|duende|authentik.");
+                "A BFF needs an auth server and none was found in the API host. Pass --auth openiddict|keycloak|auth0|okta|azuread|duende|authentik|casdoor.");
         }
 
         if (app.Bffs.FirstOrDefault(b => b.Client == client) is { } existing)

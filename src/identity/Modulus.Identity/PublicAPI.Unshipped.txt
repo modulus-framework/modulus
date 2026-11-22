@@ -70,3 +70,27 @@ const Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions.Mana
 Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions
 static Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions.AddModulusIntegrationClientAdministration(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Modulus.Identity.Extensions.IntegrationClientAdministrationExtensions.MapModulusIntegrationClients(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/identity/integration-clients") -> Microsoft.AspNetCore.Routing.RouteGroupBuilder!
+Modulus.Identity.Casdoor.CasdoorExtensions
+Modulus.Identity.Casdoor.CasdoorIdentityProvider
+Modulus.Identity.Casdoor.CasdoorIdentityProvider.CasdoorIdentityProvider(System.Net.Http.HttpClient! http, Modulus.Identity.Casdoor.CasdoorOptions! opts) -> void
+Modulus.Identity.Casdoor.CasdoorIdentityProvider.DisplayName.get -> string!
+Modulus.Identity.Casdoor.CasdoorIdentityProvider.GetUserBySubjectAsync(string! subject, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Modulus.Identity.Abstractions.ExternalUserInfo?>!
+Modulus.Identity.Casdoor.CasdoorIdentityProvider.Name.get -> string!
+Modulus.Identity.Casdoor.CasdoorIdentityProvider.ValidateTokenAsync(string! token, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+Modulus.Identity.Casdoor.CasdoorOptions
+Modulus.Identity.Casdoor.CasdoorOptions.Application.get -> string?
+Modulus.Identity.Casdoor.CasdoorOptions.Application.set -> void
+Modulus.Identity.Casdoor.CasdoorOptions.Audience.get -> string?
+Modulus.Identity.Casdoor.CasdoorOptions.Audience.set -> void
+Modulus.Identity.Casdoor.CasdoorOptions.Authority.get -> string!
+Modulus.Identity.Casdoor.CasdoorOptions.Authority.set -> void
+Modulus.Identity.Casdoor.CasdoorOptions.CasdoorOptions() -> void
+Modulus.Identity.Casdoor.CasdoorOptions.ClientId.get -> string!
+Modulus.Identity.Casdoor.CasdoorOptions.ClientId.set -> void
+Modulus.Identity.Casdoor.CasdoorOptions.ClientSecret.get -> string!
+Modulus.Identity.Casdoor.CasdoorOptions.ClientSecret.set -> void
+Modulus.Identity.Casdoor.CasdoorOptions.Scope.get -> string!
+Modulus.Identity.Casdoor.CasdoorOptions.Scope.set -> void
+const Modulus.Identity.Abstractions.FederatedProviders.Casdoor = "Casdoor" -> string!
+static Modulus.Identity.Casdoor.CasdoorExtensions.AddCasdoor(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
+static Modulus.Identity.Casdoor.CasdoorExtensions.AddCasdoorWithProfileFetch(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
