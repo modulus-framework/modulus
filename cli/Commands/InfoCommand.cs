@@ -37,14 +37,9 @@ internal sealed class InfoCommand : Command<InfoCommand.Settings>
                 new Markup($"[cyan]{Path.GetFileNameWithoutExtension(inventory.SolutionPath)}[/]"),
                 new Markup($"[grey]Solution :[/] {Path.GetFileName(inventory.SolutionPath)}"),
                 new Markup($"[grey]Root ns  :[/] {inventory.RootNamespace}"),
-                new Markup($"[grey]Kind     :[/] {(inventory.Kind is { } kind ? kind.Label() : "[grey dim]not recorded (generated before app kinds)[/]")}"),
                 new Markup($"[grey]Directory:[/] {Markup.Escape(inventory.SolutionDir)}"),
                 new Markup($"[grey]Host     :[/] {(inventory.ApiProjectPath.Length == 0 ? "[red]missing[/]" : Markup.Escape(Path.GetRelativePath(inventory.SolutionDir, inventory.ApiProjectPath)))}"),
             };
-            if (!string.IsNullOrEmpty(inventory.WebProjectPath))
-            {
-                headerRows.Add(new Markup($"[grey]Web      :[/] {Markup.Escape(Path.GetRelativePath(inventory.SolutionDir, inventory.WebProjectPath))}"));
-            }
             var root = new Panel(new Rows(headerRows.ToArray()))
                 .Border(BoxBorder.Rounded)
                 .Header("[yellow]Application[/]");

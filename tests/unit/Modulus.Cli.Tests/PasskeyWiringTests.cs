@@ -20,7 +20,6 @@ public sealed class PasskeyWiringTests
         RootNamespace = "Shop",
         AppName = "Shop",
         Auth = auth,
-        Kind = AppKind.Api,
         NoExample = false,
     };
 
@@ -52,22 +51,10 @@ public sealed class PasskeyWiringTests
     }
 
     [Fact]
-    public void The_clients_that_carry_the_bff_session_keep_no_cookie_container()
-    {
-        // Otherwise the BFF's Set-Cookie is replayed on every later request through the same client: one person's session
-        // would apply to another person's request (found 2026-10-23).
-        var gateway = _engine.Render("app/BffGatewayHandler.Web", new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.WebAppApi, NoExample = false, UiEngine = "razor-pages" });
-        var setup = _engine.Render("app/AuthenticationSetup.Web", new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.WebAppApi, NoExample = false, UiEngine = "razor-pages" });
-
-        gateway.Should().Contain("new SocketsHttpHandler { UseCookies = false }");
-        setup.Should().Contain("new SocketsHttpHandler { UseCookies = false }");
-    }
-
-    [Fact]
     public void Production_requires_passkeys_and_names_the_privileged_permissions_for_a_passkey_sign_in()
     {
         // D10 (decision record 2026-10-23): privileged permissions need a passkey sign-in in production, and production needs passkeys to be configured.
-        var program = ApiHostSource.Render(_engine, new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.Api, NoExample = false });
+        var program = ApiHostSource.Render(_engine, new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", NoExample = false });
 
         program.Should().Contain("if (builder.Environment.IsProduction() && !builder.Configuration.GetValue<bool>(\"Identity:Passkeys:Enabled\"))");
         foreach (var permission in new[] { "identity:accounts:manage", "scim:manage", "tenancy:data-stores:manage", "authorization:manage", "authorization:grant-any", "authorization:entitlements:manage", "authorization:break-glass" })
@@ -87,32 +74,6 @@ public sealed class PasskeyWiringTests
             .And.Contain("X509CertificateLoader.LoadPkcs12FromFile(path, password)")
             .And.Contain("Production needs {section}:Path (a PFX file) for the token server.");
         _engine.Render("app/api/TokenServerSetup", App(auth: "none")).Should().NotContain("LoadCertificate");
-    }
-
-    [Fact]
-    public void The_passkey_page_relays_a_no_content_answer_without_a_body()
-    {
-        // A 204 from the API (removing a passkey) must not carry a body: Kestrel refuses one.
-        var page = _engine.Render("app/PasskeysModel.Web", new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.WebAppApi, NoExample = false });
-
-        page.Should().Contain("if (response.StatusCode == HttpStatusCode.NoContent)").And.Contain("return new StatusCodeResult(StatusCodes.Status204NoContent);");
-    }
-
-    [Fact]
-    public void A_web_host_is_an_allowed_passkey_origin_because_the_browser_runs_there()
-    {
-        // WebAuthn checks the page's origin: the Web host (5181) is where the enrolment page runs, so it must be allowed too.
-        var model = new AppModel
-        {
-            RootNamespace = "Shop",
-            AppName = "Shop",
-            Auth = "openiddict",
-            Kind = AppKind.WebAppApi,
-            NoExample = false,
-            UiEngine = "razor-pages",
-        };
-
-        _engine.Render("app/appsettings.Development.json", model).Should().Contain("\"Origins\": [ \"http://localhost:5180\", \"http://localhost:5181\" ]");
     }
 
     [Fact]

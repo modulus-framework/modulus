@@ -12,7 +12,7 @@
       "Enabled": true,
       "RelyingPartyId": "localhost",
       "RelyingPartyName": "{{ app_name }}",
-      "Origins": [ "http://localhost:5180"{{ if use_ui }}, "http://localhost:5181"{{ end }} ]
+      "Origins": [ "http://localhost:5180" ]
     }
   }{{ end }}
 }

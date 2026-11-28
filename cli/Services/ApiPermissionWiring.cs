@@ -31,15 +31,15 @@ internal static class ApiPermissionWiring
         var lines = new List<string>();
         if (!host.Contains("AddModulusAuthorization(", StringComparison.OrdinalIgnoreCase))
             lines.Add("builder.Services.AddModulusAuthorization();");
-        var needsChecker = withChecker && !host.Contains(UiAccessGates.GrantCheckerCall, StringComparison.OrdinalIgnoreCase);
+        var needsChecker = withChecker && !host.Contains(ApiPermissions.GrantCheckerCall, StringComparison.OrdinalIgnoreCase);
         if (needsChecker)
-            lines.Add(UiAccessGates.GrantCheckerCall);
+            lines.Add(ApiPermissions.GrantCheckerCall);
         if (!host.Contains($"Add(\"{permission}\"", StringComparison.OrdinalIgnoreCase))
             lines.Add($"builder.Services.AddPermissions(\"{moduleName.ToLowerInvariant()}\", permissions => permissions.Add(\"{permission}\", \"{description}\"));");
-        var granted = host.Contains(UiAccessGates.GrantMarker(permission), StringComparison.OrdinalIgnoreCase)
-            || host.Contains(UiAccessGates.LegacyGrantMarker(permission), StringComparison.OrdinalIgnoreCase);
+        var granted = host.Contains(ApiPermissions.GrantMarker(permission), StringComparison.OrdinalIgnoreCase)
+            || host.Contains(ApiPermissions.LegacyGrantMarker(permission), StringComparison.OrdinalIgnoreCase);
         if (!granted)
-            lines.Add(UiAccessGates.GrantCall(permission));
+            lines.Add(ApiPermissions.GrantCall(permission));
 
         if (lines.Count == 0)
             return content;
@@ -51,7 +51,7 @@ internal static class ApiPermissionWiring
 
         var usings = new List<string> { "using Modulus.Authorization.Extensions;" };
         if (needsChecker)
-            usings.Add($"using {UiAccessGates.GrantCheckerNamespace};");
+            usings.Add($"using {ApiPermissions.GrantCheckerNamespace};");
         foreach (var usingLine in usings.Where(u => !content.Contains(u, StringComparison.Ordinal)))
             content = InsertUsing(content, usingLine, nl);
         return content;

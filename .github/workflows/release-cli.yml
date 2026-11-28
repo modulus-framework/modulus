@@ -1,0 +1,64 @@
+name: Release CLI
+
+# The CLI (Synvro.Modulus.Cli) is versioned on its own, in cli/Modulus.Cli.csproj. Tag cli-v<that version> to publish it.
+# The framework packages are released by release.yml (v* tags), which leaves the CLI out.
+on:
+  push:
+    tags:
+      - 'cli-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write       # OIDC: NuGet trusted publishing, and the build provenance signature
+      attestations: write   # build provenance attestation of the package
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Check that the tag matches the CLI version
+        run: |
+          version=$(dotnet msbuild cli/Modulus.Cli.csproj -getProperty:PackageVersion)
+          if [ "cli-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the CLI version $version in cli/Modulus.Cli.csproj (expected cli-v$version)."
+            exit 1
+          fi
+      - name: Test (unit)
+        run: dotnet test tests/unit/Modulus.Cli.Tests --configuration Release --verbosity minimal
+      - name: Pack
+        run: dotnet pack cli/Modulus.Cli.csproj --configuration Release --output artifacts/packages
+      - name: Software bill of materials (CycloneDX)
+        run: |
+          dotnet tool install --global CycloneDX
+          dotnet CycloneDX cli/Modulus.Cli.csproj --json --output artifacts/sbom
+      - name: Build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: 'artifacts/packages/*.nupkg'
+      - name: Upload package and SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.ref_name }}
+          path: |
+            artifacts/packages/*.nupkg
+            artifacts/sbom/
+      # NuGet trusted publishing: the owner configures a policy for THIS workflow file once, on nuget.org.
+      - name: NuGet login (trusted publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Publish to NuGet
+        run: |
+          for pkg in artifacts/packages/*.nupkg; do
+            dotnet nuget push "$pkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+      - name: Verify published package signature
+        run: bash build/verify-published-packages.sh artifacts/packages

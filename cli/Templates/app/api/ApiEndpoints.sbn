@@ -1,6 +1,6 @@
 using System.Reflection;
-{{ if expose_api }}using Modulus.AspNetCore.Endpoints;
-{{ end }}{{ if enable_health_checks }}using Modulus.AspNetCore.HealthChecks;
+using Modulus.AspNetCore.Endpoints;
+{{ if enable_health_checks }}using Modulus.AspNetCore.HealthChecks;
 {{ end }}{{ if use_security_guard }}using Modulus.AspNetCore.Security.Policy;
 {{ end }}{{ if auth == "openiddict" }}using Modulus.Identity.Extensions;
 {{ end }}
@@ -11,7 +11,7 @@ internal static class ApiEndpoints
 {
     public static WebApplication MapApiEndpoints(this WebApplication app)
     {
-{{ if expose_api }}        app.MapControllers();
+        app.MapControllers();
 
         // REPR endpoints (EndpointBase subclasses) contributed by module Presentation assemblies. `modulus add-module` adds
         // ProjectReferences; the Presentation DLLs land in the bin directory and are discovered by naming convention.
@@ -20,16 +20,16 @@ internal static class ApiEndpoints
             Directory.GetFiles(AppContext.BaseDirectory, "{{ root_namespace }}.Modules.*.Presentation.dll")
                 .Select(Assembly.LoadFrom)
                 .ToArray());
-{{ end }}{{ if enable_health_checks }}        app.MapModulusHealthChecks();
+{{ if enable_health_checks }}        app.MapModulusHealthChecks();
 {{ end }}{{ if auth == "openiddict" }}        // Passkey sign-in and enrolment: mapped only when Identity:Passkeys:Enabled, since the services are registered only then.
-        // Under /api so the Web host reaches them through the BFF gateway.
+        // Under /api so a client behind a BFF reaches them through its proxy.
         if (app.Configuration.GetValue<bool>("Identity:Passkeys:Enabled"))
             app.MapModulusPasskeys("/api/account/passkeys");
 {{ end }}        app.MapApiFeatures();
 
         if (app.Environment.IsDevelopment())
         {
-{{ if expose_api && target_framework == "net10.0" }}            app.MapOpenApi(){{ if use_security_guard }}.Loosen("OpenAPI document, mapped in Development only"){{ end }};
+{{ if target_framework == "net10.0" }}            app.MapOpenApi(){{ if use_security_guard }}.Loosen("OpenAPI document, mapped in Development only"){{ end }};
 {{ end }}        }
 
         return app;

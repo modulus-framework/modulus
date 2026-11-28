@@ -19,8 +19,6 @@ public static class Program
                 .WithDescription("Create a new Modulus application with comprehensive interactive configuration.")
                 .WithExample("app", "MyCompany.MyApp")
                 .WithExample("app", "MyApp", "--database", "SqlServer")
-                .WithExample("app", "MyApp", "--kind", "api")
-                .WithExample("app", "MyApp", "--kind", "web")
                 .WithExample("app", "MyApp")
                 .WithExample("app", "MyApp", "--with-example")
                 .WithExample("app", "MyApp", "--message-broker", "rabbitmq", "--caching", "redis")
@@ -142,7 +140,7 @@ public static class Program
                 .WithDescription("List every business module in this app (provider, entities, migrations).")
                 .WithExample("list");
             config.AddCommand<Commands.DescribeCommand>("describe")
-                .WithDescription("Describe the app (kind, hosts, modules and entities, BFFs, wired features); with --json, for tools that drive the CLI.")
+                .WithDescription("Describe the app (hosts, modules and entities, BFFs, wired features); with --json, for tools that drive the CLI.")
                 .WithExample("describe")
                 .WithExample("describe", "--json");
 
@@ -166,96 +164,6 @@ public static class Program
                 .WithExample("update", "--dry-run")
                 .WithExample("update", "--framework-only")
                 .WithExample("update", "--force");
-
-            // ── UI Modules ──────────────────────────────────────────────
-            config.AddBranch("ui", ui =>
-            {
-                ui.SetDescription("Scaffold pages and components on the Modulus UI framework.");
-
-                ui.AddBranch("theme", theme =>
-                {
-                    theme.SetDescription("Create, apply, list and export app themes (Modulus:Theme values).");
-
-                    theme.AddCommand<Commands.UiThemeCreateCommand>("create")
-                        .WithDescription("Create a theme in the app's Themes folder from a base and a brand colour.")
-                        .WithExample("ui", "theme", "create", "corporate", "--colors", "blue")
-                        .WithExample("ui", "theme", "create", "mono", "--base", "minimal", "--colors", "#0b7285");
-                    theme.AddCommand<Commands.UiThemeSetCommand>("set")
-                        .WithDescription("Make a theme the app's active theme (writes Modulus:Theme in appsettings.json).")
-                        .WithExample("ui", "theme", "set", "corporate");
-                    theme.AddCommand<Commands.UiThemeListCommand>("list")
-                        .WithDescription("List the app's themes and which one is active.")
-                        .WithExample("ui", "theme", "list");
-                    theme.AddCommand<Commands.UiThemeExportCommand>("export")
-                        .WithDescription("Export a theme as CSS variables, SCSS variables, a Tailwind config or JSON.")
-                        .WithExample("ui", "theme", "export", "corporate", "--format", "tailwind");
-                });
-
-                ui.AddCommand<Commands.UiCreateDashboardCommand>("create-dashboard")
-                    .WithDescription("Scaffold a dashboard page (overview, analytics, reports, audit) from the Modulus.Ui.Templates package for the app's UI engine.")
-                    .WithExample("ui", "create-dashboard", "analytics")
-                    .WithExample("ui", "create-dashboard", "reports", "--module", "Admin", "--engine", "blazor");
-
-                ui.AddCommand<Commands.UiCreateFormFromEntityCommand>("create-form-from-entity")
-                    .WithDescription("Scaffold a create/edit form whose fields come from an entity's properties.")
-                    .WithExample("ui", "create-form-from-entity", "Order")
-                    .WithExample("ui", "create-form-from-entity", "Order", "--module", "Orders", "--engine", "blazor");
-
-                ui.AddCommand<Commands.UiAddComponentCommand>("add-component")
-                    .WithDescription("Add reusable components (alert, card, data-table, ...) to the app, for its UI engine.")
-                    .WithExample("ui", "add-component", "--list")
-                    .WithExample("ui", "add-component", "alert", "card", "data-table")
-                    .WithExample("ui", "add-component", "--all");
-
-                ui.AddCommand<Commands.UiAddAdminCommand>("add-admin")
-                    .WithDescription("Scaffold the admin dashboard starter (users, roles, tenants, notifications, audit log, settings, dashboards) and its menu for the app's UI engine.")
-                    .WithExample("ui", "add-admin")
-                    .WithExample("ui", "add-admin", "--pages", "dashboard,users,roles")
-                    .WithExample("ui", "add-admin", "--engine", "blazor", "--folder", "Backoffice");
-
-                ui.AddCommand<Commands.UiAddAuthCommand>("add-auth")
-                    .WithDescription("Add the forgot-password and reset-password pages (they call Modulus.Identity's /account endpoints).")
-                    .WithExample("ui", "add-auth")
-                    .WithExample("ui", "add-auth", "--engine", "blazor");
-                ui.AddCommand<Commands.UiAdd2FaCommand>("add-2fa")
-                    .WithDescription("Add the two-factor page: set up an authenticator app, recovery codes, turn off.")
-                    .WithExample("ui", "add-2fa");
-
-                ui.AddCommand<Commands.UiAddSessionManagerCommand>("add-session-manager")
-                    .WithDescription("Add a page listing the signed-in user's sessions (revoke one or all) and recent sign-ins.")
-                    .WithExample("ui", "add-session-manager");
-
-                ui.AddCommand<Commands.UiCreateModuleHomeCommand>("create-module-home")
-                    .WithDescription("Add a landing page for a business module (entity, API and permission counts as sample values).")
-                    .WithExample("ui", "create-module-home", "Catalog");
-                ui.AddCommand<Commands.UiCreateCrudCommand>("create-crud")
-                    .WithDescription("Create list, create/edit and delete pages for an entity, over its API (generate-crud) through a typed client. MVC, Razor Pages and Blazor.")
-                    .WithExample("ui", "create-crud", "Product")
-                    .WithExample("ui", "create-crud", "Product", "--module", "Catalog", "--engine", "blazor");
-
-                ui.AddCommand<Commands.UiAddAssistantCommand>("add-assistant")
-                    .WithDescription("Host the AI platform's embedded assistant: /ai/session endpoint, ai:use permission, Ai:Host settings and a layout partial. Razor Pages and MVC.")
-                    .WithExample("ui", "add-assistant");
-
-                ui.AddCommand<Commands.UiAddChartCommand>("add-chart")
-                    .WithDescription("Add a chart page (line, column, donut, heatmap) built on the framework's chart components, with sample data.")
-                    .WithExample("ui", "add-chart", "--type", "donut")
-                    .WithExample("ui", "add-chart", "--type", "line", "--engine", "blazor");
-
-                ui.AddCommand<Commands.UiAddI18nCommand>("add-i18n")
-                    .WithDescription("Set the app's languages (Modulus:Theme:Cultures) and wire request localization; shows a language picker with two or more.")
-                    .WithExample("ui", "add-i18n", "--languages", "en,es,fr");
-
-                ui.AddCommand<Commands.UiAuditCommand>("audit")
-                    .WithDescription("Scan the app's Razor/HTML pages for accessibility problems (missing alt text, labels, names, lang ...).")
-                    .WithExample("ui", "audit")
-                    .WithExample("ui", "audit", "--format", "markdown", "--fail-on-issues");
-
-                ui.AddCommand<Commands.UiCreatePermissionMatrixCommand>("create-permission-matrix")
-                    .WithDescription("Scaffold a role/permission matrix for an entity: tick a box to grant, clear it to revoke (uses /authorization/grants).")
-                    .WithExample("ui", "create-permission-matrix", "Order")
-                    .WithExample("ui", "create-permission-matrix", "Order", "--roles", "Admin,Sales", "--permissions", "orders:order:manage,orders:order:export");
-            });
         });
 
         // The update check runs alongside the command; its notice prints after the command's own output.
@@ -274,7 +182,7 @@ internal sealed class DefaultCommand : Command
             new FigletText("Modulus")
                 .Color(Color.Cyan1));
 
-        AnsiConsole.MarkupLine("[grey]Modular-monolith framework for .NET 10[/]");
+        AnsiConsole.MarkupLine("[grey]APIs for .NET 10: modular monolith or microservices[/]");
         AnsiConsole.WriteLine();
 
         // ── Quick start panel ─────────────────────────────────────────
@@ -299,48 +207,41 @@ internal sealed class DefaultCommand : Command
             .AddColumn("[cyan]Command[/]")
             .AddColumn("[grey]Description[/]");
 
-        table.AddRow("[cyan]app[/] [grey][[<name>]][/]", "Create a new application (comprehensive interactive wizard)");
-        table.AddRow("[cyan]module[/] [grey][[<name>]][/]", "Create a new standalone business module");
-        table.AddRow("[cyan]add-module[/] [grey][[<name>]][/]", "Add a module to an existing application");
-        table.AddRow("[cyan]generate-crud[/] [grey]<E>[/]", "Generate CRUD for a domain entity");
-        table.AddRow("[cyan]generate-command[/] [grey]<C>[/]", "Generate a single command handler");
-        table.AddRow("[cyan]generate-query[/] [grey]<Q>[/]", "Generate a single query handler");
-        table.AddRow("[cyan]migrate add[/] [grey]<name>[/]", "Scaffold an EF Core migration per module");
-        table.AddRow("[cyan]migrate update[/]", "Apply pending migrations to each module DB");
-        table.AddRow("[cyan]list[/]", "List this app's modules + entities + migrations");
-        table.AddRow("[cyan]info[/]", "Overview: host, framework features wired, modules");
-        table.AddRow("[cyan]doctor[/]", "Check .NET SDK / dotnet-ef / app structure");
-        table.AddRow("[cyan]outdated[/]", "Show outdated packages in the current app");
-        table.AddRow("[cyan]update[/]", "Update packages to latest versions");
-        table.AddRow("[cyan]ui theme create[/] [grey]<name>[/]", "Create an app theme from a base and a brand colour");
-        table.AddRow("[cyan]ui theme set[/] [grey]<name>[/]", "Make a theme the active one (appsettings.json)");
-        table.AddRow("[cyan]ui theme list[/]", "List the app's themes");
-        table.AddRow("[cyan]ui theme export[/] [grey]<name>[/]", "Export a theme as css, scss, tailwind or json")
-;
-        table.AddRow("[cyan]ui create-dashboard[/] [grey]<template>[/]", "Scaffold an overview, analytics, reports or audit dashboard");
-        table.AddRow("[cyan]ui create-form-from-entity[/] [grey]<E>[/]", "Scaffold a form from an entity's properties");
-        table.AddRow("[cyan]ui add-component[/] [grey][[names]][/]", "Add UI components (alert, card, data-table, ...) to the app");
-        table.AddRow("[cyan]ui add-auth[/]", "Add forgot-password and reset-password pages");
-        table.AddRow("[cyan]ui add-2fa[/]", "Add the two-factor authentication page");
-        table.AddRow("[cyan]ui add-session-manager[/]", "Add the sessions and sign-in history page");
-        table.AddRow("[cyan]ui create-crud[/] [grey]<Entity>[/]", "Create list, edit and delete pages for an entity over its API");
-        table.AddRow("[cyan]ui add-assistant[/]", "Host the AI platform's embedded assistant (session endpoint, ai:use, partial)");
-        table.AddRow("[cyan]ui add-chart[/] [grey]--type T[/]", "Add a line, column, donut or heatmap chart page");
-        table.AddRow("[cyan]ui add-i18n[/] [grey]--languages L[/]", "Set the app's languages and wire request localization");
-        table.AddRow("[cyan]ui audit[/]", "Scan pages for accessibility problems (report as json, markdown or html)");
-        table.AddRow("[cyan]ui create-permission-matrix[/] [grey]<E>[/]", "Scaffold a role/permission matrix for an entity");
-        table.AddRow("[cyan]describe[/]", "Show detailed info about the current app structure");
-        table.AddRow("[cyan]add-bff[/] [grey]<entity>[/]", "Expose entity CRUD over BFF (Backend for Frontend)");
-        table.AddRow("[cyan]generate-bff-endpoint[/] [grey]<entity>[/]", "Generate a BFF endpoint for an entity");
-        table.AddRow("[cyan]generate-grpc[/] [grey]<service>[/]", "Generate gRPC service from domain models");
-        table.AddRow("[cyan]generate-graphql[/] [grey]<type>[/]", "Generate GraphQL types and resolvers");
-        table.AddRow("[cyan]add-webhooks[/]", "Add webhook infrastructure (outbox, dispatcher)");
-        table.AddRow("[cyan]add-tenant-lifecycle[/]", "Add tenant data export, offboarding and retention (multi-tenant apps)");
-        table.AddRow("[cyan]add-audit-store[/]", "Add change auditing to entities");
-        table.AddRow("[cyan]add-deployment[/]", "Write the production container files (Dockerfile, compose with Traefik and TLS, .env.example)");
-        table.AddRow("[cyan]add-authorization-store[/]", "Move the authorization store to the app's own migrated context (production schema)");
-        table.AddRow("[cyan]add-realtime[/]", "Add SignalR realtime messaging");
-        table.AddRow("[cyan]add-ai[/]", "Add AI features (embedding, semantic search)");
+        table.AddRow("[cyan]app[/] [grey][[<name>]][/]", "Create a new API app (modular monolith or microservices)");
+        table.AddRow("[cyan]module[/] [grey]<name>[/]", "Create a standalone business module");
+        table.AddRow("[cyan]add-module[/] [grey]<name>[/]", "Add a module to an existing app");
+        table.AddRow("[cyan]generate-crud[/] [grey]<Entity>[/]", "Generate an entity with its CRUD handlers and endpoints");
+        table.AddRow("[cyan]generate-command[/] [grey]<Name>[/]", "Generate a single command handler");
+        table.AddRow("[cyan]generate-query[/] [grey]<Name>[/]", "Generate a single query handler");
+        table.AddRow("[cyan]migrate add[/] [grey]<Name>[/]", "Scaffold a migration per module");
+        table.AddRow("[cyan]migrate update[/]", "Apply pending migrations to each module database");
+        table.AddRow("[cyan]add-bff[/] [grey]<client>[/]", "Add a web, mobile or partner backend for frontend");
+        table.AddRow("[cyan]generate-bff-endpoint[/] [grey]<Name>[/]", "Add an aggregate endpoint to a BFF");
+        table.AddRow("[cyan]generate-grpc[/] [grey]<Entity>[/]", "Expose an entity's CRUD over gRPC");
+        table.AddRow("[cyan]generate-graphql[/] [grey]<Entity>[/]", "Expose an entity's CRUD over GraphQL");
+        table.AddRow("[cyan]add-messaging[/]", "Add the messaging bus and a transport");
+        table.AddRow("[cyan]add-webhooks[/]", "Deliver integration events to signed outgoing webhooks");
+        table.AddRow("[cyan]add-realtime[/]", "Push integration events to clients (SSE; SignalR with --signalr)");
+        table.AddRow("[cyan]add-analytics[/]", "Add the analytics layer (ClickHouse and OpenLineage)");
+        table.AddRow("[cyan]add-ai[/]", "Host the AI platform's read-only connector");
+        table.AddRow("[cyan]add-search[/]", "Add full-text search (OpenSearch or Solr)");
+        table.AddRow("[cyan]add-storage[/]", "Move file storage to S3, Azure Blob or Google Cloud");
+        table.AddRow("[cyan]add-jobs[/]", "Add the Quartz job scheduler");
+        table.AddRow("[cyan]add-keyvault[/]", "Read secrets from Azure Key Vault");
+        table.AddRow("[cyan]add-openbao[/]", "Read secrets from OpenBao");
+        table.AddRow("[cyan]add-media[/]", "Add the media library");
+        table.AddRow("[cyan]add-notifications[/]", "Add the notification inbox and channel preferences");
+        table.AddRow("[cyan]add-localization[/]", "Keep translations in the database");
+        table.AddRow("[cyan]add-tenant-lifecycle[/]", "Add tenant export, offboarding and retention (multi-tenant apps)");
+        table.AddRow("[cyan]add-audit-store[/]", "Keep the business and security audit logs in a database");
+        table.AddRow("[cyan]add-authorization-store[/]", "Give the authorization store its own migrations");
+        table.AddRow("[cyan]add-deployment[/]", "Write the production container files");
+        table.AddRow("[cyan]list[/]", "List this app's modules, entities and migrations");
+        table.AddRow("[cyan]describe[/]", "Describe the app (--json for tools)");
+        table.AddRow("[cyan]info[/]", "Overview of the host, wired features and modules");
+        table.AddRow("[cyan]doctor[/]", "Check the .NET SDK, tools and app structure");
+        table.AddRow("[cyan]outdated[/]", "Show outdated packages");
+        table.AddRow("[cyan]update[/]", "Update packages to the latest versions");
 
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();

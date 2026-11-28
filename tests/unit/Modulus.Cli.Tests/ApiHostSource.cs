@@ -18,8 +18,7 @@ internal static class ApiHostSource
         if (model.UseOpenIddict)
             parts.Add(engine.Render("app/api/TokenServerSetup", model));
         parts.Add(engine.Render("app/api/AuthenticationSetup", model));
-        if (model.ExposeApi)
-            parts.Add(engine.Render("app/api/OpenApiSetup", model));
+        parts.Add(engine.Render("app/api/OpenApiSetup", model));
         parts.Add(engine.Render("app/api/DatabaseStartup", model));
         parts.Add(engine.Render("app/api/PipelineSetup", model));
         parts.Add(engine.Render("app/api/ApiEndpoints", model));

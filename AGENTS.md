@@ -6,7 +6,7 @@ Guidance for AI agents (and humans) working on the Modulus framework.
 
 Modulus is a modular-monolith framework for **.NET 10** (`net10.0`). It is a
 multi-project solution made of **87 projects** under `src/` (86 libraries plus the Roslyn analyzer project) (core, data,
-identity, messaging, platform, observability, testing; the UI framework lives in the `modulus-ui` repository, see *UI and app kinds* below),
+identity, messaging, platform, observability, testing; the UI framework lives in the `modulus-ui` repository, and the CLI scaffolds no UI),
 unit/integration tests under `tests/` and a **CLI tool** (`Modulus.Cli`) for
 scaffolding.
 
@@ -164,6 +164,11 @@ seeding) and `ShutdownAsync` runs in reverse order on graceful shutdown.
 
 ## CLI tool
 
+**The CLI creates APIs only**: a modular monolith, or microservices (`--bff`, `--services`). It scaffolds no UI. The `modulus ui` commands and the
+`webapp+api` app kind were removed in CLI 4.0.0; do not reintroduce them. The CLI is versioned on its own (`cli/Modulus.Cli.csproj`), apart from the
+framework version its templates reference (`FrameworkVersion` in `cli/Services/Models.cs`). Change the CLI version in `cli/Modulus.Cli.csproj` only (a global
+`-p:Version` does not override it) and release it with a `cli-v<version>` tag (`.github/workflows/release-cli.yml`); `release.yml` (`v*` tags) leaves the CLI out.
+
 The `modulus` CLI (Spectre.Console.Cli + Scriban) is a `dotnet tool` that
 generates complete solutions, modules, and CRUD code using a **Clean-Architecture /
 modular-monolith** layout (Domain → Application → Infrastructure → Presentation per module,
@@ -172,7 +177,7 @@ mirroring the structure of the garments-erp modules.
 
 | Command | Description |
 |---------|-------------|
-| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + optional example `Catalog` module (`--with-example`, 5 projects; off by default) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--kind api\|web` picks the **app kind** (see below). `--multi-tenancy` (with `--kind api --auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
+| `modulus app <name>` | Creates a solution: `src/API/{App}.Api` host + `src/Shared/{App}.Shared.*` kernel (4 projects) + optional example `Catalog` module (`--with-example`, 5 projects; off by default) + top-level tests. `--migration-engine dbsh` uses SQL-first migrations. `--multi-tenancy` (with `--auth openiddict`) makes companies tenants: membership-checked resolution, a tenant store module, tenant-owned entities, isolation tests (see *Security model*). |
 | `modulus add-bff <client>` | Adds a `web`, `mobile` or `partner` BFF host (`src/Bff/{App}.Bff.{Client}`) to an existing app; `modulus app --bff web,mobile,partner [--services catalog=...]` generates them up front. See *BFF (per client)*. |
 | `modulus generate-bff-endpoint <Name>` | Scaffolds an aggregate endpoint in a BFF (`--bff`, `--modules`, `--route`) composing the modules' typed clients. |
 | `modulus generate-grpc <Entity>` | Exposes an entity's CRUD commands/queries over gRPC: `.proto` + service in the module's Presentation layer, API host wiring, a test class; `--bff mobile\|all` adds the contract to BFFs as a client. See *gRPC*. |
@@ -182,10 +187,10 @@ mirroring the structure of the garments-erp modules.
 | `modulus add-audit-store` | Keeps the business audit log and the hash-chained security audit in a database: the `{App}.Modules.Audit.Infrastructure` store module (`AppAuditDbContext`, `AuditModule` with `AddModulusAuditStore`), API host wiring (`AddModulusSecurityAudit` when missing), the `Audit` connection string and a Development anchor file. Idempotent. See *Security model*. |
 | `modulus add-authorization-store` | Moves an existing app's authorization store from the framework's default context to the application's own (`{App}.Modules.Authorization.Infrastructure`: `AppAuthorizationDbContext`, its design-time factory, `AuthorizationStoreRegistration`), so its schema is authored with migrations (production refuses to create it without them). Idempotent; the new `InitialCreate` must not be applied on top of a database that already has the schema. |
 | `modulus add-realtime [--events a,b] [--bff ...] [--signalr]` | Pushes integration events to connected clients: API host wiring (`AddModulusRealtime` with one `AddEvent` per event, audience = the entity's permission; `MapModulusRealtime`), settings, a test class; `--bff` relays `/realtime` as an event stream; `--signalr` turns the hub on (SSE is the default). See *Realtime*. |
-| `modulus add-ai` | Hosts the AI platform's connector (`Modulus.AI.Connector` + EF journal) in the API host: `AddModulusAiConnector`/`MapModulusAiConnector`, `Ai:Connector` settings (off until registered with the platform), test settings with a hashed test key, `AiConnectorTests` and `AiConformanceTests` (package `Modulus.AI.Connector.Testing`). Idempotent; not for `webapp`. `generate-crud <Entity> --ai` then marks the entity `[AiIndexed]`/`[AiQueryable]`, the list query `[AiCapability]`, the lookup `[AiResource]` (with `[RequirePermission]`), grants the `AiIndexer` role and writes `{Entity}AiCapabilityTests`. See *AI connector*. |
+| `modulus add-ai` | Hosts the AI platform's connector (`Modulus.AI.Connector` + EF journal) in the API host: `AddModulusAiConnector`/`MapModulusAiConnector`, `Ai:Connector` settings (off until registered with the platform), test settings with a hashed test key, `AiConnectorTests` and `AiConformanceTests` (package `Modulus.AI.Connector.Testing`). Idempotent. `generate-crud <Entity> --ai` then marks the entity `[AiIndexed]`/`[AiQueryable]`, the list query `[AiCapability]`, the lookup `[AiResource]` (with `[RequirePermission]`), grants the `AiIndexer` role and writes `{Entity}AiCapabilityTests`. See *AI connector*. |
 | `modulus add-search [--provider opensearch\|solr]` / `add-storage [--provider s3\|azure\|gcs]` / `add-jobs` / `add-keyvault` | Wire one optional framework package into the API host: the package reference, the registration in `Configuration/FeatureServicesSetup.cs` (`AddModulusOpenSearch`/`AddModulusSolr`, `AddS3FileStorage`/`AddAzureBlobFileStorage`/`AddGoogleCloudFileStorage`, `AddQuartzJobScheduler`, `AddAzureKeyVaultSecretStore`) and the settings section. Idempotent (`FeaturePackageWiring`, `FeaturePackageInstaller`). |
 | `modulus add-media` / `add-notifications` / `add-localization` | Add a store module with its own `DbContext` (`{App}.Modules.{Media\|Notifications\|Localization}.Infrastructure`: `App{Key}DbContext`, design-time factory with `{KEY}_CONNECTION`, `{Key}Module`), the host registration (`AddModulusMedia` + `MapModulusMedia`, `AddModulusNotifications` + `MapModulusNotifications`, or the EF translation store) and the connection string. Author the schema with `migrate add InitialCreate --module {Key}`. Idempotent (`StoreModuleSpec`, `StoreModuleInstaller`). |
-| `modulus describe [--json]` | Prints the app's kind, hosts, modules + entities, BFFs and wired features. The global `--json` option (any command) silences the human output and ends with one JSON document (`success`, `exitCode`, `dryRun`, `files` written with `created`/`updated`, `error`, `result`), so a developer tool can drive the generators (with `--dry-run`). |
+| `modulus describe [--json]` | Prints the app's hosts, modules + entities, BFFs and wired features. The global `--json` option (any command) silences the human output and ends with one JSON document (`success`, `exitCode`, `dryRun`, `files` written with `created`/`updated`, `error`, `result`), so a developer tool can drive the generators (with `--dry-run`). |
 | `modulus module <name>` | Creates a blank business module (five projects) |
 | `modulus add-module <name>` | Adds a module to an existing app + wires Program.cs registration + Host `ProjectReference`s. `--migration-engine` defaults to `dbsh` when all existing modules use dbsh. |
 | `modulus generate-crud <Entity>` | Generates entity, repo, DTOs, command/query handlers across the module's layers |
@@ -833,105 +838,23 @@ handling). User/role CRUD is app-specific and intentionally not in the framework
 `Modulus.Identity` exposes `ModulusUser`/`ModulusRole` + ASP.NET Core Identity
 abstractions for apps to wire their own admin APIs.
 
-## UI and app kinds
+## Generated identity backend and API permission
 
-**The older server-rendered UI (`src/ui/Modulus.UI.*`, the Tabler theme, `ui add/remove/update/eject/diff`, `--ui-modules`) was
-removed from this repository.** The UI lives in the separate `modulus-ui` repository (packages `Synvro.Modulus.Ui.Abstractions`, `Synvro.Modulus.Ui.Assets`,
-`Synvro.Modulus.AspNetCore.Mvc`, `Synvro.Modulus.AspNetCore.Hosting`, `Synvro.Modulus.AspNetCore.Fluid`, `Synvro.Modulus.Blazor`, `Synvro.Modulus.Documents`, and the page templates in
-`Synvro.Modulus.Ui.Templates`, default 2.1.0 (`UiTemplatePackage.DefaultVersion`; `MODULUS_UI_VERSION` overrides it) (one version for both repositories, set in `ui-kit.json`, `UiTemplatePackage.DefaultVersion` and `src/Directory.Build.props` in the UI repository); renamed from `Modulus.*` on 2026-10-23). The CLI scaffolds pages from that template package with `modulus ui ...` (`add-component`, `create-form-from-entity`,
-`create-dashboard`, `add-admin` (the admin dashboard starter and its menu), `create-module-home`, `add-auth`, `add-2fa`, `add-session-manager`, `add-chart`, `add-i18n`, `create-permission-matrix`, `audit`, `theme ...`; see
-`modulus-ui/docs/CLI.md`). Package templates resolve from `~/.modulus/cache`, then the local feed (`~/.modulus/feed` or `MODULUS_LOCAL_FEED`), then nuget.org.
-
-- **App kinds (`api` / `webapp+api`).** An **`api`** app creates no UI. **`webapp+api`** generates two separately deployable projects (see *App-kind split*): the API
-  host and a Web project on the Modulus UI framework (`--ui-engine mvc|razor-pages`; `AddModulusMvc`, `MapStaticAssets`, `UseModulusLocalization`, the shell
-  layout and auth layouts under `Pages/Shared`). The single-project `webapp` kind (and its `web` alias) was retired with the older UI: `--kind webapp` fails with a message
-  pointing at `webapp+api`, and a host whose csproj still says `webapp` reads as unmarked. The kind lives in the host csproj as `<ModulusAppKind>`
-  (`AppKinds.Read`, `ModuleDiscovery.AppInventory.Kind`); `NewAppCommand.ResolveKind` resolves `--kind` (prompt, else `api` when non-interactive).
-- **MVC host structure (modular).** An `mvc` Web host has no Razor Pages. Account features are the `Account` area (`Areas/Account/{Controllers,Models,Views}`: `AccountController` sign-in/out/denied, `PasswordController` forgot/reset, `PasskeysController`),
-  the landing and error pages are `Controllers/HomeController` and `Controllers/ErrorController` (view model `Models/ErrorViewModel`), and each business module is an area: `ui create-crud` writes
-  `Areas/{Module}/Controllers/{Entities}Controller.cs`, `Areas/{Module}/Models/{Entity}ViewModels.cs` and `Areas/{Module}/Views/{Entities}/*` with the area's own `_ViewImports`/`_ViewStart`; `ui create-module-home <Module>` adds
-  `Areas/{Module}/Views/Home` and its controller. URLs are the same as the Razor Pages host (`/Account/Login`, `/ResetPassword`, `/Passkeys`, `/Error/{code}`); the passkey scripts call controller actions instead of page handlers.
-  Controllers stay thin (HTTP to the typed clients and BFF session client and back), carry `[AutoValidateAntiforgeryToken]`, and open an anonymous route only with `[AllowAnonymous]` + `[Loosened(..., Framework = true)]`.
-- **Web sign-in.** The Web project calls `AddModulusBff` (the BFF web session) and keeps its pages behind a sign-in with a `RazorPagesOptions` convention
-  (`AuthorizeFolder("/")`, `AllowAnonymousToFolder("/Account")`, with a `[Loosened]` reason for the security guard); `UiAccessGates.HasSignIn` detects it by
-  `AllowAnonymousToFolder("/Account")`.
 - **Identity backend (`--auth openiddict`).** A local token server needs users, so `modulus app --auth openiddict` also generates
   `src/Modules/{App}.Modules.Identity/{App}.Modules.Identity.Infrastructure` (an infrastructure-only module: `AppIdentityDbContext : ModulusIdentityDbContext`,
   its design-time factory, `IdentityModule`, `IdentitySeeding`; `NewAppCommand.GenerateIdentityModule`, templates in `cli/Templates/identity/`). `modulus migrate` finds it like
   any module (`migrate add InitialCreate --module Identity`), and `CodeGen.ChooseModuleRoot` ignores it (no Application layer). `AddModulusOpenIddict` stays in Program.cs. Program.cs seeds
   after migrating (`SeedIdentityAsync`): the `Admin` role and a public first-party client (id = lower-cased app name) always; the first administrator only when no users exist and either
   `Identity:Seed:AdminEmail`/`AdminPassword` are configured or, in Development only, `admin@{app}.local` with a random password logged once. Development settings turn
-  `Identity:AllowPasswordFlow` on (production opts in deliberately); the API host validates bearer tokens only and the Web project signs users in over the password grant. The seeded client
+  `Identity:AllowPasswordFlow` on (production opts in deliberately); the API host validates bearer tokens only (it has no login page). The seeded client
   switches to authorization-code + PKCE when `Identity:Seed:RedirectUris` is configured (`IdentitySeeding.EnsureClientAsync`). Generated Create/Update/Delete commands carry
   `[Transactional(typeof(IUnitOfWork))]` (several `DbContext`s are registered). `--auth none` registers no scheme (endpoints require an authenticated user by default, so the API
   answers 500 until one is added; `modulus app` warns) and external providers validate tokens only.
 - **API permission.** Every endpoint of a generated CRUD set declares `Permissions("{module}:{route}:manage")` (`ModuleModel.RequiredPermission`, set when the host has the Admin role:
-  `UiAccessGates.HasAdminRole` = the sign-in or `SeedIdentityAsync(`, so an api host qualifies). The Admin role holds it: `ApiPermissionWiring.EnsurePermission` adds
+  `ApiPermissions.HasAdminRole` = `SeedIdentityAsync(`). The Admin role holds it: `ApiPermissionWiring.EnsurePermission` adds
   `AddModulusAuthorization`, `AddGrantStorePermissionChecker`, `AddPermissions`, `AddPermissionGrants` before `builder.Build()` (idempotent, at the file's own indentation), for the example module
   and for each later `generate-crud`. Anonymous 401, signed in without the role 403. Every generated host gets the permission, whatever its identity backend: the roles it is granted to come from `Authorization:AdministratorRoles` (default `Admin`), so an external provider names its own roles there. A host with no identity package (`--auth none`) has no grant checker, and its endpoints need a signed-in caller until an identity is added. The generated test project signs in as
-  `Admin` and asserts 401/403/200, and ships `appsettings.Testing.json`. `generate-crud` scaffolds the API side only; pages come from the `modulus ui` commands.
-  Covered by `AppKindTests`, `ApiPermissionTests`, `IdentityBackendTests`, `SeededClientTemplateTests`, `UiFrameworkHostTests`.
-- **Known gaps.** The Blazor, Fluid and no-engine hosts for a web app are not generated (only `mvc` and `razor-pages`); there is no generated admin CRUD page or
-  user/role admin screen yet (the older ones were removed, the data-bound replacements are planned in `modulus-ui/docs/roadmaps/CLI-IMPLEMENTATION.md`); the repository no longer
-  ships samples.
-
-## App-kind split (`webapp+api`, as-built)
-
-Phase A of the split plan is complete: `AppKind` is a 3-value model (`Api`, `WebApp`,
-`WebAppApi`; `--kind web` is a deprecated alias for `WebApp`). All three kinds build 0 warnings
-and pass their generated test suites off the current CLI (`webapp+api` 9/9, `api` 6/6,
-`webapp` 3/3).
-
-- **Single-host kinds (`api`, `web`).** Same layout as before; the only delta for `web` is
-  `expose_api` (false): no `AddModulusOpenApi`, `MapControllers`, `MapModulusEndpoints` or
-  `MapOpenApi` (`AddControllers` stays registered, harmless), so `/api/*` 404s. Cross-cutting
-  services (correlation, security headers) register on every host shape — the template used to
-  gate the service block on `expose_api` while the pipeline calls weren't, so a UI-only host
-  called `UseModulusCorrelation()` with no `ICorrelationContext` registered and every request
-  500'd.
-- **Two-project split.** `src/API/{App}.Api` is the unchanged API host (modules, DbContexts,
-  OpenIddict token server, the Identity module + seeding). `src/Web/{App}.Web`
-  (`NewAppCommand.GenerateWebHost`) is a presentation shell: Razor Pages (Index, Account
-  Login/Logout/AccessDenied), `Security/PrincipalCurrentUser.cs`,
-  `ApiClients/{Module}ApiClient.cs` + `ApiClientExtensions.AddModuleApiClients`. It references
-  **no** module Infrastructure/Presentation — only the Modulus UI framework, `Platform` and
-  `Identity` packages, the `{App}.Api` project (for `AddModuleApiClients`) and each module's
-  `.Application` project for commands/queries/DTOs (no separate Contracts project; revisit if
-  an Application layer grows Infrastructure-facing dependencies). `WireUiModules` installs UI
-  packages into the Web project via `AppInventory.UiProjectPath`; the split drops the
-  `identity`/`users` UI modules (their pages drive an in-process user store).
-- **Auth across the split: a BFF web session.** The API (or the external provider) stays the token server; the Web
-  host is the `web` client of `Modulus.Bff` (`AddModulusBff(..., bff => bff.AddWebClient("web").SetDefaultClient("web"))`,
-  settings `Bff:Clients:web`). With the local OpenIddict server the login page calls
-  `IBffSessionService.SignInWithPasswordAsync` (password grant against the seeded first-party client); with an external
-  provider it challenges the OIDC scheme (`LoginMode: Oidc`, code + PKCE at the provider's login page). Tokens stay
-  server-side (FusionCache, Data Protection encrypted; the `.bff.web` cookie only names the session), typed clients get
-  `.AddBffUserAccessToken()` (refresh ahead of expiry under a per-session lock, refresh + replay once on `401`), and the
-  logout page calls `SignOutAsync` (revokes both tokens; redirects to the provider's end-session URL in OIDC mode).
-  `LoginPath`/`AccessDeniedPath` make the cookie redirect pages to the sign-in/denied pages while BFF endpoints keep
-  answering `401`/`403`. The generated `TokenRelayHandler` (tokens in the cookie, refresh only after a `401`, no lock)
-  is gone from new apps; `modulus doctor` warns when a Web host still has `Security/TokenRelayHandler.cs`, and
-  `generate-crud` keeps registering new clients the way the host's `ApiClientExtensions.cs` already does. Verified end
-  to end on a generated `webapp+api` app: anonymous page `302` to login, wrong password re-renders, login `302` with a
-  582-byte cookie, the admin page lists through the API, a product created on the page is visible through the API, a
-  Web restart (empty token store) ends the session, logout revokes both tokens and even the pre-logout cookie gets
-  `302`. Fixed on the way: the split API host now calls `AddMvcCore().AddRazorViewEngine()` (`AddModulusUi()`'s view
-  resolver needs it; without it the host failed to start in Development), the Web typed client unwraps the API's
-  `ApiResponse` envelope (`{ success, data }`; it deserialized the envelope as the list and every page 500'd), and the
-  CRUD page called `GetAsync(cancellationToken:)` on a client whose parameter is `ct` (did not compile).
-  Register/Forgot-over-HTTP is a fast-follow after Phase B1.
-- **`generate-crud` on a split app** writes UI into the Web project (`UiNamespace =
-  {Root}.Web`): `ui/CrudIndexPageModel.Http.sbn` calls `{Module}ApiClient` (non-2xx →
-  `ModelState`), `ui/ModuleApiClient.sbn` emits the per-module client. The split's API host
-  calls `AddModulusUi()` (services only, no theme) because generated endpoints resolve
-  `IEntityUiRegistry` to permission-filter extension fields.
-- **Tests.** Generated tests use entry-point markers (`ApiEntryPoint` in the API host,
-  `WebEntryPoint` in the Web host) — `ModulusWebAppFactory<Program>` would be ambiguous with
-  both hosts in one solution. `AppTests.sbn` emits `ApiIntegrationTests` only when the host
-  exposes an API, and the page-level `WebAppSmokeTest` for both web kinds over the matching
-  marker. The two factories are standalone (page tests make no API calls), so the Web→API hop
-  is asserted for sign-in and an unreachable API (`WebToApiLoginTests`: Web factory paired to the API TestServer, wrong and right password, API down); a full
-  login→page-create→visible-through-API round-trip are the tracked follow-ups.
+  `Admin` and asserts 401/403/200, and ships `appsettings.Testing.json`. Covered by `ApiPermissionTests`, `IdentityBackendTests`, `SeededClientTemplateTests`.
 
 ## Security model (Company = Tenant)
 
@@ -960,7 +883,7 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   accounts), so the token server's own controllers (token, authorize, account, end-session) run in the host context
   (`HostTenantContextAttribute`): a token request selects no company, and a multi-company account has no `TenantId`.
   Seeders that touch accounts or companies enter the host too (`ICurrentTenant.Change(null)`).
-- **`modulus app --multi-tenancy`** (needs `--kind api --auth openiddict`; pages have no company switcher yet and external
+- **`modulus app --multi-tenancy`** (needs `--auth openiddict`: external
   users are not local): `AddMultiTenancy(t => t.UseJwtClaimResolver().UseHeaderResolver().RequireMembership())` +
   `AddModulusSecurityContext()`, `UseMultiTenancy()` / `UseModulusSecurityContext()` right after `UseAuthentication()`, the
   infrastructure-only `{App}.Modules.Tenancy.Infrastructure` (`TenancyModule` with `AddEfCoreTenantStore` on
@@ -1264,11 +1187,6 @@ isolation, hash-chained security audit, probe suite), and the provider integrati
   for the Identity context) and `migrate update`.
 - **Known gaps (open).**
   - Identity tables are not opt-in, as noted above.
-  - The `ui` CLI defects below are deferred by decision.
-- **CLI defects in the `ui` commands (status 2026-10-23):** fixed: MVC controllers were unreachable and an MVC web host refused to
-  start under the security guard (`WebEndpoints.Web.sbn` now maps controllers and polices the default route). Not reproduced: auth
-  pages calling `/account/*` (the Blazor host maps its own; the Razor and MVC hosts sign in through the BFF). Open: `generate-crud`
-  accepts `--ui-engine` and silently ignores it (no files are misplaced); `--kind` help omits `webapp+api`.
 
 ## Cross-surface errors, REST completeness, performance (audit remediation)
 
@@ -1493,7 +1411,7 @@ app.MapBffClient("mobile").MapGet("/home", ...);   // aggregators behind the cli
   without a secret and confidential with one. Partner is client credentials only, created once
   `Identity:Seed:Clients:partner:ClientSecret` is set through user secrets or the environment. Bearer BFFs also get
   `EncryptAccessTokens: false`, and partner gets `AllowClientCredentialsFlow: true`. The web BFF uses the code flow
-  wherever the auth server has a login page (every external provider, or a `webapp` host), else the password grant.
+  wherever the auth server has a login page (every external provider), else the password grant.
   Development settings register the redirect URIs.
   `modulus add-bff web|mobile|partner [--auth X] [--services ...]` adds one BFF to an existing app: it reads the auth
   provider (`AddModulusOpenIddict(`, `AddKeycloak(`, ...), caching provider and correlation/security-header/secrets-guard
@@ -1572,7 +1490,7 @@ monolith (an optional second API surface) and microservices (service-to-service 
 - **`Identity:Issuer`** (`ModulusIdentityOptions.Issuer`). OpenIddict otherwise takes each request's address as the
   issuer, so on a host with two endpoints a token issued on one is rejected on the other (`ID2088`). Pin it to the
   public URL on any host reachable under more than one address (gRPC port, proxy, internal + external name).
-- **CLI.** `modulus generate-grpc <Entity> [--module M] [--bff a,b|all]` (refuses a `webapp` host; the entity's
+- **CLI.** `modulus generate-grpc <Entity> [--module M] [--bff a,b|all]` (the entity's
   CRUD set must exist) writes `Protos/{entity}.proto` (package `{root}.{module}.v1`) and
   `Grpc/{Entity}GrpcService.cs` (calls `IMediator`, same `Permissions(...)` as the HTTP endpoints) in the
   Presentation project (`<Protobuf GrpcServices="Both">`, so tests get client stubs), and
@@ -1612,7 +1530,7 @@ phase 4.
 - **Defaults.** `MaxDepth` 15, `MaxComplexity` 1000 (`ListSizeEstimate` 5), introspection and GraphiQL (`{path}/ui`) off,
   CSRF protection on, no form posts or WebSockets, `EnableBatchedRequests` off. Queries run **serially** unless
   `ParallelQueryExecution` (resolvers share the request's scoped `DbContext`).
-- **CLI.** `modulus generate-graphql <Entity> [--module M] [--bff a,b|all]` (not for `webapp`; the CRUD set must exist)
+- **CLI.** `modulus generate-graphql <Entity> [--module M] [--bff a,b|all]` (the CRUD set must exist)
   writes `GraphQL/{Entity}GraphType.cs` + `GraphQL/{Entity}GraphQL.cs` into the Presentation project (package
   reference added), wires the API host (`AddModulusGraphQL` over `{Root}.Modules.*.Presentation.dll`,
   `MapModulusGraphQL()` after the endpoints, `GraphQL` settings; Development turns introspection, the UI and details
@@ -1664,7 +1582,7 @@ dependency (SSE and SignalR are in the shared framework). Plan and as-built note
   down → local delivery only.
 - **BFFs.** `RemoteApis` entry `"EventStream": true` lets the web client's `GET` + `Accept: text/event-stream` through
   without `X-CSRF`; mobile ETags skip event streams.
-- **CLI.** `modulus add-realtime [--events a,b] [--bff web,mobile|all] [--signalr]` (not for `webapp`): package
+- **CLI.** `modulus add-realtime [--events a,b] [--bff web,mobile|all] [--signalr]`: package
   reference, `AddModulusRealtime` with one `AddEvent` per event (audience = the entity's CRUD permission from
   `{Entities}Endpoint.cs`, else the tenant), `MapModulusRealtime()` after the endpoints, `Realtime` settings,
   `tests/{App}.Tests/RealtimeTests.cs`, and `/realtime` as an event stream in each chosen BFF. Idempotent. Templates
@@ -1706,7 +1624,7 @@ Opt-in package that delivers integration events to external HTTP endpoints, sign
   on create and rotate only), `rotate-secret`, `test`, deliveries by status, delivery detail with payload, `retry`.
   `MaxSubscriptionsPerTenant` caps creation. Without `AddModulusAuthorization` the policy falls back to a `permission`
   claim.
-- **CLI.** `modulus add-webhooks [--events a,b]` (not for `webapp`): store module
+- **CLI.** `modulus add-webhooks [--events a,b]`: store module
   `src/Modules/{App}.Modules.Webhooks/{App}.Modules.Webhooks.Infrastructure` (context, design-time factory with
   `WEBHOOKS_CONNECTION`, `WebhooksModule`), Program.cs wiring, `ConnectionStrings:Webhooks` + `Webhooks` settings
   (Testing: `EnableDelivery: false`), `tests/{App}.Tests/WebhookTests.cs`. Idempotent; re-run to add events. Templates:
@@ -1817,7 +1735,7 @@ platform package; the platform is read-only, so only queries are exposed. The pl
 - **Personal data.** Capability results mask `[Classified]` fields per user. `[PersonalInformation]` and `[ProtectedPersonalData]` fields are only
   declared `Restricted` in the manifest, unless `Ai:Connector:MaskPersonalInformation` is `true`: then they need the clearance the entity's field-security profile
   names for `Restricted` (or for that field), are withheld from everyone when there is no profile, and cannot be filtered or sorted on. Add `[Classified]` for finer control.
-- **CLI (6c).** `modulus add-ai` and `generate-crud --ai` (see the CLI table). The assistant host is built as `modulus ui add-assistant` (session endpoint `POST /ai/session`, `ai:use`, `Ai:Host` settings, layout partial; Razor Pages and MVC). `SecurityProbeSuite` expects `401` on the signed-in probes for an endpoint whose
+- **CLI (6c).** `modulus add-ai` and `generate-crud --ai` (see the CLI table). The CLI no longer scaffolds the assistant host (it was `modulus ui add-assistant`, removed in CLI 4.0.0). `SecurityProbeSuite` expects `401` on the signed-in probes for an endpoint whose
   policies accept only other schemes (the connector's API-key endpoints); `SecurityProbeOptions.ProbeScheme` names the
   test scheme.
 - **Migrations include the journal.** `DesignTimeContext.ServicesWith(new AiChangeModelContributor())` (used by the generated `{Module}DbContextFactory`) hands model contributors to the design-time context, otherwise `dotnet ef` scaffolds a migration without `ai_changes` and the app starts with `PendingModelChangesWarning`. `modulus add-ai --migrate` patches existing modules (package ref + factory) and scaffolds `AddAiChanges`; new modules get it from `ModuleModel.AiJournal`.
@@ -1831,22 +1749,6 @@ platform package; the platform is read-only, so only queries are exposed. The pl
   next scope must show. Generated apps run it in `AiConformanceTests`. It found two fixed defects: `UseIdentityUsers`
   now looks accounts up in the host context (on a multi-tenant host every user call was refused), and the EF change
   feed never returns an empty cursor. The real platform's suite still runs before activation.
-
-## Generated web app UI conventions (2026-10-25)
-
-The `webapp+api` web host is generated from `cli/Templates/app`. Its pages use the `modulus-ui` components and the framework's own
-layout pattern, so a new page looks like the rest of the app:
-
-- Page: `<app-page-header pretitle title />`, then `m-grid m-cols-main` (main column plus `<aside>`), with `m-card` sections
-  (`m-card-header` / `m-card-title` / `m-card-body`).
-- Forms: `ant-form ant-form-vertical`, `app-form-item` + `app-input`, a `m-form-grid` for two columns, actions in `m-form-actions`.
-- Lists: `m-card m-table-card` with the `ant-table` markup; empty state `m-empty`. When a list failed to load (a message is set and
-  the list is empty), show a failed-load state, not "no results".
-- Errors: any error status re-runs `Pages/Error.cshtml` (`/Error/{code}`); the page is a framework loosening, so it needs no
-  allow-list entry.
-- Keep element ids and bound property names that scripts or tests depend on (`passkey-add`, `photo-form`, `Input.*`, handler names).
-- Password recovery: `Pages/Account/ForgotPassword` and `Pages/ResetPassword` (served at `/ResetPassword`, the path the email link
-  uses), calling `AccountApiClient` anonymously. OpenIddict apps only.
 
 ## Testing notes
 

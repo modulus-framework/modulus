@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [CLI 4.0.0] - unreleased
+
+`Synvro.Modulus.Cli` only. The framework packages are unchanged: generated apps still reference 3.1.0.
+
+### Breaking changes
+- **The CLI creates APIs only** (a modular monolith, or microservices with `--bff` and `--services`). All UI scaffolding is removed.
+- **Every `modulus ui ...` command is removed.** To keep using them, install the previous tool: `dotnet tool install -g Synvro.Modulus.Cli --version 3.1.0`.
+- **The `webapp+api` app kind is removed**, with its MVC, Razor Pages, Blazor and Fluid Web hosts. `modulus app` no longer accepts `--ui-engine`, and `--kind`
+  is no longer listed. A request for a UI (`--kind webapp+api`, `--ui-engine mvc`) fails with a message; `--kind api` and `--ui-engine none` are still accepted.
+- **`modulus describe --json`** no longer has the `kind`, `webProject` and `features.ui` fields. `modulus info` no longer shows the app kind or a Web host.
+- **`modulus doctor`** no longer checks the Web project of an existing `webapp+api` app.
+- **`modulus generate-crud`** no longer declares `--ui-engine`.
+- **New apps no longer get `.modulus.json`** (it only held UI settings), and `NuGet.config` has no UI package feed.
+
+### Removed
+- Templates, services and form components that only the UI used, and six unused `.cshtml` / `.razor` form templates.
+
 ## [3.1.0] - 2026-11-22
 
 ### Added

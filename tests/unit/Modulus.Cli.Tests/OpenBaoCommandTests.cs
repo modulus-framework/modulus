@@ -97,7 +97,6 @@ public sealed class AddOpenBaoCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = auth,
-            Kind = AppKind.Api,
         });
     }
 

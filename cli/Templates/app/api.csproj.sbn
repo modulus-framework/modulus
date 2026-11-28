@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- What this host is: 'api' (no UI) or 'web' (web app + the API for external clients). The modulus CLI reads
          it: generate-crud scaffolds a UI only for 'web', and 'ui add' refuses an 'api' host. -->
-    <ModulusAppKind>{{ kind_name }}</ModulusAppKind>
+    <ModulusAppKind>api</ModulusAppKind>
     <!-- Home for developer secrets in Development, so credentials stay out of
          appsettings*.json (the SecretsGuard fails startup if they don't). Manage with
          'dotnet user-secrets set <Key> <value>'. -->

@@ -1,13 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<!-- TreatAsLocalProperty: the framework release builds the solution with a global -p:Version=<tag>; these lines win over it. -->
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="VersionPrefix;VersionSuffix;Version;PackageVersion;AssemblyVersion;FileVersion">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <PackAsTool>true</PackAsTool>
-    <!-- The CLI ships on its own version: its changes do not republish the framework packages. -->
-    <VersionPrefix>3.1.0</VersionPrefix>
-    <Version>3.1.0</Version>
-    <PackageVersion>3.1.0</PackageVersion>
+    <!-- The CLI ships on its own version: its changes do not republish the framework packages. This is the one place to change it;
+         it is released with a cli-v<version> tag (.github/workflows/release-cli.yml). -->
+    <VersionPrefix>4.0.0</VersionPrefix>
+    <VersionSuffix></VersionSuffix>
+    <Version>$(VersionPrefix)</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
     <ToolCommandName>modulus</ToolCommandName>
     <PackageId>Synvro.Modulus.Cli</PackageId>
     <Description>Command-line tool to scaffold Modulus apps, modules and CRUD code.</Description>

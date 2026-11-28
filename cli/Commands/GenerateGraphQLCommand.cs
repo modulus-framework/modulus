@@ -118,7 +118,7 @@ internal sealed partial class GenerateGraphQLCommand : Command<GenerateGraphQLCo
             EntityPlural = plural,
             EntityPluralCamel = CodeGen.ToCamelCase(plural),
             RequiredPermission = permission,
-            AdminRole = UiAccessGates.AdminRole,
+            AdminRole = ApiPermissions.AdminRole,
             MultiTenancy = multiTenancy,
         };
 

@@ -1,7 +1,7 @@
 namespace Modulus.Cli.Services;
 
 /// <summary>
-/// A property of a CRUD entity, as its generated DTOs, commands, endpoints and pages use it.
+/// A property of a CRUD entity, as its generated DTOs, commands and endpoints use it.
 /// <list type="bullet">
 /// <item><c>Type</c> is the declared type; <c>Bare</c> is the same without <c>?</c>.</item>
 /// <item><c>Initial</c> is the default of a DTO or command property, so a create that leaves it out is valid.</item>
@@ -9,7 +9,7 @@ namespace Modulus.Cli.Services;
 /// <item><c>UpdateType</c> is the update parameter's type: nullable, so <c>null</c> leaves the stored value alone.</item>
 /// <item><c>Unwrap</c> is what an update adds to the parameter when it is assigned to the entity (<c>.Value</c> for a value type).</item>
 /// <item><c>Parser</c> is how a form value is read: <c>text</c> (a string), <c>flag</c> (a checkbox) or <c>parse</c> (a typed value).</item>
-/// <item><c>Camel</c> is the field's key in the Liquid pages and in the form data.</item>
+/// <item><c>Camel</c> is the field's name in camel case.</item>
 /// </list>
 /// </summary>
 internal sealed record CrudField(

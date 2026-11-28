@@ -1,5 +1,0 @@
-@{
-    // The Modulus UI framework's application shell (header, menu, footer, theme settings).
-    Layout = "_ModulusLayout";
-}
-

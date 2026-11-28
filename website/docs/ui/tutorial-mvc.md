@@ -547,7 +547,7 @@ The `samples/Modulus.AdminTemplate.RazorPages` project in the repository shows t
 - **Paginate large tables.** Use `app-load-more` for infinite scroll, or `app-virtual-table` for very long lists. See [Large data](./pro.md#large-data).
 - **Use an editable grid** when users need to change many rows at once. See [Pro components](./pro.md).
 - **Add a page.** Add a controller action and a view, then a menu item. The shell adds the page to the layout for you.
-- **Start from the admin pages.** `AddModulusAdminUi` and `ui add-admin` give you users, roles, tenants and settings pages. See [CLI and the admin starter](./cli.md).
+- **Start from the admin pages.** `AddModulusAdminUi` gives you users, roles, tenants and settings pages.
 
 ## Troubleshooting
 

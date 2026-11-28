@@ -38,6 +38,9 @@ jobs:
         run: dotnet test modulus.slnx --no-build --configuration Release --filter "Category=Integration" --verbosity minimal
       - name: Pack
         run: dotnet pack modulus.slnx --no-build --configuration Release --output artifacts/packages -p:Version=${GITHUB_REF_NAME#v}
+      # The CLI has its own version and its own release (release-cli.yml, cli-v* tags): it is not part of a framework release.
+      - name: Leave the CLI out of the framework release
+        run: rm -f artifacts/packages/Synvro.Modulus.Cli.*nupkg
       # Packages are not author-signed (decided by the owner): nuget.org adds its own repository signature to every package it
       # accepts, and the build provenance attestation below ties the packages to this workflow run. To add an author signature
       # later, sign artifacts/packages/*.nupkg with `dotnet nuget sign` here, before the provenance step.

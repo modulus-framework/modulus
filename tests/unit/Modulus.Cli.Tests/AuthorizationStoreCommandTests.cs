@@ -65,7 +65,6 @@ public sealed class AuthorizationStoreCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = AppKind.Api,
         });
     }
 

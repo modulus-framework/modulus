@@ -15,13 +15,12 @@ public sealed class RedactionTemplateTests
 {
     private readonly TemplateEngine _engine = new();
 
-    private static AppModel App(AppKind kind = AppKind.Api, string auth = "openiddict", params string[] bff) => new()
+    private static AppModel App(string auth = "openiddict", params string[] bff) => new()
     {
         RootNamespace = "Shop",
         AppName = "Shop",
         DbProvider = "SQLite",
         Auth = auth,
-        Kind = kind,
         Bff = bff,
         EnableCorrelation = true,
         EnableSecurityHeaders = true,
@@ -30,29 +29,21 @@ public sealed class RedactionTemplateTests
 
     private static readonly JsonDocumentOptions s_json = new() { CommentHandling = JsonCommentHandling.Skip };
 
-    [Theory]
-    [InlineData("app/Program", "app/appsettings.json", "api")]
-    [InlineData("app/Program.Web", "app/appsettings.Web.json", "webapp+api")]
-    public void App_hosts_wire_redaction(string program, string settings, string kind)
+    [Fact]
+    public void App_hosts_wire_redaction()
     {
-        var model = App(AppKinds.Parse(kind));
+        var model = App();
 
-        var source = program switch
-        {
-            "app/Program.Web" => WebHostSource.Render(_engine, model),
-            "app/Program" => ApiHostSource.Render(_engine, model),
-            _ => _engine.Render(program, model),
-        };
-        source.Should().Contain("AddModulusRedaction(")
+        ApiHostSource.Render(_engine, model).Should().Contain("AddModulusRedaction(")
             .And.Contain("using Modulus.AspNetCore.Logging;");
-        using var json = JsonDocument.Parse(_engine.Render(settings, model), s_json);
+        using var json = JsonDocument.Parse(_engine.Render("app/appsettings.json", model), s_json);
         json.RootElement.GetProperty("Security").GetProperty("Redaction").GetProperty("Enabled").GetBoolean().Should().BeTrue();
     }
 
     [Fact]
     public void Bff_hosts_wire_redaction()
     {
-        var model = BffHostModel.For(App(AppKind.Api, "openiddict", "mobile"), "mobile", 0);
+        var model = BffHostModel.For(App("openiddict", "mobile"), "mobile", 0);
 
         _engine.Render("bff/BffCoreSetup", model).Should().Contain("services.AddModulusRedaction(configuration);");
         using var json = JsonDocument.Parse(_engine.Render("bff/appsettings.json", model), s_json);

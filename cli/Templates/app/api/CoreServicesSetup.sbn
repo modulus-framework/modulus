@@ -10,9 +10,9 @@ using Modulus.AspNetCore.Logging;
 using Modulus.AspNetCore.RateLimiting;
 using Modulus.AspNetCore.Security;
 {{ if use_s3_storage }}using Modulus.Storage;
-{{ end }}{{ if expose_api }}using Modulus.AspNetCore.Http;
+{{ end }}using Modulus.AspNetCore.Http;
 using Modulus.AspNetCore.Versioning;
-{{ end }}using Modulus.Caching;
+using Modulus.Caching;
 using Modulus.EntityFrameworkCore.Extensions;
 using Modulus.Events.Extensions;
 using Modulus.Mediator.Extensions;
@@ -31,15 +31,15 @@ internal static class CoreServicesSetup
         builder.Services.AddModulusExceptionHandling();
 
 {{ if enable_correlation }}        builder.Services.AddModulusCorrelation(builder.Configuration);
-{{ end }}{{ if expose_api && enable_idempotency }}        builder.Services.AddModulusIdempotency(builder.Configuration);
-{{ end }}{{ if expose_api && enable_api_versioning }}        builder.Services.AddModulusApiVersioning(builder.Configuration);
-{{ end }}{{ if expose_api && enable_rate_limiting }}        builder.Services.AddModulusRateLimiting(builder.Configuration);
-{{ end }}{{ if expose_api && enable_cors }}        builder.Services.AddModulusCors(builder.Configuration);
+{{ end }}{{ if enable_idempotency }}        builder.Services.AddModulusIdempotency(builder.Configuration);
+{{ end }}{{ if enable_api_versioning }}        builder.Services.AddModulusApiVersioning(builder.Configuration);
+{{ end }}{{ if enable_rate_limiting }}        builder.Services.AddModulusRateLimiting(builder.Configuration);
+{{ end }}{{ if enable_cors }}        builder.Services.AddModulusCors(builder.Configuration);
 {{ end }}{{ if enable_security_headers }}        builder.Services.AddModulusSecurityHeaders(builder.Configuration);
-{{ end }}{{ if expose_api }}
+{{ end }}
         // Brotli/gzip for API responses ("ResponseCompression" section; off over HTTPS unless EnableForHttps, see BREACH).
         builder.Services.AddModulusResponseCompression(builder.Configuration);
-{{ end }}{{ if enable_feature_flags }}
+{{ if enable_feature_flags }}
         // Runtime feature flags bound to the "FeatureManagement" section. Gate a minimal-API endpoint with .RequireFeature("Flag");
         // MVC actions can use [FeatureGate("Flag")].
         builder.Services.AddModulusFeatureFlags(builder.Configuration);
@@ -87,10 +87,10 @@ internal static class CoreServicesSetup
         // Behaviours are registered once here; each module registers its own handlers, DbContext and IUnitOfWork in its
         // Module composition root.
         builder.Services.AddMediator();
-{{ if expose_api }}
+
         // MVC controllers (module Presentation assemblies).
         builder.Services.AddControllers();
-{{ end }}
+
         return builder;
     }
 }

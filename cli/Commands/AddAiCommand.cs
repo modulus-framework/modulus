@@ -105,7 +105,7 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
     internal static AiTestModel Model(ModuleDiscovery.AppInventory app, string program) => new()
     {
         RootNamespace = app.RootNamespace,
-        HasAdminRole = UiAccessGates.HasAdminRole(program),
+        HasAdminRole = ApiPermissions.HasAdminRole(program),
         HasLocalAccounts = AiWiring.HasIdentityUsers(program),
         MultiTenant = program.Contains("AddMultiTenancy(", StringComparison.Ordinal),
     };
@@ -116,7 +116,7 @@ internal sealed class AddAiCommand : Command<AddAiCommand.Settings>
         public bool HasAdminRole { get; init; }
         public bool HasLocalAccounts { get; init; }
         public bool MultiTenant { get; init; }
-        public string AdminRole => UiAccessGates.AdminRole;
+        public string AdminRole => ApiPermissions.AdminRole;
         public string TestApiKey => AiWiring.TestApiKey;
     }
 

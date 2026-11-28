@@ -14,7 +14,7 @@ internal static partial class GrpcWiring
 {
     /// <summary>
     /// The development gRPC port of the API host. Kestrel negotiates HTTP/2 over plain HTTP only on an HTTP/2-only
-    /// endpoint, so gRPC gets its own next to the HTTP one (5180; the Web host is 5181, BFFs 5190+).
+    /// endpoint, so gRPC gets its own next to the HTTP one (5180; BFFs 5190+).
     /// </summary>
     public const int DevelopmentGrpcPort = 5189;
 

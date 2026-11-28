@@ -54,7 +54,7 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
         {
             RootNamespace = app.RootNamespace,
             Events = events,
-            HasAdminRole = UiAccessGates.HasAdminRole(host),
+            HasAdminRole = ApiPermissions.HasAdminRole(host),
         };
 
         var written = new List<string>();
@@ -112,7 +112,7 @@ internal sealed class AddRealtimeCommand : Command<AddRealtimeCommand.Settings>
         public string RootNamespace { get; init; } = "";
         public IReadOnlyList<RealtimeWiring.RealtimeEventInfo> Events { get; init; } = [];
         public bool HasAdminRole { get; init; }
-        public string AdminRole => UiAccessGates.AdminRole;
+        public string AdminRole => ApiPermissions.AdminRole;
 
         /// <summary>An event the test can raise (a <c>(Guid Id)</c> event addressed by permission), or null.</summary>
         public RealtimeWiring.RealtimeEventInfo? TestEvent => Events.FirstOrDefault(e => e.Event.IdOnly && e.Permission is not null);

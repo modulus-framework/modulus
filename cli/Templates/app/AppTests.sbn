@@ -2,8 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-{{ if kind_name == "webapp+api" && web_login_mode == "Password" }}using Microsoft.AspNetCore.TestHost;
-{{ end }}using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Xunit;
 using Modulus.AspNetCore.Extensions;
@@ -20,9 +19,7 @@ using Modulus.Testing.Security;
 {{ end }}{{ if multi_tenancy }}{{ if !no_example }}using {{ root_namespace }}.Modules.{{ example_module }}.Domain;
 {{ end }}using Modulus.MultiTenancy.EntityFrameworkCore;
 {{ end }}using ApiEntryPoint = {{ root_namespace }}.Api.ApiEntryPoint;
-{{ if kind_name == "webapp+api" }}using WebEntryPoint = {{ root_namespace }}.Web.WebEntryPoint;
-{{ if auth != "none" }}using BffEntryPoint = {{ root_namespace }}.Bff.Web.BffEntryPoint;
-{{ end }}{{ end }}
+
 namespace {{ root_namespace }}.Tests;
 
 /// <summary>
@@ -58,7 +55,7 @@ public sealed class AppSmokeTest
 {{ end }}    }
 }
 
-{{ if expose_api }}/// <summary>
+/// <summary>
 /// HTTP integration tests that drive the real host through
 /// <see cref="ModulusWebAppFactory{TEntryPoint}"/>: the full middleware
 /// pipeline (correlation, idempotency, …) is active and every module DbContext
@@ -111,8 +108,8 @@ public sealed class ApiIntegrationTests(ModulusWebAppFactory<ApiEntryPoint> fact
 {{ end }}{{ end }}    }
 {{ end }}{{ end }}
 }
-{{ end }}
-{{ if expose_api && use_security_guard }}
+
+{{ if use_security_guard }}
 /// <summary>
 /// Probes every endpoint of the API host: anonymous callers get 401, signed-in callers without the endpoint's
 /// permission get 403. A new endpoint that forgets its policy fails this test (loosened endpoints are reviewed by
@@ -180,269 +177,7 @@ internal static class Companies
     }
 }
 {{ end }}
-{{ if kind_name == "webapp+api" || kind_name == "web" }}{{ web_entry = kind_name == "webapp+api" }}/// <summary>
-/// Boots the{{ if web_entry }} split's Web host — a presentation shell only (no DbContexts, no
-/// modules; pages call the API over HTTP){{ else }} web host{{ end }}. The assertions are adjusted for
-/// the test harness: <see cref="ModulusWebAppFactory{TEntryPoint}"/> forces its
-/// test scheme as the default challenge, so an anonymous hit on a protected
-/// page comes back 401 (challenge happened) rather than the cookie scheme's
-/// redirect — the redirect itself is exercised by the login flow in a browser.
-/// </summary>
-public sealed class WebAppSmokeTest(ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}> factory)
-    : IClassFixture<ModulusWebAppFactory<{{ if web_entry }}WebEntryPoint{{ else }}ApiEntryPoint{{ end }}>>
-{
-{{ if ui_engine == "fluid" }}    // The Liquid host serves its landing page and every page under Templates/ to anyone (a page that needs a user checks it itself),
-    // so there is no anonymous challenge on "/": the sign-in page and an unknown path are what the host answers on its own.
-    [Fact]
-    public async Task Landing_page_is_served()
-    {
-        var response = await factory.CreateClient().GetAsync("/");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Unknown_pages_are_not_found()
-    {
-        var response = await factory.CreateClient().GetAsync("/no-such-page-" + Guid.NewGuid().ToString("N"));
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-{{ if use_auth }}
-    [Fact]
-    public async Task LoginPage_IsAnonymous()
-    {
-        var response = await factory.CreateClient().GetAsync("/auth/login");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-{{ end }}{{ else if use_auth }}    [Fact]
-    public async Task Root_ChallengesAnonymousCallers()
-    {
-        var client = factory.CreateClient();
-
-        var response = await client.GetAsync("/");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task LoginPage_IsAnonymous()
-    {
-{{ if web_login_mode == "Oidc" }}
-        // The sign-in page sends the browser to the BFF's login, which is another host: the redirect is asserted, not followed.
-        var client = factory.CreateClient(new() { AllowAutoRedirect = false });
-
-        var response = await client.GetAsync("/Account/Login");
-
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-{{ else }}
-        var client = factory.CreateClient();
-
-        var response = await client.GetAsync("/Account/Login");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-{{ end }}
-    }
-
-    [Fact]
-    public async Task Unknown_pages_show_the_error_page_not_a_problem_document()
-    {
-        var response = await factory.CreateClient().GetAsync("/no-such-page-" + Guid.NewGuid().ToString("N"));
-        var body = await response.Content.ReadAsStringAsync();
-
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Contains("Page not found", body);
-        Assert.DoesNotContain("traceId", body);
-    }
-{{ if auth == "openiddict" && ui_engine != "blazor" }}
-    [Fact]
-    public async Task Password_recovery_pages_are_public_and_a_reset_without_a_token_is_refused()
-    {
-        var client = factory.CreateClient();
-
-        Assert.Contains("Send the reset link", await client.GetStringAsync("/Account/ForgotPassword"));
-        Assert.Contains("This link is incomplete", await client.GetStringAsync("/ResetPassword"));
-    }
-{{ end }}
-    [Fact]
-    public async Task SignedInUser_ReachesTheLandingPage()
-    {
-        var client = factory.CreateAuthenticatedClient();
-
-        var response = await client.GetAsync("/");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-{{ else }}
-    /// <summary>
-    /// With no sign-in the host registers a scheme that never signs anyone in, and the closed routes require a user. An anonymous caller
-    /// gets 401 (not 500, and not a page). The landing page and the admin pages are all closed.
-    /// </summary>
-    [Fact]
-    public async Task Without_sign_in_no_page_is_served_to_anonymous_callers()
-    {
-        var client = factory.CreateClient();
-
-        var response = await client.GetAsync("/");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-{{ end }}
-}
-{{ if kind_name == "webapp+api" && web_login_mode == "Password" }}
-/// <summary>
-/// The Web→BFF→API hop. The Web factory is paired with the BFF factory, and the BFF with the API factory
-/// (<c>PairedWith</c>), so the Web host's outbound HTTP (its session calls to the BFF, and the BFF's password grant
-/// against the token server) reaches the TestServers instead of the network. A wrong password is refused and the login
-/// page re-renders; the right one signs in and redirects.
-/// </summary>
-public sealed class WebToApiLoginTests
-{
-    private const string AdminEmail = "web-test-admin@example.test";
-    private const string AdminPassword = "Web-Test-Passw0rd!42";
-
-    [Fact]
-    public async Task LoginPage_SignsInThroughTheBff()
-    {
-        await using var api = new ModulusWebAppFactory<ApiEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Identity:Seed:AdminEmail", AdminEmail);
-            builder.UseSetting("Identity:Seed:AdminPassword", AdminPassword);
-        });
-        // OpenIddict refuses plain HTTP; the paired handlers ignore the host, so https://localhost reaches each TestServer.
-        await using var bff = new ModulusWebAppFactory<BffEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Bff:Authority", "https://localhost");
-            builder.UseSetting("Bff:Services:api:Address", "https://localhost");
-        }).PairedWith(api);
-        await using var web = new ModulusWebAppFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Bff:BaseUrl", "https://localhost");
-        }).PairedWith(bff);
-        var client = web.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-        var rejected = await SubmitLoginAsync(client, AdminEmail, "not-the-password");
-        Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
-        Assert.Contains("{{ if ui_engine == "fluid" }}Wrong email or password{{ else }}Invalid user name or password{{ end }}", await rejected.Content.ReadAsStringAsync());
-
-        var accepted = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
-        Assert.Equal(HttpStatusCode.Redirect, accepted.StatusCode);
-    }
-
-{{ if !no_example && ui_engine != "fluid" && ui_engine != "blazor" }}    [Fact]
-    public async Task CreatedProduct_IsListedThroughTheBffAndTheApi()
-    {
-        // The round trip through the whole stack: a {{ example_entity | string.downcase }} created on the Web page is stored by the API and read back by the
-        // Web list page, through the BFF's session and proxy. The Web host, the BFF and the API run in-process, each paired to the next.
-        await using var api = new ModulusWebAppFactory<ApiEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Identity:Seed:AdminEmail", AdminEmail);
-            builder.UseSetting("Identity:Seed:AdminPassword", AdminPassword);
-            // The API validates the bearer token the BFF forwards: its default scheme is the token validation, not the test one.
-            builder.ConfigureTestServices(services => services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
-            {
-                options.DefaultScheme = "OpenIddict.Validation.AspNetCore";
-                options.DefaultAuthenticateScheme = "OpenIddict.Validation.AspNetCore";
-                options.DefaultChallengeScheme = "OpenIddict.Validation.AspNetCore";
-                options.DefaultForbidScheme = "OpenIddict.Validation.AspNetCore";
-            }));
-        });
-        await using var bff = new ModulusWebAppFactory<BffEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Bff:Authority", "https://localhost");
-            builder.UseSetting("Bff:Services:api:Address", "https://localhost");
-            // The proxy (YARP) sends its own requests, outside IHttpClientFactory, so PairedWith does not reach it:
-            // its forwarder goes to the API's TestServer instead.
-            builder.ConfigureTestServices(services =>
-            {
-                services.RemoveAll<Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory>();
-                services.AddSingleton<Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory>(new PairedForwarderFactory(api.Server.CreateHandler()));
-            });
-        }).PairedWith(api);
-        await using var web = new ModulusWebAppFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Bff:BaseUrl", "https://localhost");
-            // The factory makes its test scheme the default, which would answer the page with 401 before the browser's BFF
-            // session is checked. This page is signed in through the real cookie session, so the defaults go back to it.
-            builder.ConfigureTestServices(services => services.PostConfigure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
-            {
-                options.DefaultScheme = "bff-session";
-                options.DefaultAuthenticateScheme = "bff-session";
-                options.DefaultChallengeScheme = "bff-session";
-                options.DefaultForbidScheme = "bff-session";
-            }));
-        }).PairedWith(bff);
-        // The session cookie is Secure: the client must address the host over https or it would not send it back.
-        var client = web.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-            BaseAddress = new Uri("https://localhost"),
-        });
-
-        var signedIn = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
-        Assert.Equal(HttpStatusCode.Redirect, signedIn.StatusCode);
-        var name = $"Round trip {Guid.NewGuid():N}";
-        var created = await PostFormAsync(client, "/{{ example_route }}/new", new Dictionary<string, string> { ["Input.Name"] = name });
-        var createdBody = await created.Content.ReadAsStringAsync();
-        Assert.True(created.StatusCode == HttpStatusCode.Redirect, $"create answered {created.StatusCode}: {System.Text.RegularExpressions.Regex.Match(createdBody, "validation-summary[\\s\\S]{0,400}")}");
-
-        var list = await client.GetStringAsync("/{{ example_route }}");
-        Assert.Contains(name, list);
-
-    }
-
-{{ end }}    [Fact]
-    public async Task LoginPage_ExplainsWhenTheBffIsDown()
-    {
-        // Not paired: the authority points at a port nothing listens on, i.e. the API is down.
-        await using var web = new ModulusWebAppFactory<WebEntryPoint>().WithWebHostBuilder(builder =>
-        {
-            builder.UseSetting("Bff:BaseUrl", "https://127.0.0.1:1");
-        });
-        var client = web.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-
-        var response = await SubmitLoginAsync(client, AdminEmail, AdminPassword);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("not available", await response.Content.ReadAsStringAsync());
-    }
-
-    private static async Task<HttpResponseMessage> PostFormAsync(HttpClient client, string path, Dictionary<string, string> fields)
-    {
-        // Razor Pages forms carry an anti-forgery token: read it from the page the form is on, then post it back.
-        var page = await client.GetStringAsync(path);
-        var token = System.Text.RegularExpressions.Regex
-            .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
-        fields["__RequestVerificationToken"] = token;
-        return await client.PostAsync(path, new FormUrlEncodedContent(fields));
-    }
-
-    // Sends the proxy's requests to a TestServer handler (the paired API).
-    private sealed class PairedForwarderFactory(HttpMessageHandler handler) : Yarp.ReverseProxy.Forwarder.IForwarderHttpClientFactory
-    {
-        public HttpMessageInvoker CreateClient(Yarp.ReverseProxy.Forwarder.ForwarderHttpClientContext context) => new(handler, disposeHandler: false);
-    }
-
-    private static async Task<HttpResponseMessage> SubmitLoginAsync(HttpClient client, string user, string password)
-    {
-        var page = await client.GetStringAsync("{{ if ui_engine == "fluid" }}/auth/login{{ else }}/Account/Login{{ end }}");
-        var token = System.Text.RegularExpressions.Regex
-            .Match(page, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
-        var response = await client.PostAsync("{{ if ui_engine == "fluid" }}/auth/login{{ else }}/Account/Login{{ end }}", new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["{{ if ui_engine == "fluid" }}email{{ else }}UserName{{ end }}"] = user,
-            ["{{ if ui_engine == "fluid" }}password{{ else }}Password{{ end }}"] = password,
-            ["__RequestVerificationToken"] = token,
-        }));
-        // A failed sign-in is answered with the sign-in page itself (Razor Pages) or with a redirect back to it that carries the
-        // error (Blazor): either way the page that explains it is the one returned.
-        return response.Headers.Location?.OriginalString.Contains("error=", StringComparison.Ordinal) == true
-            ? await client.GetAsync(response.Headers.Location)
-            : response;
-    }
-}
-{{ end }}{{ end }}
 /// <summary>
 /// Architecture tests that enforce module boundaries. These verify that your
 /// modular monolith respects the module system: every integration event has a

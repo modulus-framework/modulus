@@ -3,8 +3,8 @@ using {{ root_namespace }}.Api.Configuration;
 using {{ root_namespace }}.Api.Endpoints;
 using {{ root_namespace }}.Api.Hosting;
 using {{ root_namespace }}.Api.Middleware;
-{{ if expose_api }}using {{ root_namespace }}.Api.OpenApi;
-{{ end }}using {{ root_namespace }}.Api.Security;
+using {{ root_namespace }}.Api.OpenApi;
+using {{ root_namespace }}.Api.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +16,8 @@ builder.AddApiTokenServer();
 {{ end }}builder.AddApiModules();
 builder.AddApiCore();
 builder.AddApiAuthentication();
-{{ if expose_api }}builder.AddApiOpenApi();
-{{ end }}builder.AddApiFeatures();
+builder.AddApiOpenApi();
+builder.AddApiFeatures();
 
 var app = builder.Build();
 
@@ -33,10 +33,8 @@ app.Run();
 // host via Modulus.Testing's ModulusWebAppFactory<Program>.
 public partial class Program;
 
-// Namespaced entry-point marker for the integration tests: in a webapp+api app
-// both hosts expose a global Program, so the test project's
-// ModulusWebAppFactory<TEntryPoint> generic argument is ambiguous — each host
-// gets a namespaced marker instead (the Web host's is WebEntryPoint).
+// Namespaced entry-point marker for the integration tests: every host has a global Program (the BFFs too), so the
+// ModulusWebAppFactory<TEntryPoint> generic argument uses this unambiguous name.
 namespace {{ root_namespace }}.Api
 {
     public sealed class ApiEntryPoint;

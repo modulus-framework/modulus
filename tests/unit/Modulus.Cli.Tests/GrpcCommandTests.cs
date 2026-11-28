@@ -177,7 +177,7 @@ public sealed class GrpcCommandTests : IDisposable
 
     private const string Pres = "src/Modules/Shop.Modules.Catalog/Shop.Modules.Catalog.Presentation";
 
-    private void GenerateApp(AppKind kind = AppKind.Api, string[]? bff = null, bool multiTenancy = false)
+    private void GenerateApp(string[]? bff = null, bool multiTenancy = false)
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -185,7 +185,6 @@ public sealed class GrpcCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = kind,
             MultiTenancy = multiTenancy,
             Bff = bff ?? [],
             EnableCorrelation = true,

@@ -111,15 +111,13 @@ public sealed class CrudFieldsTests : IDisposable
     }
 
     [Fact]
-    public void The_reads_and_the_edit_form_carry_every_field()
+    public void The_reads_carry_every_field()
     {
         var model = Model(Fields());
 
         _engine.Render("module/Application/GetByIdHandler", model).Should().Contain("Quantity = entity.Quantity,");
         _engine.Render("module/Application/GetAllHandler", model).Should().Contain("Price = e.Price,");
         _engine.Render("module/Application/GetCursorHandler", model).Should().Contain("ReleasedOn = e.ReleasedOn,");
-        _engine.Render("module/Application/GetForEditQuery", model).Should().Contain("int Quantity,");
-        _engine.Render("module/Application/GetForEditHandler", model).Should().Contain("entity.Quantity,");
         _engine.Render("module/Application/Dto", model).Should().Contain("public int Quantity { get; init; } = default;");
     }
 

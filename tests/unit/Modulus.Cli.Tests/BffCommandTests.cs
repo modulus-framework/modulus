@@ -6,84 +6,18 @@ using Xunit;
 
 namespace Modulus.Cli.Tests;
 
-/// <summary>The <c>webapp+api</c> Web host on the BFF web session, and <c>doctor</c>'s warning for hosts still on the token relay.</summary>
+/// <summary>The web BFF's settings for a browser app that signs in at an external provider.</summary>
 [Trait("Category", "Unit")]
-public sealed class WebHostBffSessionTests
+public sealed class WebBffSettingsTests
 {
-    private readonly TemplateEngine _engine = new();
-
-    private static AppModel Split(string auth) => new()
-    {
-        RootNamespace = "Shop",
-        AppName = "Shop",
-        Auth = auth,
-        Kind = AppKind.WebAppApi,
-        EnableCorrelation = true,
-        EnableSecurityHeaders = true,
-        EnableSecretsGuard = true,
-    };
-
     [Fact]
-    public void Web_host_signs_in_through_the_bff_over_http()
+    public void The_web_bff_returns_the_browser_to_one_allowed_origin_only()
     {
-        var app = Split("openiddict");
+        var app = new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "keycloak" };
 
-        // The Web host holds no tokens and runs no BFF in-process: it calls the BFF's session endpoints through the gateway.
-        var program = WebHostSource.Render(_engine, app);
-        program.Should().NotContain("AddModulusBff").And.NotContain("AddCookie(");
-        program.Should().Contain("AddModulusHttpClient<BffSessionClient>").And.Contain("AddHttpMessageHandler<BffGatewayHandler>");
-        program.Should().Contain("AddScheme<AuthenticationSchemeOptions, BffSessionAuthenticationHandler>");
+        using var doc = JsonDocument.Parse(new TemplateEngine().Render("bff/appsettings.json", BffHostModel.For(app, "web", 0)));
 
-        using var doc = JsonDocument.Parse(_engine.Render("app/appsettings.Web.json", app));
-        doc.RootElement.GetProperty("Bff").GetProperty("BaseUrl").GetString().Should().Be("http://localhost:5190");
-        doc.RootElement.GetProperty("Bff").TryGetProperty("Clients", out _).Should().BeFalse("the clients live in the BFF's own settings");
-
-        _engine.Render("app/web.csproj", app).Should().Contain("Modulus.Bff");
-        _engine.Render("app/ApiClientExtensions.Web", app).Should().Contain("services.AddBffGatewayClient<")
-            .And.NotContain("AddBffUserAccessToken");
-
-        _engine.Render("app/LoginModel.Web", app).Should().Contain("session.SignInAsync(UserName, Password");
-        _engine.Render("app/LogoutModel.Web", app).Should().Contain("session.SignOutAsync(loginPage, HttpContext.RequestAborted)");
-        _engine.Render("app/BffSessionClient.Web", app).Should().Contain("PostAsJsonAsync(\"bff/login\"").And.Contain("\"bff/user\"");
-    }
-
-    [Fact]
-    public void Web_host_without_auth_calls_the_api_anonymously()
-    {
-        var app = Split("none");
-        WebHostSource.Render(_engine, app).Should().NotContain("AddModulusBff").And.NotContain("BffSessionClient");
-        _engine.Render("app/web.csproj", app).Should().NotContain("Modulus.Bff");
-        _engine.Render("app/ApiClientExtensions.Web", app).Should().NotContain("AddBffGatewayClient").And.NotContain("AddBffUserAccessToken");
-        using var _ = JsonDocument.Parse(_engine.Render("app/appsettings.Web.json", app));
-    }
-
-    [Fact]
-    public void Web_host_with_an_external_provider_sends_the_browser_to_the_bff_login()
-    {
-        var app = Split("keycloak");
-
-        // The browser signs in at the provider: the Web host redirects to the BFF's bff/login, not a password form.
-        var login = _engine.Render("app/LoginModel.Web", app);
-        login.Should().Contain("public IActionResult OnGet").And.Contain("session.SignInUrl(");
-        login.Should().NotContain("OnPostAsync").And.NotContain("SignInAsync(UserName");
-        _engine.Render("app/Login.Web.cshtml", app).Should().NotContain("asp-for=\"UserName\"");
-
-        _engine.Render("app/BffSessionClient.Web", app).Should().Contain("bff/login?returnUrl=")
-            .And.Contain("bff/logout?returnUrl=");
-
-        // The BFF returns the browser to this host only: its origin is the one allowed return origin.
-        using var doc = JsonDocument.Parse(_engine.Render("bff/appsettings.json", BffHostModel.For(app, "web", 0)));
         doc.RootElement.GetProperty("Bff").GetProperty("AllowedReturnOrigins")[0].GetString().Should().Be("http://localhost:5181");
-    }
-
-    [Fact]
-    public void Web_sign_in_is_rate_limited_per_client_address()
-    {
-        var app = Split("openiddict");
-        _engine.Render("app/RateLimitingSetup.Web", app).Should().Contain("PermitLimit = 10")
-            .And.Contain("SignInPolicy = \"sign-in\"");
-        _engine.Render("app/LoginModel.Web", app).Should().Contain("[EnableRateLimiting(RateLimitingSetup.SignInPolicy)]");
-        _engine.Render("app/PipelineSetup.Web", app).Should().Contain("app.UseRateLimiter();");
     }
 }
 
@@ -95,7 +29,7 @@ public sealed class BffCommandTests : IDisposable
 
     private string AppDir => Path.Combine(_dir, "Shop");
 
-    private void GenerateApp(string auth = "openiddict", AppKind kind = AppKind.Api, string[]? bff = null, string? services = null)
+    private void GenerateApp(string auth = "openiddict", string[]? bff = null, string? services = null)
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -103,7 +37,6 @@ public sealed class BffCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = auth,
-            Kind = kind,
             Bff = bff ?? ["web"],
             BffServices = BffClients.ParseServices(services),
             EnableCorrelation = true,
@@ -203,35 +136,6 @@ public sealed class BffCommandTests : IDisposable
             .Should().Throw<ArgumentException>().WithMessage("*add-bff partner*");
         FluentActions.Invoking(() => command.ExecuteCore(new GenerateBffEndpointCommand.Settings { Name = "X", Bff = "web", Modules = "Billing" }, AppDir))
             .Should().Throw<ArgumentException>().WithMessage("*Unknown module 'Billing'*");
-    }
-
-    [Fact]
-    public void Doctor_warns_about_a_web_host_still_on_the_token_relay()
-    {
-        GenerateApp(kind: AppKind.WebAppApi, bff: []);
-        var web = ModuleDiscovery.Inventory(AppDir)!.WebProjectPath;
-
-        DoctorCommand.CheckWebTokenHandling(web)!.Kind.Should().Be(DoctorCommand.CheckKind.Pass);
-
-        var relay = Path.Combine(Path.GetDirectoryName(web)!, "Security", "TokenRelayHandler.cs");
-        File.WriteAllText(relay, "// generated before the BFF web session");
-        var check = DoctorCommand.CheckWebTokenHandling(web)!;
-        check.Kind.Should().Be(DoctorCommand.CheckKind.Warn);
-        check.Detail.Should().Contain("BffGatewayHandler");
-    }
-
-    [Fact]
-    public void Doctor_warns_when_a_web_host_references_module_infrastructure()
-    {
-        GenerateApp(kind: AppKind.WebAppApi, bff: []);
-        var web = ModuleDiscovery.Inventory(AppDir)!.WebProjectPath!;
-        DoctorCommand.CheckWebInvariant(web).Should().BeNull();
-
-        File.WriteAllText(web, File.ReadAllText(web).Replace("</Project>",
-            "  <ItemGroup><ProjectReference Include=\"..\\..\\Modules\\X\\X.Infrastructure\\X.Infrastructure.csproj\" /></ItemGroup>\n</Project>"));
-        var check = DoctorCommand.CheckWebInvariant(web)!;
-        check.Kind.Should().Be(DoctorCommand.CheckKind.Warn);
-        check.Detail.Should().Contain("X.Infrastructure");
     }
 
     public void Dispose()

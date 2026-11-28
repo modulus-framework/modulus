@@ -6,7 +6,7 @@ Adds the tenant data lifecycle to a multi-tenant API app: exports of a company's
 modulus add-tenant-lifecycle
 ```
 
-The command needs an app generated with multi-tenancy (`modulus app --multi-tenancy --kind api --auth openiddict`). An app without it is refused, because the lifecycle acts on companies.
+The command needs an app generated with multi-tenancy (`modulus app --multi-tenancy --auth openiddict`). An app without it is refused, because the lifecycle acts on companies.
 
 ## What it adds
 

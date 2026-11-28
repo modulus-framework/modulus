@@ -527,7 +527,7 @@ This tutorial leaves out authentication. Before you deploy, add it with `AddAuth
 - **Add a page.** Create `Components/Pages/Invoices.razor` with `@page "/invoices"`, add a menu item in `AppMenuContributor`, and you are done. The shell picks it up.
 - **Add an editable grid.** When users need to type into many rows at once, use `EditableGrid` instead of a drawer. See [Pro components](./pro.md).
 - **Brand the app.** Change `Title`, `PrimaryColor` and `BorderRadius`, or bind them from configuration. See [Theming](./theming.md).
-- **Start from the admin pages.** `AddModulusAdminUi` and the CLI's `ui add-admin` give you users, roles, tenants and settings pages to edit. See [CLI and the admin starter](./cli.md).
+- **Start from the admin pages.** `AddModulusAdminUi` gives you users, roles, tenants and settings pages.
 
 ## Troubleshooting
 

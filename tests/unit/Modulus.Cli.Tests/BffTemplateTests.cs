@@ -11,13 +11,12 @@ public sealed class BffTemplateTests
 {
     private readonly TemplateEngine _engine = new();
 
-    private static AppModel App(string auth = "openiddict", AppKind kind = AppKind.Api, params string[] bff) => new()
+    private static AppModel App(string auth = "openiddict", params string[] bff) => new()
     {
         RootNamespace = "Shop",
         AppName = "Shop",
         DbProvider = "SQLite",
         Auth = auth,
-        Kind = kind,
         Bff = bff,
         EnableCorrelation = true,
         EnableSecurityHeaders = true,
@@ -48,7 +47,7 @@ public sealed class BffTemplateTests
     [InlineData("casdoor", "Casdoor", "https://door.example.com")]
     public void Every_supported_auth_server_gets_its_authority(string auth, string server, string authority)
     {
-        var model = BffHostModel.For(App(auth, AppKind.Api, "mobile"), "mobile", 0);
+        var model = BffHostModel.For(App(auth, "mobile"), "mobile", 0);
 
         using var doc = JsonDocument.Parse(_engine.Render("bff/appsettings.json", model));
         var bff = doc.RootElement.GetProperty("Bff");
@@ -57,13 +56,12 @@ public sealed class BffTemplateTests
     }
 
     [Theory]
-    [InlineData("openiddict", "api", "Password")]
-    [InlineData("openiddict", "webapp+api", "Password")]
-    [InlineData("keycloak", "api", "Oidc")]
-    [InlineData("azuread", "api", "Oidc")]
-    public void Web_bff_signs_in_with_code_flow_wherever_the_auth_server_has_a_login_page(string auth, string kind, string mode)
+    [InlineData("openiddict", "Password")]
+    [InlineData("keycloak", "Oidc")]
+    [InlineData("azuread", "Oidc")]
+    public void Web_bff_signs_in_with_code_flow_wherever_the_auth_server_has_a_login_page(string auth, string mode)
     {
-        var model = BffHostModel.For(App(auth, AppKinds.Parse(kind), "web"), "web", 0);
+        var model = BffHostModel.For(App(auth, "web"), "web", 0);
 
         using var doc = JsonDocument.Parse(_engine.Render("bff/appsettings.json", model));
         doc.RootElement.GetProperty("Bff").GetProperty("Clients").GetProperty("web").GetProperty("LoginMode").GetString().Should().Be(mode);

@@ -1,5 +1,0 @@
-@{
-    // The sign-in and status pages render in the auth frame (no shell), see Pages/Shared/_AuthLayout.cshtml.
-    Layout = "_AuthLayout";
-}
-

@@ -194,7 +194,7 @@ internal sealed partial class GenerateGrpcCommand : Command<GenerateGrpcCommand.
             ProtoFile = snake + ".proto",
             ProtoPackage = $"{ToSnakeCase(rootNamespace.Replace(".", "", StringComparison.Ordinal))}.{ToSnakeCase(module.Name)}.v1",
             RequiredPermission = permission,
-            AdminRole = UiAccessGates.AdminRole,
+            AdminRole = ApiPermissions.AdminRole,
             MultiTenancy = multiTenancy,
         };
     }

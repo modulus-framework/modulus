@@ -24,7 +24,6 @@ public sealed class TenantLifecycleCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = AppKind.Api,
             MultiTenancy = multiTenancy,
         });
     }

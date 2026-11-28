@@ -1,5 +1,0 @@
-@using {{ root_namespace }}.Web
-@using {{ root_namespace }}.Web.Areas.Account.Models
-@using Modulus.Ui.Abstractions
-@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@addTagHelper *, Modulus.AspNetCore.Mvc

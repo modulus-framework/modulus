@@ -107,7 +107,7 @@ public sealed class RealtimeCommandTests : IDisposable
 
     private string AppDir => Path.Combine(_dir, "Shop");
 
-    private void GenerateApp(AppKind kind = AppKind.Api, string[]? bff = null)
+    private void GenerateApp(string[]? bff = null)
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -115,7 +115,6 @@ public sealed class RealtimeCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = kind,
             Bff = bff ?? [],
             EnableCorrelation = true,
             EnableSecurityHeaders = true,

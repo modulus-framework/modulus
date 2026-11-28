@@ -29,27 +29,14 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         [Description("Expose the entity to the AI platform: [[AiIndexed]]/[[AiQueryable]] on the entity, [[AiCapability]] on the list query, [[AiResource]] on the lookup query, the indexing grant and a test class. Re-run on an existing entity to mark it. Needs modulus add-ai.")]
         public bool Ai { get; init; }
 
-        // Declared only to refuse it: generate-crud writes the API side, and the pages come from `modulus ui create-crud`.
-        [CommandOption("--ui-engine")]
-        [Description("Not used here: pages come from `modulus ui create-crud <Entity> --engine <mvc|razor-pages|blazor>`.")]
-        public string? UiEngine { get; init; }
-
     }
 
     private readonly TemplateEngine _templates = new();
-    private readonly ITemplatePackageResolver _resolver = new TemplatePackageResolver();
-
-    private UiFileGenerator? _uiGenerator;
 
     public override int Execute(CommandContext ctx, Settings s)
     {
         s.Apply();
-        return CommandRunner.Run(() =>
-        {
-            if (s.UiEngine is not null)
-                throw new InvalidOperationException("generate-crud does not take --ui-engine: it writes the API side only. Run `modulus ui create-crud <Entity> --engine <mvc|razor-pages|blazor>` for the pages.");
-            return ExecuteCore(ctx, s);
-        });
+        return CommandRunner.Run(() => ExecuteCore(ctx, s));
     }
 
     private int ExecuteCore(CommandContext ctx, Settings s)
@@ -100,7 +87,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         // Every generated endpoint and command needs the CRUD permission, whatever the identity backend: the administrator
         // roles it is granted to are configured (Authorization:AdministratorRoles, default Admin), so an external provider names its own.
         var host = ResolveHost(module);
-        model.RequiredPermission = UiAccessGates.CrudPermission(module.Name, routeName);
+        model.RequiredPermission = ApiPermissions.CrudPermission(module.Name, routeName);
 
         // A multi-tenant host (modulus app --multi-tenancy) keeps companies apart: the entity is tenant-owned and gets a test.
         var inventory = ModuleDiscovery.Inventory(Environment.CurrentDirectory);
@@ -225,16 +212,6 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             }
         }
 
-
-        // ── Presentation layer UI files (Phase 3c) ────────────────
-        try
-        {
-            Task.Run(() => GenerateUiFilesAsync(entity, model, presDir)).Wait();
-        }
-        catch (Exception ex)
-        {
-            Ux.Warning($"UI generation error: {ex.Message}");
-        }
         // ── Summary ───────────────────────────────────────────────
         AnsiConsole.MarkupLine("[green]✓[/] Generated CRUD for [cyan]{0}[/] in [grey]{1}[/]",
             entity, module.Name);
@@ -272,7 +249,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     {
         var entity = model.EntityName!;
         var plural = CodeGen.Pluralize(entity);
-        var permission = model.RequiredPermission ?? UiAccessGates.CrudPermission(module.Name, model.RouteName!);
+        var permission = model.RequiredPermission ?? ApiPermissions.CrudPermission(module.Name, model.RouteName!);
         var names = AiWiring.NamesFor(module.RootNamespace, module.Name, entity, permission);
         var checksPermission = model.RequiredPermission is not null;
 
@@ -336,7 +313,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
             SearchCapability = names.SearchCapability,
             CalculateCapability = names.CalculateCapability,
             names.ResourceType,
-            AdminRole = UiAccessGates.AdminRole,
+            AdminRole = ApiPermissions.AdminRole,
             TestInstance = AiWiring.TestInstance,
             // Extraction needs a record the test can create (the generated create request takes a name) and an instance without a company.
             CanExtract = checksPermission && !model.MultiTenant && AiWiring.TitleField(entitySource) == "Name",
@@ -394,7 +371,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
     }
 
     /// <summary>
-    /// The <c>Program.cs</c> half of the API's permission when there is no admin page to carry it: the policy provider, the
+    /// The <c>Program.cs</c> half of the API's permission: the policy provider, the
     /// registry declaration and the Admin role's grant (all idempotent). The endpoints declare the permission themselves.
     /// </summary>
     private static void EnsureApiPermission(
@@ -411,7 +388,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         var identityPackage = File.Exists(host.ApiCsproj)
             && File.ReadAllText(host.ApiCsproj).Contains("Include=\"Synvro.Modulus.Identity\"", StringComparison.Ordinal);
         var wired = ApiPermissionWiring.EnsurePermission(
-            original, ApiHostFiles.ReadAll(host.ProgramCs), module.Name, permission, UiAccessGates.CrudPermissionDescription(model.EntityPlural ?? module.Name),
+            original, ApiHostFiles.ReadAll(host.ProgramCs), module.Name, permission, ApiPermissions.CrudPermissionDescription(model.EntityPlural ?? module.Name),
             withChecker: identityPackage);
         if (wired != original)
         {
@@ -433,7 +410,7 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         if (!File.Exists(settingsPath))
             return false;
         var json = File.ReadAllText(settingsPath);
-        var granted = TenantLifecycleWiring.EnsureCompanyGrant(json, UiAccessGates.AdminRole, permission);
+        var granted = TenantLifecycleWiring.EnsureCompanyGrant(json, ApiPermissions.AdminRole, permission);
         if (granted == json)
             return false;
         if (!Ux.DryRun)
@@ -593,75 +570,6 @@ internal sealed class GenerateCrudCommand : Command<GenerateCrudCommand.Settings
         // Detect the prevailing line ending style to avoid mixed \r\n / \n.
         var nl = content.Contains("\r\n") ? "\r\n" : "\n";
         return content.Insert(bodyOpen + 1, nl + line);
-    }
-    private async Task GenerateUiFilesAsync(string entity, ModuleModel model, string presDir)
-    {
-        var uiEngine = ReadUiEngineFromConfig();
-
-        if (string.IsNullOrEmpty(uiEngine) || uiEngine == "none")
-        {
-            Ux.Detail("UI engine not configured, skipping UI file generation");
-            return;
-        }
-
-        try
-        {
-            _uiGenerator ??= new UiFileGenerator(_resolver);
-
-            Ux.Info($"Generating UI files for {entity} with {uiEngine}...");
-
-            var generatedFiles = await _uiGenerator.GenerateAsync(
-                model, entity, uiEngine, presDir);
-
-            if (generatedFiles.Count > 0)
-            {
-                foreach (var file in generatedFiles)
-                {
-                    AnsiConsole.MarkupLine("  [green]→[/] [grey]{0}[/]", file);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Ux.Warning($"UI generation skipped: {ex.Message}");
-        }
-    }
-
-    private string? ReadUiEngineFromConfig()
-    {
-        var configPaths = new[]
-        {
-            Path.Combine(Directory.GetCurrentDirectory(), ".modulus.json"),
-            Path.Combine(Directory.GetCurrentDirectory(), "modulus.json"),
-        };
-
-        foreach (var configPath in configPaths)
-        {
-            if (!File.Exists(configPath))
-                continue;
-
-            try
-            {
-                var json = File.ReadAllText(configPath);
-                using var doc = JsonDocument.Parse(json);
-
-                if (doc.RootElement.TryGetProperty("uiEngine", out var engine))
-                {
-                    var engineValue = engine.GetString();
-                    if (!string.IsNullOrEmpty(engineValue))
-                    {
-                        Ux.Info($"Using UI engine: {engineValue}");
-                        return engineValue;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Ux.Detail($"Failed to read UI engine config: {ex.Message}");
-            }
-        }
-
-        return null;
     }
 }
 

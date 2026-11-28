@@ -103,7 +103,6 @@
     <Project Path="src/analytics/Modulus.Analytics.Apicurio/Modulus.Analytics.Apicurio.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.OpenMetadata/Modulus.Analytics.OpenMetadata.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.DuckDB/Modulus.Analytics.DuckDB.csproj" />
-    <Project Path="samples/Modulus.Analytics.MigrationSample/Modulus.Analytics.MigrationSample.csproj" />
     <Project Path="src/analytics/Modulus.Analytics.Testing/Modulus.Analytics.Testing.csproj" />
   </Folder>
   <Folder Name="/src/ai/">

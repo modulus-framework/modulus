@@ -75,7 +75,6 @@ public sealed class AuditStoreCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = auth,
-            Kind = AppKind.Api,
         });
     }
 

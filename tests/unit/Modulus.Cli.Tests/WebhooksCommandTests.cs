@@ -186,7 +186,7 @@ public sealed class WebhooksCommandTests : IDisposable
 
     private const string Infra = "src/Modules/Shop.Modules.Webhooks/Shop.Modules.Webhooks.Infrastructure";
 
-    private void GenerateApp(AppKind kind = AppKind.Api, bool multiTenancy = false)
+    private void GenerateApp(bool multiTenancy = false)
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -194,7 +194,6 @@ public sealed class WebhooksCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = kind,
             MultiTenancy = multiTenancy,
             EnableCorrelation = true,
             EnableSecurityHeaders = true,

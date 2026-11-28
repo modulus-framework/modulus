@@ -14,21 +14,19 @@ public sealed class SecurityGuardTemplateTests
 {
     private readonly TemplateEngine _engine = new();
 
-    private static AppModel Model(string auth, AppKind kind = AppKind.Api) => new()
+    private static AppModel Model(string auth) => new()
     {
         RootNamespace = "Shop",
         AppName = "Shop",
         Auth = auth,
-        Kind = kind,
     };
 
     [Theory]
-    [InlineData("openiddict", "api")]
-    [InlineData("keycloak", "api")]
-    [InlineData("openiddict", "webapp+api")]
-    public void Hosts_with_a_sign_in_wire_the_guard_and_loosen_the_development_OpenAPI_document(string auth, string kind)
+    [InlineData("openiddict")]
+    [InlineData("keycloak")]
+    public void Hosts_with_a_sign_in_wire_the_guard_and_loosen_the_development_OpenAPI_document(string auth)
     {
-        var model = Model(auth, Kind(kind));
+        var model = Model(auth);
         var program = ApiHostSource.Render(_engine, model);
 
         model.UseSecurityGuard.Should().BeTrue();
@@ -37,8 +35,7 @@ public sealed class SecurityGuardTemplateTests
             .And.Contain("using Modulus.AspNetCore.Security.Policy;")
             .And.Contain("using Modulus.AuditLogging.Security;")
             .And.Contain("using Modulus.Authorization.Extensions;");
-        if (model.ExposeApi)
-            program.Should().Contain("app.MapOpenApi().Loosen(\"OpenAPI document, mapped in Development only\");");
+        program.Should().Contain("app.MapOpenApi().Loosen(\"OpenAPI document, mapped in Development only\");");
     }
 
     [Fact]
@@ -64,10 +61,10 @@ public sealed class SecurityGuardTemplateTests
     }
 
     [Theory]
-    [InlineData("none", "api")]
-    public void Hosts_without_an_enforceable_sign_in_get_no_guard(string auth, string kind)
+    [InlineData("none")]
+    public void Hosts_without_an_enforceable_sign_in_get_no_guard(string auth)
     {
-        var model = Model(auth, Kind(kind));
+        var model = Model(auth);
 
         model.UseSecurityGuard.Should().BeFalse();
         ApiHostSource.Render(_engine, model).Should().NotContain("AddModulusSecurityGuard").And.NotContain(".Loosen(")
@@ -85,31 +82,13 @@ public sealed class SecurityGuardTemplateTests
             .Should().Equal("/openapi/{documentName}.json");
     }
 
-    [Fact]
-    public void The_web_host_wires_the_guard_and_lists_its_liveness_probe()
-    {
-        var model = Model("openiddict", AppKind.WebAppApi);
-        model.EnableHealthChecks = true;
-
-        WebHostSource.Render(_engine, model)
-            .Should().Contain("services.AddModulusSecurityGuard(configuration);")
-            .And.Contain("app.MapHealthChecks(\"/health/live\").Loosen(");
-
-        var json = _engine.Render("app/loosening-allowlist.Web.json", model);
-        using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });
-        doc.RootElement.GetProperty("endpoints").EnumerateArray()
-            .Select(e => e.GetProperty("route").GetString())
-            .Should().Equal("/health/live");
-    }
-
     [Theory]
-    [InlineData("openiddict", "api", true)]
-    [InlineData("keycloak", "api", true)]
-    [InlineData("openiddict", "webapp+api", true)]
-    [InlineData("none", "api", false)]
-    public void Guarded_API_hosts_ship_the_security_probe_test(string auth, string kind, bool expected)
+    [InlineData("openiddict", true)]
+    [InlineData("keycloak", true)]
+    [InlineData("none", false)]
+    public void Guarded_API_hosts_ship_the_security_probe_test(string auth, bool expected)
     {
-        var tests = _engine.Render("app/AppTests", Model(auth, Kind(kind)));
+        var tests = _engine.Render("app/AppTests", Model(auth));
 
         if (expected)
         {
@@ -122,12 +101,6 @@ public sealed class SecurityGuardTemplateTests
             tests.Should().NotContain("SecurityProbeTests");
         }
     }
-
-    private static AppKind Kind(string kind) => kind switch
-    {
-        "webapp+api" => AppKind.WebAppApi,
-        _ => AppKind.Api,
-    };
 
     private static int Occurrences(string haystack, string needle)
     {

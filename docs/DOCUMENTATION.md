@@ -1,5 +1,8 @@
 # DOCUMENTATION
 
+> **CLI 4.0.0 creates APIs only.** Notes below about the `modulus ui` commands, the `webapp+api` app kind or generated Web hosts are history: that
+> code was removed from the CLI. CLI 3.1.0 is the last version with it.
+
 This document combines 14 source documents. Contents:
 
 - [Advanced features: hybrid cache, per-client BFFs, gRPC, webhooks, GraphQL, realtime, AI platform integration](#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration)

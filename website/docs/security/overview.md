@@ -71,7 +71,7 @@ Recorded events never contain user names, passwords, tokens or SQL text.
 ## Command-line support
 
 ```bash
-modulus app Shop --kind api --auth openiddict --multi-tenancy
+modulus app Shop --auth openiddict --multi-tenancy
 modulus add-audit-store
 ```
 

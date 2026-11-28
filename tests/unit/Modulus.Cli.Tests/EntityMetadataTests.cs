@@ -62,33 +62,4 @@ public sealed class EntityMetadataTests
     [Fact]
     public void Properties_of_another_class_in_the_file_are_not_picked_up_before_the_entity()
         => EntityMetadata.Parse(Source, "Other").Select(f => f.Name).Should().Equal("Unrelated");
-
-    [Theory]
-    [InlineData("mvc", "asp-for=\"Total\"")]
-    [InlineData("razor-pages", "asp-for=\"Total\"")]
-    [InlineData("blazor", "@bind-Value=\"form.Total\"")]
-    public void The_form_template_renders_a_control_per_field(string engine, string expected)
-    {
-        var nupkg = Path.Combine(UiTemplatePackage.UserRoot, "feed", $"{UiTemplatePackage.PackageId}.{UiTemplatePackage.DefaultVersion}.nupkg");
-        if (!File.Exists(nupkg)) return;
-
-        var dir = Directory.CreateTempSubdirectory("form").FullName;
-        try
-        {
-            UiTemplatePackage.Extract(nupkg, Path.Combine(dir, "templates"));
-            var file = UiScaffold.TemplateFile(Path.Combine(dir, "templates"), engine, "entity-form")!;
-
-            var html = new TemplateEngine().Render(file, new
-            {
-                EntityName = "Order",
-                EntityNamePlural = "Orders",
-                ModuleName = "Orders",
-                Fields = EntityMetadata.Parse(Source, "Order"),
-            });
-
-            html.Should().Contain(expected).And.Contain("Customer Email").And.Contain("Order");
-            html.Should().NotContain("{{");
-        }
-        finally { Directory.Delete(dir, recursive: true); }
-    }
 }

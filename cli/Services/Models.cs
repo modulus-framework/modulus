@@ -123,16 +123,6 @@ internal sealed class AppModel
     /// </summary>
     public string? LocalPackageSource { get; set; }
 
-    /// <summary>A local feed holding the UI framework packages (<c>Modulus.AspNetCore.Mvc</c>, ...); written to NuGet.config until they are on nuget.org.</summary>
-    public string? UiFeedSource { get; set; }
-
-    /// <summary>
-    /// True when the Web project of a <c>webapp+api</c> app runs on the Modulus UI framework (<c>Modulus.AspNetCore.Mvc</c>:
-    /// <c>AddModulusMvc</c>, the shell layout) (<c>AddModulusMvc</c>, the shell layout).
-    /// Set for the mvc and razor-pages engines; the Blazor engine needs a Blazor host, which is not generated.
-    /// </summary>
-    public bool UseUiFramework { get; set; }
-
     /// <summary>
     /// Migration engine for generated modules: "efcore" (default, EF Core
     /// migrations) or "dbsh" (SQL-first migrations managed by the external
@@ -142,37 +132,6 @@ internal sealed class AppModel
 
     /// <summary>True when modules manage their schema with dbsh SQL migrations.</summary>
     public bool UseDbsh => MigrationEngine == "dbsh";
-
-    /// <summary>API only, or a web app that also exposes the API (<c>--kind</c>).</summary>
-    public AppKind Kind { get; set; } = AppKind.Api;
-
-    /// <summary>UI rendering engine: "mvc", "razor-pages", "blazor", "fluid", or "none" (API only).</summary>
-    public string UiEngine { get; set; } = "none";
-
-    /// <summary>True when UI is scaffolded (not "none").</summary>
-    public bool HasUi => UiEngine != "none";
-
-    /// <summary>The kind as written into the host csproj (<c>&lt;ModulusAppKind&gt;</c>).</summary>
-    public string KindName => Kind.Name();
-
-    /// <summary>True for a web app: it gets the UI foundation (and the theme), whatever feature modules are chosen.</summary>
-    public bool UseUi => Kind is AppKind.WebAppApi;
-
-    /// <summary>True when the app exposes API endpoints to external callers (api and webapp+api kinds).</summary>
-    public bool ExposeApi => true;
-
-    /// <summary>
-    /// The UI host project's namespace (<c>{Root}.Web</c> for the webapp+api split, <c>{Root}.Api</c> otherwise).
-    /// Set by <c>GenerateAll</c>; defaults so every template that renders <c>{{ ui_namespace }}</c> (the example
-    /// <c>ModuleApiClient</c> when <c>modulus app</c> generates a Web project) gets a valid namespace.
-    /// </summary>
-    public string UiNamespace
-    {
-        get => string.IsNullOrEmpty(_uiNamespace) ? $"{RootNamespace}.Api" : _uiNamespace;
-        set => _uiNamespace = value;
-    }
-
-    private string? _uiNamespace;
 
     /// <summary>
     /// Auth provider key: "none" (default), "openiddict", or one of the six
@@ -306,13 +265,12 @@ internal sealed class AppModel
     /// null only without the example module.
     /// </summary>
     public string? ExamplePermission =>
-        !NoExample ? UiAccessGates.CrudPermission(ExampleModule, ExampleRoute) : null;
+        !NoExample ? ApiPermissions.CrudPermission(ExampleModule, ExampleRoute) : null;
 
     /// <summary>
     /// True when the host wires the startup security guard (<c>AddModulusSecurityGuard</c>): every endpoint must resolve to a
     /// policy and every anonymous one needs a reason and an allow-list entry. Needs a sign-in to enforce anything, so not with
-    /// <c>--auth none</c>, nor for a web app on an external provider (its pages have no cookie sign-in yet, so they could only be
-    /// left open or locked).
+    /// <c>--auth none</c>.
     /// </summary>
     public bool UseSecurityGuard => UseAuth;
 
@@ -347,27 +305,12 @@ internal sealed class AppModel
         return new BffClientModel { Name = client, ClientId = $"{AppNameLower}-{client}", Port = port };
     }).ToList();
 
-    /// <summary>
-    /// How the <c>webapp+api</c> Web host signs users in through its BFF web session: the password grant against the local
-    /// OpenIddict server (the API host has no login page), else the external provider's own login page (code + PKCE).
-    /// </summary>
-    public string WebLoginMode => UseOpenIddict ? "Password" : "Oidc";
-
-    /// <summary>The Web host's <c>Bff:BaseUrl</c>: the <c>web</c> BFF, the first client (see <see cref="BffClients.WithWebClient"/>).</summary>
-    public string BffBaseUrl => $"http://localhost:{BffClients.FirstPort}";
-
-    /// <summary>The Web host's <c>Bff:AuthServer</c>.</summary>
-    public string WebAuthServer => BffClients.AuthServer(Auth);
-
-    /// <summary>The Web host's <c>Bff:Authority</c>: empty for OpenIddict (the API host, <c>Api:BaseUrl</c>), else the provider's issuer.</summary>
-    public string WebAuthority => UseOpenIddict ? "" : BffClients.Authority(Auth, AppNameLower);
-
     /// <summary>What the example permission's registry entry says.</summary>
     public string ExamplePermissionDescription =>
-        UiAccessGates.CrudPermissionDescription(CodeGen.Pluralize(ExampleEntity));
+        ApiPermissions.CrudPermissionDescription(CodeGen.Pluralize(ExampleEntity));
 
     /// <summary>The role that holds the example permission (the one the identity backend seeds the first administrator into).</summary>
-    public string AdminRole => UiAccessGates.AdminRole;
+    public string AdminRole => ApiPermissions.AdminRole;
 
     // ── Message Broker Configuration ────────────────────────────────
     /// <summary>Message broker: "none", "rabbitmq", or "kafka".</summary>
@@ -512,8 +455,8 @@ internal sealed class ModuleModel
     public bool? UseAuth { get; set; }
 
     /// <summary>
-    /// The entity's properties that the generated DTOs, commands, endpoints and CRUD pages carry, <c>Name</c> first. Name only
-    /// unless generate-crud or create-crud reads the entity class (<see cref="CrudFields.Resolve"/>).
+    /// The entity's properties that the generated DTOs, commands, endpoints and endpoints carry, <c>Name</c> first. Name only
+    /// unless generate-crud reads the entity class (<see cref="CrudFields.Resolve"/>).
     /// </summary>
     public IReadOnlyList<CrudField> Fields { get; set; } = CrudFields.NameOnly;
 
@@ -580,26 +523,6 @@ internal sealed class ModuleModel
     // Lower-cased module name, used for table prefix + integration event type strings.
     public string ModuleNameLower => ModuleName.ToLowerInvariant();
 
-    /// <summary>
-    /// The host API project's root namespace (e.g. <c>MyApp.Api</c>).
-    /// </summary>
-    public string ApiNamespace => $"{RootNamespace}.Api";
-
-    /// <summary>
-    /// The UI host project's root namespace. For webapp+api kind, this is the Web project
-    /// (e.g. <c>MyApp.Web</c>); for other kinds, it defaults to <see cref="ApiNamespace"/>.
-    /// Used in generated CRUD page namespaces. Defaults to <see cref="ApiNamespace"/> when unset,
-    /// so every template that renders <c>{{ ui_namespace }}</c> gets a valid namespace even on a
-    /// path that never chose a UI host.
-    /// </summary>
-    public string UiNamespace
-    {
-        get => string.IsNullOrEmpty(_uiNamespace) ? ApiNamespace : _uiNamespace;
-        set => _uiNamespace = value;
-    }
-
-    private string? _uiNamespace;
-
     // ── Entity being scaffolded (null when generating a blank module) ──
     // Scriban treats "" as truthy, so blank modules must leave these null.
     public string? EntityName { get; set; }       // "Product"
@@ -607,23 +530,9 @@ internal sealed class ModuleModel
     public string? RouteName { get; set; }        // "products"
 
     /// <summary>
-    /// True when the entity implements <c>IHasExtraProperties</c> and its create command carries the extension values,
-    /// so the generated create form can render <c>&lt;m-fields&gt;</c> and pass them on. False for a CRUD set generated
-    /// before that existed (files are never overwritten), where the form would only collect data that is dropped.
-    /// </summary>
-    public bool HasExtraFields { get; set; }
-
-    /// <summary>
-    /// True when the page also gets an edit modal: the update command carries the extension values (so an edit can
-    /// save them) and the host has a theme that provides the modal container. The edit form reads the stored values
-    /// through a dedicated <c>Get{Entity}ForEditQuery</c>, not the API DTO.
-    /// </summary>
-    public bool HasEditForm { get; set; }
-
-    /// <summary>
     /// The permission (e.g. <c>catalog:products:manage</c>) the generated API endpoints require, or null when the host
     /// has no identity backend whose <c>Admin</c> role could hold it (then they are as open as the rest of that host). See
-    /// <see cref="UiAccessGates.CrudPermission"/>.
+    /// <see cref="ApiPermissions.CrudPermission"/>.
     /// </summary>
     public string? RequiredPermission { get; set; }
 
@@ -637,11 +546,6 @@ internal sealed class ModuleModel
     public string? EntityPlural => string.IsNullOrEmpty(EntityName)
         ? null
         : CodeGen.Pluralize(EntityName);
-
-    // Names the Modulus.Ui.Templates package uses (entity_name_plural, route_prefix, module_description).
-    public string? EntityNamePlural => EntityPlural;
-    public string? RoutePrefix => RouteName;
-    public string ModuleDescription => $"{ModuleName} module";
 }
 
 /// <summary>

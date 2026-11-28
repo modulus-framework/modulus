@@ -6,7 +6,7 @@ sidebar_position: 1
 
 <img src="/img/icon.png" alt="Modulus CLI icon" width="96" />
 
-The `modulus` CLI tool generates complete solutions, modules, and CRUD code.
+The `modulus` CLI tool generates complete API solutions, modules, and CRUD code: a modular monolith, or microservices with backends for frontends. It creates no UI (the `modulus ui` commands were [removed in CLI 4.0.0](../ui/cli)).
 
 ## Installation
 
@@ -28,10 +28,9 @@ dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 | [`modulus list`](list) | List modules and entities |
 | [`modulus info`](info) | Show app overview |
 | [`modulus doctor`](doctor) | Check environment |
-| [`modulus ui`](../ui/cli) | Scaffold pages, components and themes for the UI (`add-admin`, `create-crud`, `create-dashboard`, ...) |
 | [`modulus outdated`](outdated) | Check for package updates |
 | [`modulus update`](update) | Apply package updates |
-| `modulus describe` | Print the app's kind, hosts, modules, BFFs and wired features (`--json` for tools) |
+| `modulus describe` | Print the app's hosts, modules, BFFs and wired features (`--json` for tools) |
 | `modulus add-bff <client>` | Add a `web`, `mobile` or `partner` backend-for-frontend host (see [BFF](../platform/bff)) |
 | `modulus generate-bff-endpoint <Name>` | Scaffold an aggregate endpoint in a BFF |
 | `modulus generate-grpc <Entity>` | Expose an entity's CRUD over gRPC (see [gRPC](../platform/grpc)) |
@@ -43,7 +42,6 @@ dotnet tool install -g --add-source ./nupkg Synvro.Modulus.Cli
 | `modulus add-tenant-lifecycle` | Add tenant exports, legal holds and deletion to a multi-tenant app |
 | `modulus add-analytics` | Add the analytics store and its local services |
 | `modulus add-openbao` | Read secrets from OpenBao |
-| `modulus ui ...` | UI scaffolding, see [the UI section](../ui/cli) |
 
 ## Global Flags
 

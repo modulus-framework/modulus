@@ -14,27 +14,16 @@ internal sealed class TemplateEngine
     private readonly Assembly _assembly = typeof(TemplateEngine).Assembly;
 
     /// <summary>
-    /// Renders a template by embedded resource path (e.g. <c>"app/Program.cs"</c>), or from disk when given an absolute file path.
+    /// Renders a template by embedded resource path (e.g. <c>"app/Program.cs"</c>).
     /// </summary>
     public string Render(string templatePath, object model, string? outputPath = null)
     {
-        string templateSource;
-        if (Path.IsPathRooted(templatePath))
-        {
-            // A template file from the resolved Modulus.Ui.Templates package.
-            if (!File.Exists(templatePath))
-                throw new FileNotFoundException($"Template file not found: {templatePath}");
-            templateSource = File.ReadAllText(templatePath);
-        }
-        else
-        {
-            var resourceName = $"Modulus.Cli.Templates.{templatePath.Replace('/', '.')}.sbn";
-            using var stream = _assembly.GetManifestResourceStream(resourceName)
-                ?? throw new FileNotFoundException(
-                    $"Embedded template not found: {resourceName}");
-            using var reader = new StreamReader(stream);
-            templateSource = reader.ReadToEnd();
-        }
+        var resourceName = $"Modulus.Cli.Templates.{templatePath.Replace('/', '.')}.sbn";
+        using var stream = _assembly.GetManifestResourceStream(resourceName)
+            ?? throw new FileNotFoundException(
+                $"Embedded template not found: {resourceName}");
+        using var reader = new StreamReader(stream);
+        var templateSource = reader.ReadToEnd();
 
         var template = Template.Parse(templateSource);
         if (template.HasErrors)
@@ -49,7 +38,7 @@ internal sealed class TemplateEngine
             if (value is not null)
                 scriptObject[ToSnakeCase(prop.Name)] = value;
         }
-        // use_auth tells UI templates whether the app signs users in; the app is found from the file being written.
+        // use_auth tells endpoint templates whether the app signs users in; the app is found from the file being written.
         if (outputPath is not null && !scriptObject.ContainsKey("use_auth"))
             scriptObject["use_auth"] = AppAuth.Enabled(outputPath);
         // Every project file targets the app's framework; a model that names none gets the one of the app being written.
@@ -72,12 +61,6 @@ internal sealed class TemplateEngine
     public void RenderToFile(
         string templatePath, object model, string outputPath)
     {
-        // A Liquid page (the Fluid engine) is not Scriban: it is copied as it is, so its {{ }} and {% %} tags reach the page.
-        if (templatePath.EndsWith(".liquid", StringComparison.OrdinalIgnoreCase))
-        {
-            Ux.WriteFile(outputPath, File.ReadAllText(templatePath));
-            return;
-        }
         var content = Render(templatePath, model, outputPath);
         Ux.WriteFile(outputPath, content);
     }

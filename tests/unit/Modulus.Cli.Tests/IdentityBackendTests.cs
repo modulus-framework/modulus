@@ -19,12 +19,11 @@ public sealed class IdentityBackendTests : IDisposable
 
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
-    private static AppModel Model(string auth = "openiddict", AppKind kind = AppKind.Api, string db = "SQLite") => new()
+    private static AppModel Model(string auth = "openiddict", string db = "SQLite") => new()
     {
         RootNamespace = "Shop",
         AppName = "Shop",
         Auth = auth,
-        Kind = kind,
         DbProvider = db,
     };
 

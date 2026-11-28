@@ -16,7 +16,11 @@ internal static class CliUpdateNotifier
     private static readonly TimeSpan CacheLifetime = TimeSpan.FromHours(24);
     private static readonly TimeSpan CheckBudget = TimeSpan.FromSeconds(1);
 
-    private static string CachePath => Path.Combine(UiTemplatePackage.UserRoot, "update-check.json");
+    /// <summary>The folder that holds the cached update check (<c>~/.modulus</c>); tests point it elsewhere.</summary>
+    internal static string CacheRoot { get; set; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".modulus");
+
+    private static string CachePath => Path.Combine(CacheRoot, "update-check.json");
 
     /// <summary>Starts the check, or returns a completed task with no result when it is switched off for this run.</summary>
     public static Task<string?> Start(string[] args)

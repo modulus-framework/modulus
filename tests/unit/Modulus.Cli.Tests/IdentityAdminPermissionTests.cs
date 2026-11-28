@@ -15,12 +15,11 @@ public sealed class IdentityAdminPermissionTests
 {
     private readonly TemplateEngine _engine = new();
 
-    private static AppModel App(string auth, bool noExample = false, AppKind kind = AppKind.Api) => new()
+    private static AppModel App(string auth, bool noExample = false) => new()
     {
         RootNamespace = "Shop",
         AppName = "Shop",
         Auth = auth,
-        Kind = kind,
         NoExample = noExample,
     };
 

@@ -7,7 +7,7 @@ namespace {{ module_namespace }}.Application;
 [CacheFor(30, Tags = ["{{ module_name_lower }}:{{ route_name }}"])]
 /// <summary>
 /// One page of {{ entity_name_lower }}s. The result is bounded: <see cref="PageSize"/> is clamped to
-/// <see cref="MaxPageSize"/> by the handler, so no caller (REST, gRPC, GraphQL, the admin page) can ask for every row.
+/// <see cref="MaxPageSize"/> by the handler, so no caller (REST, gRPC, GraphQL) can ask for every row.
 /// </summary>
 {{ if required_permission }}[RequirePermission("{{ required_permission }}")]
 {{ end }}public sealed record Get{{ entity_plural }}Query(int Page = 1, int PageSize = Get{{ entity_plural }}Query.DefaultPageSize)

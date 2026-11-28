@@ -203,7 +203,7 @@ public sealed class AiCommandTests : IDisposable
 
     private string AppDir => Path.Combine(_dir, "Shop");
 
-    private void GenerateApp(AppKind kind = AppKind.Api)
+    private void GenerateApp()
     {
         Ux.Quiet = true;
         new NewAppCommand().GenerateAll(AppDir, new AppModel
@@ -211,7 +211,6 @@ public sealed class AiCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = kind,
             EnableCorrelation = true,
             EnableSecurityHeaders = true,
             EnableSecretsGuard = true,
@@ -256,7 +255,6 @@ public sealed class AiCommandTests : IDisposable
             RootNamespace = "Shop",
             AppName = "Shop",
             Auth = "openiddict",
-            Kind = AppKind.Api,
             MultiTenancy = true,
             EnableCorrelation = true,
             EnableSecurityHeaders = true,
@@ -297,7 +295,6 @@ public sealed class AiCommandTests : IDisposable
         var description = DescribeCommand.Describe(ModuleDiscovery.Inventory(AppDir)!);
 
         description.Name.Should().Be("Shop");
-        description.Kind.Should().Be("api");
         description.ApiProject.Should().Be("src/API/Shop.Api/Shop.Api.csproj");
         description.Modules.Should().ContainSingle(m => m.Name == "Catalog")
             .Which.Entities.Should().Contain("Product");

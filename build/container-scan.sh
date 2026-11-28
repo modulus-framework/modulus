@@ -29,7 +29,7 @@ cleanup() { "$CONTAINER" rm -f "$RUN-api" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
 
 echo "==> generating $APP_NAME from $FEED"
-dotnet run --project "$CLI" -- app "$APP_NAME" --kind api --auth openiddict --package-source "$FEED" --output "$WORK" --force --quiet
+dotnet run --project "$CLI" -- app "$APP_NAME" --auth openiddict --package-source "$FEED" --output "$WORK" --force --quiet
 cd "$APP"
 
 echo "==> production deployment files"

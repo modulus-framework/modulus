@@ -78,7 +78,6 @@ internal sealed class AddBffCommand : Command<AddBffCommand.Settings>
             RootNamespace = app.RootNamespace,
             AppName = app.RootNamespace.Split('.')[^1],
             Auth = auth,
-            Kind = app.Kind ?? AppKind.Api,
             CachingProvider = apiCsproj.Contains("Modulus.Caching.Redis", StringComparison.Ordinal) ? "redis" : "inmemory",
             EnableCorrelation = program.Contains("AddModulusCorrelation(", StringComparison.Ordinal),
             EnableSecurityHeaders = program.Contains("AddModulusSecurityHeaders(", StringComparison.Ordinal),

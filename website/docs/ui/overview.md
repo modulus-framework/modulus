@@ -50,4 +50,4 @@ Run them in the Development environment. Sign in with any sample user's email an
 - **[Getting started](./getting-started.md)** installs the packages and shows a first page in each flavour.
 - **The two tutorials** build a complete app, one step at a time, and end with a list of what to try next.
 - **[Concepts](./concepts.md)** explains how the shell, menu, services and htmx fit together, and what is known to be limited.
-- **Reference** covers the [components](./components.md), the [Pro components](./pro.md), [forms](./forms.md), [plugins](./plugins.md), [theming](./theming.md), [production](./production.md), [Liquid](./fluid.md) and the [CLI](./cli.md).
+- **Reference** covers the [components](./components.md), the [Pro components](./pro.md), [forms](./forms.md), [plugins](./plugins.md), [theming](./theming.md), [production](./production.md), [Liquid](./fluid.md) and the [CLI note](./cli.md).

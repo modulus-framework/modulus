@@ -36,10 +36,10 @@ public sealed class CliUpdateNotifierTests
     public async Task LatestVersionAsync_answers_from_a_fresh_cache_without_asking_nuget()
     {
         var root = Path.Combine(Path.GetTempPath(), "modulus-update-" + Guid.NewGuid().ToString("N"));
-        var previous = UiTemplatePackage.UserRoot;
+        var previous = CliUpdateNotifier.CacheRoot;
         try
         {
-            UiTemplatePackage.UserRoot = root;
+            CliUpdateNotifier.CacheRoot = root;
             Directory.CreateDirectory(root);
             var checkedAt = DateTimeOffset.UtcNow.AddHours(-1).ToString("O");
             await File.WriteAllTextAsync(Path.Combine(root, "update-check.json"),
@@ -51,7 +51,7 @@ public sealed class CliUpdateNotifierTests
         }
         finally
         {
-            UiTemplatePackage.UserRoot = previous;
+            CliUpdateNotifier.CacheRoot = previous;
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }

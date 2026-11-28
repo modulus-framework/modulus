@@ -102,14 +102,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--migration-engine")]
         public string? MigrationEngine { get; init; }
 
-        [Description("App kind: api (an API host, no UI is created) or webapp+api (a Web project on the Modulus UI framework + the API for external clients such as mobile or desktop apps). The single-project webapp and web kinds are retired. Omit to be prompted; api when not interactive.")]
-        [CommandOption("--kind")]
-        public string? Kind { get; init; }
-
-
-        [Description("Web apps only: UI rendering engine: mvc, razor-pages, blazor, fluid, or none (API only). Omit to be prompted for web apps, default none for api kind.")]
-        [CommandOption("--ui-engine")]
-        public string? UiEngine { get; init; }
         [Description("Backends for Frontends to generate, one deployable per client: web, mobile, partner (comma-separated), or none. Each is src/Bff/{App}.Bff.{Client}, proxies /api to the API and works with every supported auth server.")]
         [CommandOption("--bff")]
         public string? Bff { get; init; }
@@ -118,7 +110,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         [CommandOption("--services")]
         public string? Services { get; init; }
 
-        [Description("Company = tenant: tenant resolution with membership checks, a tenant store module, tenant-owned entities and isolation tests. Needs --auth openiddict (api and webapp+api).")]
+        [Description("Company = tenant: tenant resolution with membership checks, a tenant store module, tenant-owned entities and isolation tests. Needs --auth openiddict.")]
         [CommandOption("--multi-tenancy")]
         [DefaultValue(false)]
         public bool MultiTenancy { get; init; }
@@ -149,11 +141,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// <summary>Valid migration engine choices, in selection-menu order.</summary>
     internal static readonly string[] KnownMigrationEngines = ["efcore", "dbsh"];
 
-    internal static readonly string[] KnownUiEngines = ["mvc", "razor-pages", "blazor", "fluid", "none"];
-
-    /// <summary>The engines a web app host can run on today: the Modulus UI framework's Razor hosts and the Liquid (Fluid) host.</summary>
-    internal static readonly string[] HostableUiEngines = ["mvc", "razor-pages", "blazor", "fluid"];
-
     private readonly TemplateEngine _templates = new();
 
     public override int Execute(CommandContext ctx, Settings s)
@@ -164,6 +151,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
     private int ExecuteCore(CommandContext ctx, Settings s)
     {
+        RefuseRetiredOptions(ctx?.Remaining.Parsed);
+
         if (Ux.IsInteractive && !Ux.Quiet)
             AnsiConsole.Write(new Rule("[cyan]Modulus â€” create a new application[/]") { Border = BoxBorder.Rounded });
 
@@ -174,14 +163,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 ciHint: "Pass the app name, e.g. `modulus app MyApp`.");
         var rootNs = ValidateAppName(name);
 
-        var kind = ResolveKind(s.Kind);
-
         var database = ResolveDatabase(s.Database);
-        var uiEngine = ResolveUiEngine(s.UiEngine, kind, Ux.IsInteractive);
-
-        // The Web project of a webapp+api runs on the Modulus UI framework (mvc or razor-pages hosts).
-        var useUiFramework = UsesUiFramework(kind, uiEngine);
-
         var auth = ResolveAuth(s.Auth);
         var multiTenancy = ResolveMultiTenancy(s.MultiTenancy, auth);
 
@@ -254,11 +236,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Ux.Status($"Clearing {appName}/", () => Ux.DeleteDirectory(projectDir));
         }
 
-        // --package-source is the local feed of the packages. The UI templates are looked up in MODULUS_LOCAL_FEED, so a feed given only with
-        // --package-source would be ignored there (the Web project then lost its UI references); the option stands in for it unless the variable is set.
-        if (s.PackageSource is { Length: > 0 } feed && Environment.GetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable) is not { Length: > 0 })
-            Environment.SetEnvironmentVariable(UiTemplatePackage.FeedEnvironmentVariable, feed);
-
         var model = new AppModel
         {
             RootNamespace = rootNs,
@@ -283,14 +260,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             EnableSecretsGuard = enableSecretsGuard,
             EnablePersonalDataProtection = enablePersonalDataProtection,
             MigrationEngine = migrationEngine,
-            Kind = kind,
-            UiEngine = uiEngine,
-            UseUiFramework = useUiFramework,
             LocalPackageSource = s.PackageSource,
-            // The UI feed is a source of its own unless it is the package source already: one folder under two source keys
-            // confuses NuGet's source mapping (the UI packages then fail to resolve at their own version).
-            UiFeedSource = UiFeedSourceFor(uiEngine, s.PackageSource),
-            Bff = BffClients.WithWebClient(bff, kind == AppKind.WebAppApi && auth != "none"),
+            Bff = bff,
             BffServices = bffServices,
             MultiTenancy = multiTenancy,
         };
@@ -299,10 +270,10 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
 
         // â”€â”€ Summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         AnsiConsole.WriteLine();
-        Ux.Success($"Created [cyan]{appName}[/] ({kind.Label()}) at [grey]{projectDir}[/]");
+        Ux.Success($"Created [cyan]{appName}[/] at [grey]{projectDir}[/]");
         if (Ux.DryRun)
             Ux.Warning("Dry-run: nothing was actually written.");
-        if (AuthNote(auth, kind) is { } authNote)
+        if (AuthNote(auth) is { } authNote)
         {
             if (auth == "none")
                 Ux.Warning(authNote);
@@ -320,17 +291,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (!Ux.DryRun)
         {
             AnsiConsole.MarkupLine("  [grey]dotnet restore[/]");
-            if (kind == AppKind.WebAppApi)
-            {
-                AnsiConsole.MarkupLine("  [grey]# Start the API:[/]");
-                AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
-                AnsiConsole.MarkupLine("  [grey]# In another terminal, start the Web app:[/]");
-                AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/Web/{0}.Web", rootNs);
-            }
-            else
-            {
-                AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
-            }
+            AnsiConsole.MarkupLine("  [grey]dotnet run --project[/] src/API/{0}.Api", rootNs);
             foreach (var client in model.BffClientModels)
             {
                 AnsiConsole.MarkupLine("  [grey]# {0} BFF (http://localhost:{1}):[/] [grey]dotnet run --project[/] src/Bff/{2}.Bff.{3}",
@@ -341,8 +302,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         AnsiConsole.MarkupLine("[grey]Then try:[/]");
         AnsiConsole.MarkupLine("  [grey]modulus add-module[/] Orders");
         AnsiConsole.MarkupLine("  [grey]modulus generate-crud[/] Order --module Orders  [grey]# API endpoints[/]");
-        if (kind is AppKind.WebAppApi)
-            AnsiConsole.MarkupLine("  [grey]modulus ui create-form-from-entity[/] Order  [grey]# a form page for an entity[/]");
         AnsiConsole.MarkupLine("  [grey]modulus list[/]  [grey]# see what's in this app[/]");
         if (model.UseDbsh)
         {
@@ -362,20 +321,8 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         var rootNs = model.RootNamespace;
         var projects = new List<string>();
 
-        // The UI host project's namespace (pages, typed clients, generated CRUD
-        // page models): the Web project for the split, the API host otherwise.
-        model.UiNamespace = model.Kind == AppKind.WebAppApi
-            ? $"{rootNs}.Web"
-            : $"{rootNs}.Api";
-
         // â”€â”€ Host / API project â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         GenerateApiHost(projectDir, model, projects);
-
-        // â”€â”€ Web project (webapp+api only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        if (model.Kind == AppKind.WebAppApi)
-        {
-            GenerateWebHost(projectDir, model, projects);
-        }
 
         // Backends for Frontends (--bff): one deployable per client type.
         for (var i = 0; i < model.Bff.Count; i++)
@@ -424,7 +371,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 EntityName = model.ExampleEntity,
                 EntityNameLower = CodeGen.ToCamelCase(model.ExampleEntity),
                 RouteName = CodeGen.Pluralize(model.ExampleEntity).ToLowerInvariant(),
-                // A web app's API exposes the entity's extension fields, filtered through the UI registry.
                 // With the identity backend the example API needs the permission the Admin role holds (see Program.cs).
                 RequiredPermission = model.ExamplePermission,
                 MultiTenant = model.MultiTenancy,
@@ -476,51 +422,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         _templates.RenderToFile("app/gitignore", model,
             Path.Combine(projectDir, ".gitignore"));
 
-        // â”€â”€ UI Modules â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        // The same predicate as the rest of the UI setup, so no package is referenced for a host that does not run on the framework.
-        if (UsesUiFramework(model.Kind, model.UiEngine))
-        {
-            AddUiFrameworkPackages(projectDir, model);
-
-            // Guidance for AI assistants: CLAUDE.md and AGENTS.md (read on every session) and a skill with the UI reference.
-            _templates.RenderToFile("app/ClaudeMd", model, Path.Combine(projectDir, "CLAUDE.md"));
-            _templates.RenderToFile("app/ClaudeMd", model, Path.Combine(projectDir, "AGENTS.md"));
-            _templates.RenderToFile("app/ModulusUiSkill", model,
-                Path.Combine(projectDir, ".claude", "skills", "modulus-ui", "SKILL.md"));
-        }
-
-        // Write .modulus.json for later CLI commands (generate-crud, etc.)
-        var modulusJson = new
-        {
-            version = "1.0",
-            framework_version = model.FrameworkVersion,
-            ui_engine = model.UiEngine,
-            ui_kit_version = UiTemplatePackage.ResolvedVersion ?? UiTemplatePackage.DefaultVersion
-        };
-        var modulusJsonPath = Path.Combine(projectDir, ".modulus.json");
-        File.WriteAllText(modulusJsonPath, System.Text.Json.JsonSerializer.Serialize(modulusJson, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-
-        // The example entity's list, create and edit pages in a web app, over the example API they already call. Best effort: the
-        // pages need the UI template package, and without it the app is still generated (`modulus ui create-crud` adds them later).
-        if (model.Kind == AppKind.WebAppApi && !model.NoExample && model.UiEngine is not ("blazor" or "fluid"))
-            AddExamplePages(projectDir, model);
-    }
-
-    private static void AddExamplePages(string projectDir, AppModel model)
-    {
-        var settings = new UiCreateCrudCommand.Settings
-        {
-            Entity = model.ExampleEntity,
-            Module = model.ExampleModule,
-            Engine = model.UiEngine,
-            Output = projectDir,
-            // The API client was written a moment ago by this same run, so the overwrite replaces only what this run produced.
-            Force = true,
-            Quiet = true,
-        };
-        var code = new UiCreateCrudCommand().Execute(null!, settings);
-        if (code != 0)
-            Ux.Warning($"The {model.ExampleEntity} pages were not added (run `modulus ui create-crud {model.ExampleEntity} --module {model.ExampleModule}` once the UI template package is available).");
     }
 
     /// <summary>
@@ -535,15 +436,14 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
         if (model.UseOpenIddict)
             _templates.RenderToFile("app/api/TokenServerSetup", model, Path.Combine(apiDir, "Security", "TokenServerSetup.cs"));
         _templates.RenderToFile("app/api/AuthenticationSetup", model, Path.Combine(apiDir, "Security", "AuthenticationSetup.cs"));
-        if (model.ExposeApi)
-            _templates.RenderToFile("app/api/OpenApiSetup", model, Path.Combine(apiDir, "OpenApi", "OpenApiSetup.cs"));
+        _templates.RenderToFile("app/api/OpenApiSetup", model, Path.Combine(apiDir, "OpenApi", "OpenApiSetup.cs"));
         _templates.RenderToFile("app/api/DatabaseStartup", model, Path.Combine(apiDir, "Hosting", "DatabaseStartup.cs"));
         _templates.RenderToFile("app/api/PipelineSetup", model, Path.Combine(apiDir, "Middleware", "PipelineSetup.cs"));
         _templates.RenderToFile("app/api/ApiEndpoints", model, Path.Combine(apiDir, "Endpoints", "ApiEndpoints.cs"));
         _templates.RenderToFile("app/api/FeatureEndpoints", model, Path.Combine(apiDir, "Endpoints", "FeatureEndpoints.cs"));
     }
 
-    /// <summary>Generates the API host project for this app (single-project api/webapp, or the API component of webapp+api).</summary>
+    /// <summary>Generates the API host project for this app.</summary>
     private void GenerateApiHost(string projectDir, AppModel model, List<string> projects)
     {
         var rootNs = model.RootNamespace;
@@ -566,332 +466,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             _templates.RenderToFile("app/loosening-allowlist.json", model,
                 Path.Combine(apiDir, "Security", "loosening-allowlist.json"));
         projects.Add($"src/API/{rootNs}.Api/{rootNs}.Api.csproj");
-    }
-
-    /// <summary>Generates the Web project for webapp+api kind (Razor Pages UI, no DB access, all calls over HTTP to the API).</summary>
-    /// <summary>
-    /// The application menu the Web host shows: its client and the contributor that adds the API's menu to the shell. Rendered with the
-    /// identity backend only, because the API maps the menu there, and whenever the API client registration refers to it.
-    /// </summary>
-    private void RenderNavigationMenu(string webDir, AppModel model)
-    {
-        if (model.Auth != "openiddict") return;
-        _templates.RenderToFile("app/NavigationMenuClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "NavigationMenuClient.cs"));
-        _templates.RenderToFile("app/NavigationMenuContributor.Web", model,
-            Path.Combine(webDir, "Components", "Navigation", "Menu", "ServerNavigationMenuContributor.cs"));
-    }
-
-    private void GenerateWebHost(string projectDir, AppModel model, List<string> projects)
-    {
-        var rootNs = model.RootNamespace;
-        var webDir = Path.Combine(projectDir, "src", "Web", $"{rootNs}.Web");
-        _templates.RenderToFile("app/web.csproj", model,
-            Path.Combine(webDir, $"{rootNs}.Web.csproj"));
-        _templates.RenderToFile(model.UiEngine switch
-        {
-            "blazor" => "app/Program.Blazor",
-            "fluid" => "app/Program.Fluid",
-            _ => "app/Program.Web",
-        }, model, Path.Combine(webDir, "Program.cs"));
-
-        // The Web project has its own configuration: it connects to nothing but
-        // the API host ("Api:BaseUrl"), so it must not share the API's
-        // appsettings (connection strings, OpenIddict server options) â€” and it
-        // needs its own launchSettings so both hosts can run side by side.
-        _templates.RenderToFile("app/appsettings.Web.json", model,
-            Path.Combine(webDir, "appsettings.json"));
-        _templates.RenderToFile("app/appsettings.Web.Development.json", model,
-            Path.Combine(webDir, "appsettings.Development.json"));
-        _templates.RenderToFile("app/launchSettings.Web.json", model,
-            Path.Combine(webDir, "Properties", "launchSettings.json"));
-
-        // The Fluid host renders Liquid pages from Templates/: the layout, the landing page and the error page, copied verbatim from
-        // the UI template package (they hold Liquid tags, which the Scriban renderer would not pass through).
-        if (model.UiEngine == "fluid")
-        {
-            var packageTemplates = UiTemplatePackage.Resolve()
-                ?? throw new InvalidOperationException(
-                    $"Could not find the {UiTemplatePackage.PackageId} package, which has the Liquid host pages. " +
-                    $"Pack it into ~/.modulus/feed (or set {UiTemplatePackage.FeedEnvironmentVariable}).");
-            var pagesDir = Directory.CreateDirectory(Path.Combine(webDir, "Templates")).FullName;
-            File.Copy(Path.Combine(packageTemplates, "fluid", "host-layout.liquid"), Path.Combine(pagesDir, "_layout.liquid"), overwrite: true);
-            File.Copy(Path.Combine(packageTemplates, "fluid", "host-index.liquid"), Path.Combine(pagesDir, "index.liquid"), overwrite: true);
-            File.Copy(Path.Combine(packageTemplates, "fluid", "host-error.liquid"), Path.Combine(pagesDir, "error.liquid"), overwrite: true);
-            if (model.UseAuth)
-                RenderFluidSignIn(webDir, model, pagesDir, packageTemplates);
-            projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
-            return;
-        }
-
-        // The Blazor host renders components, not Razor Pages: its pages, then the same typed API clients.
-        if (model.UiEngine == "blazor")
-        {
-            GenerateBlazorWebPages(webDir, model);
-            RenderBlazorWebSetup(webDir, model);
-            _templates.RenderToFile("app/ApiClientExtensions.Web", model, Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
-            // ApiClientExtensions registers these clients whenever the host has an openiddict identity, so the Blazor host renders
-            // them too (the Razor Pages branch below does the same for its pages).
-            if (model.UseAuth && model.Auth == "openiddict")
-            {
-                _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
-                _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
-                _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
-            }
-            _templates.RenderToFile("app/MenuRegistration.Web", model, Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
-            RenderNavigationMenu(webDir, model);
-            if (!model.NoExample)
-                _templates.RenderToFile("ui/EntityApiClient", model, UiLayout.ApiClientFile(webDir, model.ExampleEntity));
-            projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
-            return;
-        }
-
-        // Razor Pages plumbing: tag helpers (m-*) and the theme's layouts. MVC keeps its own under Views/.
-        if (model.UiEngine != "mvc")
-        {
-            _templates.RenderToFile("app/WebPagesViewImports", model,
-                Path.Combine(webDir, "Pages", "_ViewImports.cshtml"));
-            _templates.RenderToFile("app/WebPagesViewStart", model,
-                Path.Combine(webDir, "Pages", "_ViewStart.cshtml"));
-        }
-
-        // The framework's shell layout comes with the package; the sign-in and status pages need a frame without it.
-        if (model.UseUiFramework)
-        {
-            var layoutDir = model.UiEngine == "mvc" ? "Views" : "Pages";
-            _templates.RenderToFile("app/WebBlankLayout", model,
-                Path.Combine(webDir, layoutDir, "Shared", "_BlankLayout.cshtml"));
-            _templates.RenderToFile("app/WebAuthLayout", model,
-                Path.Combine(webDir, layoutDir, "Shared", "_AuthLayout.cshtml"));
-        }
-
-        // Landing page â€” where the sign-in flow redirects after login.
-        if (model.UiEngine == "mvc")
-        {
-            // MVC: the landing page is a controller action with a view. Views get their own imports and layout.
-            _templates.RenderToFile("app/WebMvcViewImports", model,
-                Path.Combine(webDir, "Views", "_ViewImports.cshtml"));
-            _templates.RenderToFile("app/WebPagesViewStart", model,
-                Path.Combine(webDir, "Views", "_ViewStart.cshtml"));
-            _templates.RenderToFile("app/HomeController.Web", model,
-                Path.Combine(webDir, "Controllers", "HomeController.cs"));
-            _templates.RenderToFile("app/Index.Mvc.cshtml", model,
-                Path.Combine(webDir, "Views", "Home", "Index.cshtml"));
-        }
-        else
-        {
-            _templates.RenderToFile("app/IndexModel.Web", model,
-                Path.Combine(webDir, "Pages", "Index.cshtml.cs"));
-            _templates.RenderToFile("app/Index.Web.cshtml", model,
-                Path.Combine(webDir, "Pages", "Index.cshtml"));
-        }
-
-        // Typed API clients: always generated. With auth on they carry the BFF web session's token
-        // (AddBffUserAccessToken); with auth off they call the API anonymously.
-        _templates.RenderToFile("app/ApiClientExtensions.Web", model,
-            Path.Combine(webDir, "Services", "ApiClientExtensions.cs"));
-        if (!model.NoExample)
-        {
-            _templates.RenderToFile("ui/EntityApiClient", model,
-                UiLayout.ApiClientFile(webDir, model.ExampleEntity));
-        }
-
-        // Program.cs composes one setup file per concern; the Razor Pages and MVC hosts share them.
-        RenderRazorWebSetup(webDir, model);
-
-        // Menu contributors live in Components/Navigation/Menu and are registered by scan (see Composition/MenuRegistration.cs).
-        _templates.RenderToFile("app/MenuRegistration.Web", model,
-            Path.Combine(webDir, "Composition", "MenuRegistration.cs"));
-        RenderNavigationMenu(webDir, model);
-        _templates.RenderToFile("app/favicon.svg", model, Path.Combine(webDir, "wwwroot", "favicon.svg"));
-        if (model.UiEngine == "mvc")
-            RenderMvcErrorPage(webDir, model);
-        else
-        {
-            _templates.RenderToFile("app/ErrorModel.Web", model, Path.Combine(webDir, "Pages", "Error.cshtml.cs"));
-            _templates.RenderToFile("app/Error.Web.cshtml", model, Path.Combine(webDir, "Pages", "Error.cshtml"));
-        }
-
-        // â”€â”€ Authentication: a BFF web session (Modulus.Bff) behind the sign-in pages â”€â”€
-        if (model.UseAuth)
-        {
-            _templates.RenderToFile("app/loosening-allowlist.Web.json", model,
-                Path.Combine(webDir, "Security", "loosening-allowlist.json"));
-            _templates.RenderToFile("app/PrincipalCurrentUser", model,
-                Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
-
-            if (model.UiEngine == "mvc")
-            {
-                RenderMvcAccountArea(webDir, model);
-            }
-            else
-            {
-                var accountDir = Path.Combine(webDir, "Pages", "Account");
-                _templates.RenderToFile("app/WebAccountViewStart", model,
-                    Path.Combine(accountDir, "_ViewStart.cshtml"));
-                _templates.RenderToFile("app/LoginModel.Web", model,
-                    Path.Combine(accountDir, "Login.cshtml.cs"));
-                _templates.RenderToFile("app/Login.Web.cshtml", model,
-                    Path.Combine(accountDir, "Login.cshtml"));
-                _templates.RenderToFile("app/LogoutModel.Web", model,
-                    Path.Combine(accountDir, "Logout.cshtml.cs"));
-                _templates.RenderToFile("app/Logout.Web.cshtml", model,
-                    Path.Combine(accountDir, "Logout.cshtml"));
-                _templates.RenderToFile("app/AccessDeniedModel.Web", model,
-                    Path.Combine(accountDir, "AccessDenied.cshtml.cs"));
-                _templates.RenderToFile("app/AccessDenied.Web.cshtml", model,
-                    Path.Combine(accountDir, "AccessDenied.cshtml"));
-
-                // Passkey enrolment: the signed-in person adds and removes passkeys through the API (local token server only).
-                if (model.Auth == "openiddict")
-                {
-                    _templates.RenderToFile("app/PasskeysModel.Web", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml.cs"));
-                    _templates.RenderToFile("app/Passkeys.Web.cshtml", model, Path.Combine(webDir, "Pages", "Passkeys.cshtml"));
-                    _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
-                    _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
-                    _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
-                    _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
-
-                    // Password recovery: the forgot and reset pages call the API anonymously (the email link carries the token).
-                    _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
-                    _templates.RenderToFile("app/ForgotPasswordModel.Web", model, Path.Combine(accountDir, "ForgotPassword.cshtml.cs"));
-                    _templates.RenderToFile("app/ForgotPassword.Web.cshtml", model, Path.Combine(accountDir, "ForgotPassword.cshtml"));
-                    _templates.RenderToFile("app/ResetPasswordModel.Web", model, Path.Combine(accountDir, "ResetPassword.cshtml.cs"));
-                    _templates.RenderToFile("app/ResetPassword.Web.cshtml", model, Path.Combine(accountDir, "ResetPassword.cshtml"));
-                }
-            }
-        }
-
-        projects.Add($"src/Web/{rootNs}.Web/{rootNs}.Web.csproj");
-    }
-
-    /// <summary>MVC error page: <c>Controllers/ErrorController.cs</c>, its view model and <c>Views/Error/Index.cshtml</c>.</summary>
-    private void RenderMvcErrorPage(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/mvc/ErrorController", model, Path.Combine(webDir, "Controllers", "ErrorController.cs"));
-        _templates.RenderToFile("app/mvc/ErrorViewModel", model, Path.Combine(webDir, "Models", "ErrorViewModel.cs"));
-        _templates.RenderToFile("app/mvc/Error.cshtml", model, Path.Combine(webDir, "Views", "Error", "Index.cshtml"));
-    }
-
-    /// <summary>
-    /// MVC account pages as an area (<c>Areas/Account</c>): thin controllers, view models and views, so sign-in, password recovery and
-    /// passkeys are one module with its own folders, apart from the app's feature controllers.
-    /// </summary>
-    private void RenderMvcAccountArea(string webDir, AppModel model)
-    {
-        var area = Path.Combine(webDir, "Areas", "Account");
-        var views = Path.Combine(area, "Views");
-        _templates.RenderToFile("app/mvc/AreaViewImports.cshtml", model, Path.Combine(views, "_ViewImports.cshtml"));
-        _templates.RenderToFile("app/mvc/AreaViewStart.cshtml", model, Path.Combine(views, "_ViewStart.cshtml"));
-        _templates.RenderToFile("app/mvc/AccountController", model, Path.Combine(area, "Controllers", "AccountController.cs"));
-        _templates.RenderToFile("app/mvc/LoginViewModel", model, Path.Combine(area, "Models", "LoginViewModel.cs"));
-        _templates.RenderToFile("app/mvc/Login.cshtml", model, Path.Combine(views, "Account", "Login.cshtml"));
-        _templates.RenderToFile("app/mvc/Logout.cshtml", model, Path.Combine(views, "Account", "Logout.cshtml"));
-        _templates.RenderToFile("app/mvc/AccessDenied.cshtml", model, Path.Combine(views, "Account", "AccessDenied.cshtml"));
-
-        // Passkeys and password recovery: the local token server only.
-        if (model.Auth != "openiddict")
-            return;
-        _templates.RenderToFile("app/mvc/PasskeysController", model, Path.Combine(area, "Controllers", "PasskeysController.cs"));
-        _templates.RenderToFile("app/mvc/Passkeys.cshtml", model, Path.Combine(views, "Passkeys", "Index.cshtml"));
-        _templates.RenderToFile("app/PasskeyApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyApiClient.cs"));
-        _templates.RenderToFile("app/passkeys.js", model, Path.Combine(webDir, "wwwroot", "js", "passkeys.js"));
-        _templates.RenderToFile("app/PasskeyLoginClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "PasskeyLoginClient.cs"));
-        _templates.RenderToFile("app/passkey-login.js", model, Path.Combine(webDir, "wwwroot", "js", "passkey-login.js"));
-        _templates.RenderToFile("app/AccountApiClient.Web", model, Path.Combine(webDir, "Services", "ApiClients", "AccountApiClient.cs"));
-        _templates.RenderToFile("app/mvc/PasswordController", model, Path.Combine(area, "Controllers", "PasswordController.cs"));
-        _templates.RenderToFile("app/mvc/PasswordViewModels", model, Path.Combine(area, "Models", "PasswordViewModels.cs"));
-        _templates.RenderToFile("app/mvc/ForgotPassword.cshtml", model, Path.Combine(views, "Password", "ForgotPassword.cshtml"));
-        _templates.RenderToFile("app/mvc/ResetPassword.cshtml", model, Path.Combine(views, "Password", "ResetPassword.cshtml"));
-    }
-
-    /// <summary>The local UI feed for the generated app, or null when the app needs none or the package source already serves it.</summary>
-    private static string? UiFeedSourceFor(string uiEngine, string? packageSource)
-    {
-        if (uiEngine == "none")
-            return null;
-        var uiFeed = UiFrameworkPackages.LocalFeed();
-        if (uiFeed is null || packageSource is null)
-            return uiFeed;
-        return string.Equals(Path.GetFullPath(uiFeed), Path.GetFullPath(packageSource), StringComparison.Ordinal) ? null : uiFeed;
-    }
-
-    /// <summary>The Razor Pages and MVC host's setup files: one per concern, composed by Program.cs.</summary>
-    private void RenderRazorWebSetup(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/WebCoreSetup.Web", model, Path.Combine(webDir, "Configuration", "WebCoreSetup.cs"));
-        _templates.RenderToFile("app/UiSetup.Web", model, Path.Combine(webDir, "Configuration", "UiSetup.cs"));
-        if (model.UseAuth)
-            RenderBffGatewaySecurity(webDir, model);
-        else
-            _templates.RenderToFile("app/NoSignInAuthentication.Web", model, Path.Combine(webDir, "Security", "NoSignInAuthentication.cs"));
-        _templates.RenderToFile("app/PipelineSetup.Web", model, Path.Combine(webDir, "Middleware", "PipelineSetup.cs"));
-        _templates.RenderToFile("app/WebEndpoints.Web", model, Path.Combine(webDir, "Endpoints", "WebEndpoints.cs"));
-        _templates.RenderToFile("app/HealthChecksSetup.Web", model, Path.Combine(webDir, "Observability", "HealthChecksSetup.cs"));
-    }
-
-    /// <summary>
-    /// The Fluid host's sign-in: the BFF gateway and session, as the Razor Pages host has them, the rate limits, the sign-in endpoints and the
-    /// Liquid sign-in page (Templates/auth/login.liquid). The page posts to the BFF, which checks the credentials.
-    /// </summary>
-    private void RenderFluidSignIn(string webDir, AppModel model, string pagesDir, string packageTemplates)
-    {
-        RenderBffGatewaySecurity(webDir, model);
-        _templates.RenderToFile("app/PrincipalCurrentUser", model, Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
-        _templates.RenderToFile("app/loosening-allowlist.Web.json", model, Path.Combine(webDir, "Security", "loosening-allowlist.json"));
-        _templates.RenderToFile("app/AuthEndpoints.Fluid", model, Path.Combine(webDir, "Endpoints", "AuthEndpoints.cs"));
-        var authDir = Directory.CreateDirectory(Path.Combine(pagesDir, "auth")).FullName;
-        File.Copy(Path.Combine(packageTemplates, "fluid", "auth-login.liquid"), Path.Combine(authDir, "login.liquid"), overwrite: true);
-        // The second step when the account has an authenticator app (AuthEndpoints posts the code to /auth/two-factor).
-        File.Copy(Path.Combine(packageTemplates, "fluid", "auth-two-factor.liquid"), Path.Combine(authDir, "two-factor.liquid"), overwrite: true);
-    }
-
-    /// <summary>
-    /// The Web hosts' sign-in through the BFF (src/Bff/{App}.Bff.Web), shared by Razor Pages and Blazor: the authentication setup,
-    /// the gateway that carries the browser's cookie to the BFF, the scheme that reads the BFF's session and the BFF client.
-    /// </summary>
-    private void RenderBffGatewaySecurity(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/AuthenticationSetup.Web", model, Path.Combine(webDir, "Security", "AuthenticationSetup.cs"));
-        _templates.RenderToFile("app/BffGatewayHandler.Web", model, Path.Combine(webDir, "Security", "BffGatewayHandler.cs"));
-        _templates.RenderToFile("app/BffSessionAuthenticationHandler.Web", model, Path.Combine(webDir, "Security", "BffSessionAuthenticationHandler.cs"));
-        _templates.RenderToFile("app/BffSessionClient.Web", model, Path.Combine(webDir, "Security", "BffSessionClient.cs"));
-        _templates.RenderToFile("app/RateLimitingSetup.Web", model, Path.Combine(webDir, "Configuration", "RateLimitingSetup.cs"));
-    }
-
-    /// <summary>The Blazor host's setup files: one per concern, composed by Program.cs.</summary>
-    private void RenderBlazorWebSetup(string webDir, AppModel model)
-    {
-        _templates.RenderToFile("app/UiSetup.Blazor", model, Path.Combine(webDir, "Configuration", "UiSetup.cs"));
-        if (model.UseAuth)
-        {
-            RenderBffGatewaySecurity(webDir, model);
-            _templates.RenderToFile("app/AccountEndpoints.Blazor", model, Path.Combine(webDir, "Endpoints", "AccountEndpoints.cs"));
-        }
-        _templates.RenderToFile("app/PipelineSetup.Blazor", model, Path.Combine(webDir, "Middleware", "PipelineSetup.cs"));
-        _templates.RenderToFile("app/WebEndpoints.Blazor", model, Path.Combine(webDir, "Endpoints", "WebEndpoints.cs"));
-    }
-
-    /// <summary>The Blazor host's pages: the app shell, routes, the main layout and a home page, plus the sign-in pages with --auth.</summary>
-    private void GenerateBlazorWebPages(string webDir, AppModel model)
-    {
-        var components = Path.Combine(webDir, "Components");
-        _templates.RenderToFile("app/blazor/App.razor", model, Path.Combine(components, "App.razor"));
-        _templates.RenderToFile("app/blazor/Routes.razor", model, Path.Combine(components, "Routes.razor"));
-        _templates.RenderToFile("app/blazor/_Imports.razor", model, Path.Combine(components, "_Imports.razor"));
-        _templates.RenderToFile("app/blazor/Layout/MainLayout.razor", model, Path.Combine(components, "Layout", "MainLayout.razor"));
-        _templates.RenderToFile("app/blazor/Pages/Home.razor", model, Path.Combine(components, "Pages", "Home.razor"));
-        _templates.RenderToFile("app/blazor/Pages/Error.razor", model, Path.Combine(components, "Pages", "Error.razor"));
-        // The static file middleware warns about a missing wwwroot folder. An empty file keeps the folder in git.
-        Ux.WriteFile(Path.Combine(webDir, "wwwroot", ".gitkeep"), "");
-        if (model.UseAuth)
-        {
-            _templates.RenderToFile("app/blazor/Layout/BlankLayout.razor", model, Path.Combine(components, "Layout", "BlankLayout.razor"));
-            _templates.RenderToFile("app/blazor/RedirectToLogin.razor", model, Path.Combine(components, "RedirectToLogin.razor"));
-            _templates.RenderToFile("app/loosening-allowlist.Web.json", model, Path.Combine(webDir, "Security", "loosening-allowlist.json"));
-            _templates.RenderToFile("app/PrincipalCurrentUser", model, Path.Combine(webDir, "Security", "PrincipalCurrentUser.cs"));
-            if (model.WebLoginMode == "Password")
-                _templates.RenderToFile("app/blazor/Pages/Account/Login.razor", model, Path.Combine(components, "Pages", "Account", "Login.razor"));
-        }
     }
 
     /// <summary>
@@ -958,8 +532,7 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     }
 
     /// <summary>
-    /// <c>--multi-tenancy</c> is for an API host with the local token server: pages have no company switcher yet (a browser
-    /// sends no <c>X-Tenant-Id</c>), and an external provider has no local users whose memberships could be seeded.
+    /// <c>--multi-tenancy</c> is for an API host with the local token server: an external provider has no local users whose memberships could be seeded.
     /// </summary>
     internal static bool ResolveMultiTenancy(bool requested, string auth)
     {
@@ -983,51 +556,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
             Path.Combine(infraDir, "IdentityModule.cs"));
         _templates.RenderToFile("identity/IdentitySeeding", model,
             Path.Combine(infraDir, "IdentitySeeding.cs"));
-    }
-
-    /// <summary>Whether the Web project runs on the Modulus UI framework: a webapp+api app with a hosted UI engine (mvc, razor-pages, blazor or fluid).</summary>
-    internal static bool UsesUiFramework(AppKind kind, string uiEngine) =>
-        kind == AppKind.WebAppApi && (uiEngine is "mvc" or "razor-pages" or "blazor" or "fluid");
-
-    /// <summary>References the UI framework packages for the app's UI engine in the host project.</summary>
-    private static void AddUiFrameworkPackages(string projectDir, AppModel model)
-    {
-        if (model.UiEngine == "none") return;
-
-        var (hostProject, _) = model.Kind == AppKind.WebAppApi
-            ? GetWebHostPaths(projectDir, model)
-            : GetApiHostPaths(projectDir, model);
-        if (!File.Exists(hostProject)) return;
-
-        var packages = UiFrameworkPackages.For(model.UiEngine);
-        if (packages.Count == 0)
-        {
-            Ux.Warning($"UI framework packages for '{model.UiEngine}' not found (is Modulus.Ui.Templates available?); the app has no UI references yet.");
-            return;
-        }
-
-        foreach (var package in packages)
-            ProjectFileService.EnsureCsprojPackageReference(hostProject, package.Id, package.Version, Ux.DryRun);
-    }
-
-    private static (string Project, string ProgramCs) GetApiHostPaths(string projectDir, AppModel model)
-    {
-        var rootNs = model.RootNamespace;
-        var apiDir = Path.Combine(projectDir, "src", "API", $"{rootNs}.Api");
-        return (
-            Path.Combine(apiDir, $"{rootNs}.Api.csproj"),
-            Path.Combine(apiDir, "Program.cs")
-        );
-    }
-
-    private static (string Project, string ProgramCs) GetWebHostPaths(string projectDir, AppModel model)
-    {
-        var rootNs = model.RootNamespace;
-        var webDir = Path.Combine(projectDir, "src", "Web", $"{rootNs}.Web");
-        return (
-            Path.Combine(webDir, $"{rootNs}.Web.csproj"),
-            Path.Combine(webDir, "Program.cs")
-        );
     }
 
     /// <summary>
@@ -1088,39 +616,6 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
                 $"Unknown auth provider '{auth}'. Valid: {string.Join(", ", AuthProviders.Keys)}.");
 
         return AuthProviders.Find(auth)!.Key;
-    }
-
-    /// <summary>Resolves the UI rendering engine: interactive selection for web apps when not supplied, validation + normalisation when passed on the command line.</summary>
-    private static string ResolveUiEngine(string? provided, AppKind kind, bool interactive)
-    {
-        // API apps never use UI
-        if (kind == AppKind.Api)
-        {
-            if (!string.IsNullOrWhiteSpace(provided) && provided != "none")
-                throw new ArgumentException(
-                    $"--ui-engine '{provided}' requires a web app: API hosts create no UI. Use --kind webapp+api, or use --ui-engine none.");
-            return "none";
-        }
-
-        // Web apps: resolve UI engine
-        string engine;
-        if (string.IsNullOrWhiteSpace(provided))
-        {
-            engine = interactive
-                ? Ux.SelectOrFallback("UI rendering engine?", HostableUiEngines, "razor-pages")
-                : throw new ArgumentException(
-                    "--ui-engine required for web apps in non-interactive mode. Valid: " + string.Join(", ", HostableUiEngines) + ".");
-        }
-        else
-        {
-            engine = provided;
-        }
-
-        engine = ValidateChoice(engine, KnownUiEngines, "UI engine");
-        if (!HostableUiEngines.Contains(engine))
-            throw new ArgumentException(
-                $"A web app host runs on the mvc, razor-pages or blazor engine; '{engine}' has page templates (modulus ui add-component, ...) but no app host yet.");
-        return engine;
     }
 
     /// <summary>
@@ -1260,42 +755,42 @@ internal sealed class NewAppCommand : Command<NewAppCommand.Settings>
     /// an Identity module, so it works out of the box in Development; the note says what to do before production.
     /// A web app + API's API is also meant for external clients, which is why it matters most there.
     /// </summary>
-    internal static string? AuthNote(string auth, AppKind kind)
+    internal static string? AuthNote(string auth)
     {
-        var clients = kind == AppKind.WebAppApi ? "The API is also for external clients (mobile, desktop), which need a way to sign in. " : "";
         return auth switch
         {
-            "none" => clients +
+            "none" =>
                 "Auth is 'none': endpoints require an authenticated user and no authentication scheme is registered, so the API answers 500 " +
                 "until you register one (AddAuthentication().AddJwtBearer(...)) or re-run with --auth openiddict or an external provider. " +
                 "Call AllowAnonymous() in an endpoint's Configure() to open it.",
             "openiddict" =>
                 " Auth is 'openiddict': an Identity module (users, roles, token store) was generated. In Development it creates an admin " +
                 "(random password, logged once) and turns the password grant on, so a client can POST /connect/token and call the API with the " +
-                "bearer token." + (kind == AppKind.WebAppApi
-                    ? " The API host answers bearer tokens only (no login page); the Web project signs users in over the password grant " +
-                      "and relays the token on every page's API call. External clients (mobile, desktop, SPA) do the same; the split's API " +
-                      "has no page to sign users in through, so no code flow is served."
-                    : string.Empty) +
+                "bearer token." +
                 " Before production: modulus migrate add InitialCreate --module Identity, real signing certificates, " +
                 "Identity:Seed:AdminEmail/AdminPassword from secrets, and Identity:AllowPasswordFlow only for trusted first-party clients.",
             _ => null,
         };
     }
 
-    private const string ApiChoice = "API: an API host, no UI";
-    private const string WebAppApiChoice = "Web app + API: separate deployable Web UI + API backend (HTTP calls, token relay)";
-
     /// <summary>
-    /// Resolves the app kind. An explicit <c>--kind</c> wins; otherwise the user is asked, and a non-interactive run defaults to <c>api</c>.
+    /// <c>--kind</c> and <c>--ui-engine</c> were removed with the UI scaffolding. The parser ignores unknown options, so a script that still
+    /// asks for a web app would silently get an API; refuse it instead. <c>--kind api</c> stays harmless.
     /// </summary>
-    internal static AppKind ResolveKind(string? kind)
+    internal static void RefuseRetiredOptions(ILookup<string, string?>? options)
     {
-        if (!string.IsNullOrWhiteSpace(kind))
-            return AppKinds.Parse(kind);
-
-        var choice = Ux.SelectOrFallback("Application type?", [ApiChoice, WebAppApiChoice], ApiChoice);
-        return choice == WebAppApiChoice ? AppKind.WebAppApi : AppKind.Api;
+        if (options is null)
+            return;
+        foreach (var option in options)
+        {
+            var name = option.Key.TrimStart('-');
+            var isKind = name.Equals("kind", StringComparison.OrdinalIgnoreCase);
+            if (!isKind && !name.Equals("ui-engine", StringComparison.OrdinalIgnoreCase))
+                continue;
+            var harmless = isKind ? "api" : "none";
+            if (option.Any(v => !string.Equals(v, harmless, StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException($"--{name} is no longer supported: the CLI creates APIs only (a modular monolith, or microservices with --bff and --services).");
+        }
     }
 
     /// <summary>

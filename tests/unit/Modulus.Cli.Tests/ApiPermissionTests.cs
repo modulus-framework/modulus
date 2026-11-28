@@ -25,12 +25,11 @@ public sealed class ApiPermissionTests
         RequiredPermission = permission,
     };
 
-    private static AppModel App(string auth = "openiddict", AppKind kind = AppKind.Api, bool noExample = false) => new()
+    private static AppModel App(string auth = "openiddict", bool noExample = false) => new()
     {
         RootNamespace = "Shop",
         AppName = "Shop",
         Auth = auth,
-        Kind = kind,
         NoExample = noExample,
     };
 
@@ -71,7 +70,6 @@ public sealed class ApiPermissionTests
     [InlineData("module/Application/GetAllQuery")]
     [InlineData("module/Application/GetByIdQuery")]
     [InlineData("module/Application/GetCursorQuery")]
-    [InlineData("module/Application/GetForEditQuery")]
     public void Read_queries_require_the_same_permission(string template)
     {
         var source = _engine.Render(template, Crud("catalog:products:manage"));
@@ -84,7 +82,6 @@ public sealed class ApiPermissionTests
     [InlineData("module/Application/GetAllQuery")]
     [InlineData("module/Application/GetByIdQuery")]
     [InlineData("module/Application/GetCursorQuery")]
-    [InlineData("module/Application/GetForEditQuery")]
     public void Read_queries_have_no_permission_attribute_without_a_permission(string template)
     {
         _engine.Render(template, Crud(null)).Should().NotContain("RequirePermission");
@@ -102,31 +99,22 @@ public sealed class ApiPermissionTests
     // ── Which hosts have a role to hold it ───────────────────────
 
     [Fact]
-    public void A_host_with_the_identity_seeder_or_the_sign_in_has_an_admin_role()
-    {
-        var api = ApiHostSource.Render(_engine, App(kind: AppKind.Api));
-        var web = ApiHostSource.Render(_engine, App(kind: AppKind.WebAppApi));
-
-        UiAccessGates.HasAdminRole(api).Should().BeTrue("an api app has no pages but seeds the Admin role");
-        UiAccessGates.HasAdminRole(web).Should().BeTrue();
-        UiAccessGates.HasSignIn(api).Should().BeFalse("the page gates still apply only to pages");
-    }
+    public void A_host_with_the_identity_seeder_has_an_admin_role()
+        => ApiPermissions.HasAdminRole(ApiHostSource.Render(_engine, App())).Should().BeTrue("the API seeds the Admin role");
 
     [Fact]
     public void A_host_with_no_identity_backend_has_no_admin_role()
     {
-        UiAccessGates.HasAdminRole(ApiHostSource.Render(_engine, App(auth: "none"))).Should().BeFalse();
-        UiAccessGates.HasAdminRole(ApiHostSource.Render(_engine, App(auth: "keycloak"))).Should().BeFalse();
+        ApiPermissions.HasAdminRole(ApiHostSource.Render(_engine, App(auth: "none"))).Should().BeFalse();
+        ApiPermissions.HasAdminRole(ApiHostSource.Render(_engine, App(auth: "keycloak"))).Should().BeFalse();
     }
 
     // ── The example app ──────────────────────────────────────────
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void The_example_app_grants_its_permission_to_the_admin_role(bool web)
+    [Fact]
+    public void The_example_app_grants_its_permission_to_the_admin_role()
     {
-        var model = App(kind: web ? AppKind.WebAppApi : AppKind.Api);
+        var model = App();
         var program = ApiHostSource.Render(_engine, model);
 
         model.ExamplePermission.Should().Be("catalog:products:manage");
@@ -153,7 +141,7 @@ public sealed class ApiPermissionTests
     public void A_second_generate_crud_finds_the_example_permission_already_wired()
     {
         // generate-crud Product on a fresh web app must not add the same lines again.
-        var program = ApiHostSource.Render(_engine, App(kind: AppKind.WebAppApi));
+        var program = ApiHostSource.Render(_engine, App());
 
         ApiPermissionWiring.EnsurePermission(program, "Catalog", "catalog:products:manage", "Manage Products.")
             .Should().Be(program);

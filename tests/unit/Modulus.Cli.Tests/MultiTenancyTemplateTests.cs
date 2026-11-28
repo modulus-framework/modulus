@@ -20,7 +20,6 @@ public sealed class MultiTenancyTemplateTests
         RootNamespace = "Shop",
         AppName = "Shop",
         Auth = "openiddict",
-        Kind = AppKind.Api,
         MultiTenancy = multiTenancy,
     };
 
@@ -75,7 +74,7 @@ public sealed class MultiTenancyTemplateTests
             .Should().BeGreaterThan(startup.IndexOf("MigrateModulusDatabasesAsync", StringComparison.Ordinal), "the schema exists first");
 
         _engine.Render("app/api/DatabaseStartup", Model(multiTenancy: false)).Should().NotContain("TopUpCompanyGrantsAsync");
-        _engine.Render("app/api/DatabaseStartup", new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", Kind = AppKind.Api, MultiTenancy = true, NoExample = true })
+        _engine.Render("app/api/DatabaseStartup", new AppModel { RootNamespace = "Shop", AppName = "Shop", Auth = "openiddict", MultiTenancy = true, NoExample = true })
             .Should().NotContain("TopUpCompanyGrantsAsync", "without the example there is no authorization store");
     }
 

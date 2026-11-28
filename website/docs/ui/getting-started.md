@@ -10,7 +10,6 @@ In this page you check the prerequisites, install the packages, and see the four
 
 - **.NET 10 SDK.** Check with `dotnet --version`; it should print `10.0.x`.
 - **An editor.** Visual Studio, Rider or VS Code with the C# extension. Any of them can run the `dotnet` commands in these pages.
-- **Optional: the Modulus CLI** for scaffolding. See [CLI and the admin starter](./cli.md).
 
 ## Get the packages
 

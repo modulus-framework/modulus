@@ -24,90 +24,6 @@ public sealed class CliScaffoldBuildTests
 {
     private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(10);
 
-
-    [Theory]
-    [InlineData("mvc")]
-    [InlineData("razor-pages")]
-    [InlineData("blazor")]
-    // The fluid engine is refused by the CLI for a web host (only mvc, razor-pages and blazor are generated), so it is not in the matrix.
-    public async Task ModulusApp_ScaffoldedWithUiEngine_BuildsSuccessfully(string uiEngine)
-    {
-        var repoRoot = FindRepoRoot();
-        var work = Directory.CreateTempSubdirectory("modulus-cli-ui-e2e-");
-        try
-        {
-            var nupkgDir = Path.Combine(work.FullName, "nupkg");
-            var cliBinDir = Path.Combine(work.FullName, "cli-bin");
-            var outputDir = Path.Combine(work.FullName, "output");
-            var isolatedCache = new Dictionary<string, string>
-            {
-                ["NUGET_PACKAGES"] = Path.Combine(work.FullName, "packages"),
-                // The generated app builds in its own folder; a shared redirected output folder would collide between apps.
-                ["ArtifactsPath"] = string.Empty,
-            };
-            Directory.CreateDirectory(nupkgDir);
-            Directory.CreateDirectory(outputDir);
-
-            // 1. Pack all Modulus.* packages
-            await RunAsync(
-                "dotnet",
-                $"pack \"{Path.Combine(repoRoot, "modulus.slnx")}\" -c Release -o \"{nupkgDir}\" --nologo",
-                repoRoot);
-
-            // 2. The UI framework packages come from the modulus-ui repository. Copy them into this run's feed.
-            CopyUiPackages(nupkgDir);
-
-            // 3. Build the CLI
-            await RunAsync(
-                "dotnet",
-                $"build \"{Path.Combine(repoRoot, "cli", "Modulus.Cli.csproj")}\" -c Release -o \"{cliBinDir}\" --nologo",
-                repoRoot);
-            var cliDll = Path.Combine(cliBinDir, "Modulus.Cli.dll");
-            File.Exists(cliDll).Should().BeTrue($"the CLI build should have produced {cliDll}");
-
-            // 4. Scaffold a fresh web app with UI engine
-            var appName = $"TestApp{char.ToUpper(uiEngine[0])}{uiEngine.Substring(1).Replace("-", "")}";
-            var scaffoldArgs = string.Join(' ',
-                "app", appName,
-                "--with-example",
-                "--kind", "webapp+api",
-                "--ui-engine", uiEngine,
-                "--database", "SQLite",
-                "--auth", "none",
-                "--message-broker", "none",
-                "--caching", "inmemory",
-                "--storage", "local",
-                "--signalr", "none",
-                "--migration-engine", "efcore",
-                "--package-source", $"\"{nupkgDir}\"",
-                "-o", $"\"{outputDir}\"");
-            await RunAsync("dotnet", $"\"{cliDll}\" {scaffoldArgs}", work.FullName, isolatedCache);
-
-            var appSlnx = Path.Combine(outputDir, appName, $"{appName}.slnx");
-            File.Exists(appSlnx).Should().BeTrue($"the CLI should have scaffolded {appSlnx}");
-
-            // 4. Verify .modulus.json was created with UI engine
-            var modulusJson = Path.Combine(outputDir, appName, ".modulus.json");
-            File.Exists(modulusJson).Should().BeTrue($"CLI should have created {modulusJson}");
-            var jsonContent = File.ReadAllText(modulusJson);
-            jsonContent.Should().Contain($"\"ui_engine\": \"{uiEngine}\"", $".modulus.json should specify ui_engine: {uiEngine}");
-
-            // 5. Generate CRUD to test UI template integration
-            var generateCrudArgs = string.Join(' ',
-                "generate-crud", "Product",
-                "--module", "Catalog",
-                "--package-source", $"\"{nupkgDir}\"");
-            await RunAsync("dotnet", $"\"{cliDll}\" {generateCrudArgs}", Path.Combine(outputDir, appName), isolatedCache);
-
-            // 6. Build the scaffolded app with generated CRUD pages
-            await RunAsync("dotnet", $"build \"{appSlnx}\" -c Release --nologo", Path.Combine(outputDir, appName), isolatedCache);
-        }
-        finally
-        {
-            try { work.Delete(recursive: true); } catch { /* best-effort cleanup */ }
-        }
-    }
-
     [Fact]
     public async Task ModulusApp_ScaffoldedSolution_BuildsSuccessfully()
     {
@@ -147,9 +63,7 @@ public sealed class CliScaffoldBuildTests
             var cliDll = Path.Combine(cliBinDir, "Modulus.Cli.dll");
             File.Exists(cliDll).Should().BeTrue($"the CLI build should have produced {cliDll}");
 
-            // 3. Scaffold a fresh app, pointed at the local feed. --kind api
-            // and no UI modules keep the package surface minimal (no
-            // `dotnet add package` shelling-out from WireUiModules); default
+            // 3. Scaffold a fresh app, pointed at the local feed.
             // --with-example includes the example Catalog module so this
             // exercises real generated 4-layer module code, not just the
             // bare host. --auth none avoids OpenIddict cert/seed complexity
@@ -157,7 +71,6 @@ public sealed class CliScaffoldBuildTests
             var scaffoldArgs = string.Join(' ',
                 "app", "TestApp",
                 "--with-example",
-                "--kind", "api",
                 "--database", "SQLite",
                 "--auth", "none",
                 "--message-broker", "none",
@@ -231,7 +144,6 @@ public sealed class CliScaffoldBuildTests
             // 3. Scaffold an API with the local OpenIddict token server (the identity module, seeding and the token endpoint).
             var scaffoldArgs = string.Join(' ',
                 "app", "TestOidc",
-                "--kind", "api",
                 "--database", "SQLite",
                 "--auth", "openiddict",
                 "--message-broker", "none",
@@ -254,32 +166,6 @@ public sealed class CliScaffoldBuildTests
         {
             try { work.Delete(recursive: true); } catch { /* best-effort cleanup */ }
         }
-    }
-
-    /// <summary>
-    /// Copies the modulus-ui packages the CLI needs (version 2.0.0, the UI version in cli/Services/UiTemplatePackage.cs) from the
-    /// local UI feed (MODULUS_LOCAL_FEED, then ~/.modulus/feed) into the test's package folder. Without them the generated web app
-    /// cannot restore, because the test's package source is the framework feed only.
-    /// </summary>
-    private static void CopyUiPackages(string destination)
-    {
-        const string UiVersion = "2.0.0";
-        var folders = new List<string>();
-        if (Environment.GetEnvironmentVariable("MODULUS_LOCAL_FEED") is { Length: > 0 } custom)
-            folders.AddRange(custom.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries));
-        folders.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".modulus", "feed"));
-
-        var feed = folders.FirstOrDefault(f => Directory.Exists(f) && Directory.EnumerateFiles(f, $"*.{UiVersion}.nupkg").Any());
-        feed.Should().NotBeNull($"the modulus-ui {UiVersion} packages should be packed into a local feed (see the modulus-ui repository)");
-
-        var uiPackages = new[] { "Synvro.Modulus.Ui.", "Synvro.Modulus.AspNetCore.Mvc.", "Synvro.Modulus.AspNetCore.Hosting.",
-            "Synvro.Modulus.AspNetCore.Fluid.", "Synvro.Modulus.Blazor.", "Synvro.Modulus.Documents." };
-        var copied = Directory.EnumerateFiles(feed!, $"*.{UiVersion}.nupkg")
-            .Where(file => uiPackages.Any(prefix => Path.GetFileName(file).StartsWith(prefix, StringComparison.Ordinal)))
-            .ToList();
-        copied.Should().NotBeEmpty();
-        foreach (var file in copied)
-            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
     }
 
     private static async Task RunAsync(

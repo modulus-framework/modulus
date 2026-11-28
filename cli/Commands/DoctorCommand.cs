@@ -78,28 +78,6 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
                 inventory.ProgramCsPath,
                 inventory.SolutionDir));
 
-            if (inventory.Kind == AppKind.WebAppApi)
-            {
-                // The split kind's second project must exist and boot its own
-                // Program: `modulus add-module` wires module Infrastructure
-                // references into the API host only — the Web project's UI
-                // compiles against each module's Application layer, so a
-                // missing Web project means the kind marker is stale.
-                checks.Add(CheckResult.Pass("App kind", "webapp+api (API host + Web project)"));
-                checks.Add(CheckFile(
-                    "Web project exists",
-                    inventory.WebProjectPath ?? "",
-                    inventory.SolutionDir));
-                checks.Add(CheckFile(
-                    "Web Program.cs exists",
-                    inventory.WebProgramCsPath ?? "",
-                    inventory.SolutionDir));
-                if (CheckWebTokenHandling(inventory.WebProjectPath) is { } tokens)
-                    checks.Add(tokens);
-                if (CheckWebInvariant(inventory.WebProjectPath) is { } invariant)
-                    checks.Add(invariant);
-            }
-
             checks.Add(CheckFile(
                 "NuGet.config present",
                 Path.Combine(inventory.SolutionDir, "NuGet.config"),
@@ -282,51 +260,6 @@ internal sealed class DoctorCommand : Command<DoctorCommand.Settings>
         {
             return CheckResult.Warn("dotnet-ef tool", $"dotnet not found ({ex.Message}).");
         }
-    }
-
-    /// <summary>
-    /// A Web host generated before the BFF web session carries <c>Security/TokenRelayHandler.cs</c>: tokens in the browser
-    /// cookie, refresh only after a 401 and no refresh lock (rotating refresh tokens can race). Warns with the way out.
-    /// Null when the host has no sign-in.
-    /// </summary>
-    internal static CheckResult? CheckWebTokenHandling(string? webProjectPath)
-    {
-        if (string.IsNullOrEmpty(webProjectPath) || Path.GetDirectoryName(webProjectPath) is not { } webDir)
-            return null;
-        if (File.Exists(Path.Combine(webDir, "Security", "TokenRelayHandler.cs")))
-        {
-            return CheckResult.Warn(
-                "Web sign-in",
-                "Uses the generated TokenRelayHandler (tokens in the browser cookie, refresh only after a 401, no refresh lock). " +
-                "Move to the BFF gateway: add the web BFF (modulus add-bff web), sign in and out through BffSessionClient, " +
-                "replace .AddHttpMessageHandler<TokenRelayHandler>() with .AddHttpMessageHandler<BffGatewayHandler>() " +
-                "and delete Security/TokenRelayHandler.cs (see docs/DOCUMENTATION.md#advanced-features-hybrid-cache-per-client-bffs-grpc-webhooks-graphql-realtime-ai-platform-integration).");
-        }
-
-        var csproj = File.Exists(webProjectPath) ? File.ReadAllText(webProjectPath) : "";
-        return File.Exists(Path.Combine(webDir, "Security", "BffGatewayHandler.cs")) || csproj.Contains("Modulus.Bff", StringComparison.Ordinal)
-            ? CheckResult.Pass("Web sign-in", "BFF gateway (the web BFF holds the tokens)")
-            : null;
-    }
-
-    /// <summary>
-    /// A Web host is a presentation shell: it must reach data through the API, so a reference to a module's Infrastructure
-    /// project (its DbContext) breaks the split. Null when the host has no such reference.
-    /// </summary>
-    internal static CheckResult? CheckWebInvariant(string? webProjectPath)
-    {
-        if (string.IsNullOrEmpty(webProjectPath) || !File.Exists(webProjectPath))
-            return null;
-
-        var offenders = System.Text.RegularExpressions.Regex
-            .Matches(File.ReadAllText(webProjectPath), "<ProjectReference\\s+Include=\"([^\"]*\\.Infrastructure\\.csproj)\"")
-            .Select(m => Path.GetFileNameWithoutExtension(m.Groups[1].Value.Replace('\\', '/')))
-            .ToList();
-        return offenders.Count == 0
-            ? null
-            : CheckResult.Warn(
-                "Web host isolation",
-                $"References {string.Join(", ", offenders)}: a Web host should call the API, not load module Infrastructure/DbContexts.");
     }
 
     /// <summary>

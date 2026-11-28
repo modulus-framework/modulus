@@ -6,7 +6,7 @@ using {{ module_namespace }}.Application.Dtos;
 namespace {{ module_namespace }}.Presentation;
 {{ if required_permission }}
 // Every endpoint below needs the "{{ required_permission }}" permission. The Admin role holds it (grant it to other roles in Program.cs or
-// through the Permissions UI); a web app's admin page for this entity is guarded by the same one. Change it with Permissions("...")
+// through the authorization API). Change it with Permissions("...")
 // or AllowAnonymous() in an endpoint's Configure().
 {{ end }}
 public sealed class Get{{ entity_plural }}Request

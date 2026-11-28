@@ -1,48 +1,36 @@
 namespace Modulus.Cli.Services;
 
 /// <summary>Shared rules for the Admin role and the per-entity CRUD permission (<c>{module}:{route}:manage</c>) that generated API endpoints use.</summary>
-internal static class UiAccessGates
+internal static class ApiPermissions
 {
     /// <summary>The role the generated identity backend seeds the first administrator into (<c>IdentitySeeding.AdminRole</c>).</summary>
     public const string AdminRole = "Admin";
 
-    /// <summary>Resolves <c>ICurrentUser.HasPermission</c> from the grant store, so menus and pages see the Admin role's grants.</summary>
+    /// <summary>Resolves <c>ICurrentUser.HasPermission</c> from the grant store, so menus and handlers see the Admin role's grants.</summary>
     public const string GrantCheckerCall = "builder.Services.AddGrantStorePermissionChecker();";
 
     /// <summary>Namespace of <see cref="GrantCheckerCall"/>'s extension.</summary>
     public const string GrantCheckerNamespace = "Modulus.Identity.Extensions";
 
-    private const string PageAuthorizationMarker = "AllowAnonymousToFolder(\"/Account\")";
-
     /// <summary>
     /// True when this <c>Program.cs</c> belongs to a host whose identity backend seeds the <c>Admin</c> role (an app generated with
-    /// <c>--auth openiddict</c>, either kind) or that keeps its pages behind a sign-in, so granting a permission to that role means something.
+    /// <c>--auth openiddict</c>), so granting a permission to that role means something.
     /// </summary>
     public static bool HasAdminRole(string programContent)
     {
         ArgumentNullException.ThrowIfNull(programContent);
-        return HasSignIn(programContent)
-            || programContent.Contains("SeedIdentityAsync(", StringComparison.Ordinal);
+        return programContent.Contains("SeedIdentityAsync(", StringComparison.Ordinal);
     }
 
-    /// <summary>What a CRUD permission's registry entry says (shown by the Permissions UI).</summary>
+    /// <summary>What a CRUD permission's registry entry says (listed with the permission).</summary>
     public static string CrudPermissionDescription(string entityPlural)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(entityPlural);
         return $"Manage {entityPlural}.";
     }
 
-    /// <summary>True when this <c>Program.cs</c> keeps its pages behind a sign-in, so a role can be granted a permission and mean something.</summary>
-    public static bool HasSignIn(string programContent)
-    {
-        ArgumentNullException.ThrowIfNull(programContent);
-        return programContent.Contains(PageAuthorizationMarker, StringComparison.OrdinalIgnoreCase)
-            // The MVC host keeps its account pages in an area, so it carries no Razor Pages folder rule: its sign-in is the BFF session.
-            || programContent.Contains("AddWebAuthentication(", StringComparison.Ordinal);
-    }
-
     /// <summary>
-    /// The permission that guards a generated CRUD admin page: <c>{module}:{route}:manage</c> (e.g. <c>catalog:products:manage</c>),
+    /// The permission that guards a generated CRUD API: <c>{module}:{route}:manage</c> (e.g. <c>catalog:products:manage</c>),
     /// so <c>catalog:*</c> covers a whole module and <c>IPermissionRegistry.GetByModule("catalog")</c> lists it.
     /// </summary>
     public static string CrudPermission(string moduleName, string route)

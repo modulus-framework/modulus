@@ -28,7 +28,7 @@ app.Run();
 
 public partial class Program;
 
-// Namespaced entry-point marker for the integration tests, as in the API and Web hosts: each host's Program is global, so a
+// Namespaced entry-point marker for the integration tests, as in the API host: each host's Program is global, so a
 // test project that references several hosts names this one through its marker.
 namespace {{ project_name }}
 {
