@@ -17,7 +17,7 @@ jobs:
     name: Repository (Trivy filesystem)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Vulnerabilities and misconfigurations in the source tree
         run: >
           docker run --rm -v "$PWD:/src:ro" aquasec/trivy:0.58.1 fs
@@ -27,7 +27,7 @@ jobs:
     name: Generated API (Trivy image, OWASP ZAP baseline)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
