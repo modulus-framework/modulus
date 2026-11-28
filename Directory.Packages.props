@@ -95,7 +95,7 @@
          LICENSE because the package only carries a licence URL). -->
     <PackageVersion Include="Parquet.Net"                               Version="6.1.0" />
     <!-- Analytics DuckDB lake reader: DuckDB.NET.Data 1.5.3 (MIT; the native DuckDB library it loads is MIT too). Checked against its .nuspec on 2026-11-04. -->
-    <PackageVersion Include="DuckDB.NET.Data"                           Version="1.5.3" />
+    <PackageVersion Include="DuckDB.NET.Data"                           Version="1.5.6.1" />
     <!-- DuckDB.NET.Bindings.Full (MIT): ships the native DuckDB library for every runtime; DuckDB.NET.Data alone has none. Checked 2026-11-04. -->
     <PackageVersion Include="DuckDB.NET.Bindings.Full"                  Version="1.5.3" />
     <!-- gRPC for .NET (Apache-2.0). Grpc.Tools is build-time only (protoc codegen). -->
